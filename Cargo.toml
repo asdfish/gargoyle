@@ -1,0 +1,25 @@
+[package]
+name = "gargoyle"
+version = "0.1.0"
+edition = "2024"
+description = "guile bindings for rust"
+license = "MIT"
+
+[features]
+default = ["api_all", "guile_latest"]
+
+api_v0 = []
+api_all = ["api_v0"]
+
+guile_2_2 = []
+guile_3_0 = []
+guile_latest = ["guile_3_0"]
+
+[build-dependencies]
+bindgen = { version = "0.72.0", default-features = false }
+cc = { version = "1.2.30", default-features = false }
+cfg-if = { version = "1.0.1", default-features = false }
+pkg-config = { version = "0.3.32", default-features = false }
+
+[dependencies]
+parking_lot = { version = "0.12.4", default-features = false }
