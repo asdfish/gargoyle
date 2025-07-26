@@ -143,13 +143,20 @@ impl Api {
     }
 
     pub fn make_bool<'id>(&'id self, b: bool) -> Bool<'id> {
-        let scm = RawScm::from(match b {
+        let scm = match b {
             true => unsafe { crate::sys::GARGOYLE_REEXPORTS_SCM_BOOL_T },
             false => unsafe { crate::sys::GARGOYLE_REEXPORTS_SCM_BOOL_F },
-        });
+        };
 
         // SAFETY: the scm is a bool
-        unsafe { Bool::new_unchecked(scm) }
+        unsafe { Bool::from_ptr(scm) }
+    }
+    pub fn make_char<'id>(&'id self, ch: char) -> Char<'id> {
+        unsafe {
+            Char::from_ptr(sys::scm_integer_to_char(sys::scm_from_uint32(u32::from(
+                ch,
+            ))))
+        }
     }
     pub fn make_string<'id, S>(&'id self, string: &S) -> String<'id>
     where
@@ -159,9 +166,8 @@ impl Api {
 
         let scm =
             unsafe { crate::sys::scm_from_utf8_stringn(string.as_ptr().cast(), string.len()) };
-        let scm = RawScm::from(scm);
         // SAFETY: this is a string
-        unsafe { String::new_unchecked(scm) }
+        unsafe { String::from_ptr(scm) }
     }
 }
 
@@ -266,10 +272,6 @@ impl<'id> ScmSubtype<'id> for Any<'id> {
 #[repr(transparent)]
 pub struct Bool<'id>(RawScm<'id>);
 impl<'id> Bool<'id> {
-    unsafe fn new_unchecked(scm: RawScm<'id>) -> Self {
-        Self(scm)
-    }
-
     pub fn to_bool(self) -> bool {
         unsafe { crate::sys::scm_to_bool(self.0.as_ptr()) }.eq(&1)
     }
@@ -292,12 +294,33 @@ impl<'id> ScmSubtype<'id> for Bool<'id> {
 
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
-pub struct String<'id>(RawScm<'id>);
-impl<'id> String<'id> {
-    unsafe fn new_unchecked(scm: RawScm<'id>) -> Self {
-        Self(scm)
+pub struct Char<'id>(RawScm<'id>);
+impl<'id> Char<'id> {
+    pub fn to_char(self) -> char {
+        char::from_u32(unsafe { sys::scm_to_uint32(sys::scm_char_to_integer(self.as_ptr())) })
+            .unwrap()
+    }
+}
+impl<'id> ScmSubtype<'id> for Char<'id> {
+    type This<'a> = Char<'a>;
+
+    unsafe fn as_ptr(&self) -> crate::sys::SCM {
+        unsafe { self.0.as_ptr() }
     }
 
+    unsafe fn from_ptr(ptr: crate::sys::SCM) -> Self {
+        Self(RawScm::from(ptr))
+    }
+
+    unsafe fn cast_lifetime<'b>(self) -> Self::This<'b> {
+        Char(unsafe { self.0.cast_lifetime() })
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct String<'id>(RawScm<'id>);
+impl<'id> String<'id> {
     pub fn to_string(self) -> string::String<AllocVec<u8, CAllocator>> {
         self.try_to_string().unwrap()
     }
@@ -364,6 +387,7 @@ unsafe impl<T> Send for DeadScm<T> where T: ScmSubtype<'static> {}
 #[non_exhaustive]
 pub enum Scm<'id> {
     Bool(Bool<'id>),
+    Char(Char<'id>),
     String(String<'id>),
     Other(Any<'id>),
 }
@@ -399,19 +423,6 @@ impl From<crate::sys::SCM> for RawScm<'_> {
         }
     }
 }
-
-// pub mod sys {
-//     //! Low level bindings to guile.
-//     //!
-//     //! Only the `scm*` and `g_reexports*` symbols can be guaranteed to exist.
-
-//     #![allow(improper_ctypes)]
-//     #![expect(non_camel_case_types)]
-//     #![expect(non_snake_case)]
-//     #![expect(non_upper_case_globals)]
-
-//     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-// }
 
 #[cfg(test)]
 mod tests {
@@ -474,6 +485,14 @@ mod tests {
         with_guile(|api| {
             assert_eq!(api.make_bool(true).to_bool(), true);
             assert_eq!(api.make_bool(false).to_bool(), false);
+        });
+    }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn char_conversion() {
+        with_guile(|api| {
+            assert_eq!(api.make_char('a').to_char(), 'a');
         });
     }
 

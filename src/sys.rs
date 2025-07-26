@@ -45,6 +45,12 @@ unsafe extern "C" {
 
     pub fn scm_to_bool(_: SCM) -> c_int;
 
+    pub fn scm_from_uint32(_: u32) -> SCM;
+    pub fn scm_to_uint32(_: SCM) -> u32;
+
+    pub fn scm_integer_to_char(_: SCM) -> SCM;
+    pub fn scm_char_to_integer(_: SCM) -> SCM;
+
     pub fn scm_gc_protect_object(_: SCM) -> SCM;
     pub fn scm_gc_unprotect_object(_: SCM) -> SCM;
 }
