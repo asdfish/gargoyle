@@ -21,7 +21,7 @@
 #[cfg(not(feature = "guile_3_0"))]
 compile_error!("Neither of the `guile_*` features are selected.");
 
-use std::{env, path::PathBuf, str};
+use std::str;
 
 fn compiler_args(
     pkg_config::Library {
@@ -65,14 +65,6 @@ const GUILE_VERSION: &str = "guile-3.0";
 
 fn main() {
     let args = pkg_config::Config::new().probe(GUILE_VERSION).unwrap();
-    let libguile = args
-        .include_paths
-        .iter()
-        .find_map(|path| {
-            let path = path.join("libguile.h");
-            path.is_file().then_some(path)
-        })
-        .unwrap();
     let args = compiler_args(args).collect::<Result<Vec<_>, _>>().unwrap();
 
     println!(
@@ -85,12 +77,4 @@ cargo:rerun-if-changed=src/reexports.c"
         .flags(args.clone())
         .file("src/reexports.c")
         .compile("reexports");
-    bindgen::Builder::default()
-        .clang_args(args)
-        .header("src/reexports.h")
-        .header(libguile.to_str().unwrap())
-        .generate()
-        .unwrap()
-        .write_to_file(PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("bindings.rs"))
-        .unwrap();
 }

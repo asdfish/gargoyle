@@ -1,7 +1,7 @@
 use {
     crate::sys::{free, malloc},
     allocator_api2::alloc::{AllocError, Allocator, Layout},
-    std::{num::NonZeroU64, ptr::NonNull},
+    std::{num::NonZeroUsize, ptr::NonNull},
 };
 
 /// Allocator that allocates using [malloc] and [free] from [crate::sys].
@@ -15,7 +15,7 @@ unsafe impl Allocator for CAllocator {
         size.try_into()
             .ok()
             // malloc does not acccept 0
-            .and_then(NonZeroU64::new)
+            .and_then(NonZeroUsize::new)
             .ok_or(AllocError)
             // SAFETY: bytes is not zero
             .map(|bytes| unsafe { malloc(bytes.get()) })

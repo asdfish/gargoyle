@@ -13,7 +13,6 @@ guile_3_0 = []
 guile_latest = ["guile_3_0"]
 
 [build-dependencies]
-bindgen = { version = "0.72.0", default-features = false }
 cc = { version = "1.2.30", default-features = false }
 cfg-if = { version = "1.0.1", default-features = false }
 pkg-config = { version = "0.3.32", default-features = false }

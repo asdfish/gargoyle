@@ -22,6 +22,7 @@
 
 mod alloc;
 mod guard;
+pub mod sys;
 
 use {
     crate::{alloc::CAllocator, guard::Guard},
@@ -143,8 +144,8 @@ impl Api {
 
     pub fn make_bool<'id>(&'id self, b: bool) -> Bool<'id> {
         let scm = RawScm::from(match b {
-            true => unsafe { crate::sys::G_REEXPORTS_SCM_BOOL_T },
-            false => unsafe { crate::sys::G_REEXPORTS_SCM_BOOL_F },
+            true => unsafe { crate::sys::GARGOYLE_REEXPORTS_SCM_BOOL_T },
+            false => unsafe { crate::sys::GARGOYLE_REEXPORTS_SCM_BOOL_F },
         });
 
         // SAFETY: the scm is a bool
@@ -399,18 +400,18 @@ impl From<crate::sys::SCM> for RawScm<'_> {
     }
 }
 
-pub mod sys {
-    //! Low level bindings to guile.
-    //!
-    //! Only the `scm*` and `g_reexports*` symbols can be guaranteed to exist.
+// pub mod sys {
+//     //! Low level bindings to guile.
+//     //!
+//     //! Only the `scm*` and `g_reexports*` symbols can be guaranteed to exist.
 
-    #![allow(improper_ctypes)]
-    #![expect(non_camel_case_types)]
-    #![expect(non_snake_case)]
-    #![expect(non_upper_case_globals)]
+//     #![allow(improper_ctypes)]
+//     #![expect(non_camel_case_types)]
+//     #![expect(non_snake_case)]
+//     #![expect(non_upper_case_globals)]
 
-    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-}
+//     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+// }
 
 #[cfg(test)]
 mod tests {

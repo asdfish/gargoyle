@@ -25,8 +25,8 @@
 
 #include <libguile.h>
 
-extern const SCM G_REEXPORTS_SCM_BOOL_T;
-extern const SCM G_REEXPORTS_SCM_BOOL_F;
-extern const SCM G_REEXPORTS_SCM_UNDEFINED;
+extern const SCM GARGOYLE_REEXPORTS_SCM_BOOL_T;
+extern const SCM GARGOYLE_REEXPORTS_SCM_BOOL_F;
+extern const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED;
 
 #endif // GARGOYLE_REEXPORTS_H
