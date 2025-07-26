@@ -132,7 +132,7 @@ impl Api {
         T: ScmSubtype<'static>,
     {
         // SAFETY: we are back in guile mode
-        unsafe { scm.0.cast_lifetime() }
+        unsafe { T::This::<'id>::from_ptr(scm.0.as_ptr()) }
     }
 
     pub fn without_guile<F, O>(&mut self, operation: F) -> O
@@ -188,22 +188,36 @@ impl Api {
             false => unsafe { crate::sys::G_REEXPORTS_SCM_BOOL_T },
         }))
     }
+
+    pub fn kill<'id, T>(&self, scm: T) -> DeadScm<T::This<'static>>
+    where
+        T: ScmSubtype<'id>,
+    {
+        // SAFETY: the `DeadScm` type disables reading
+        DeadScm::from(unsafe { scm.cast_lifetime() })
+    }
 }
 
 pub trait ScmSubtype<'id>: Sized {
     type This<'a>: ScmSubtype<'a>;
 
-    fn from_raw(_: RawScm<'id>) -> Self;
-    fn into_scm(self) -> Scm<'id>;
+    // fn from_raw(_: RawScm<'id>) -> Self;
+    // fn into_scm(self) -> Scm<'id>;
+
+    /// # Safety
+    ///
+    /// This is safe if you don't smuggle the `SCM` into areas not in guile mode.
+    unsafe fn as_ptr(&self) -> crate::sys::SCM;
+
+    /// # Safety
+    ///
+    /// Make sure the lifetime is accurate.
+    unsafe fn from_ptr(_: crate::sys::SCM) -> Self;
 
     /// # Safety
     ///
     /// This you may cast the lifetime so long as you don't use it to smuggle it to places not in guile mode.
     unsafe fn cast_lifetime<'b>(self) -> Self::This<'b>;
-    fn kill(self) -> DeadScm<Self::This<'static>> {
-        // SAFETY: the `DeadScm` type disables reading
-        DeadScm(unsafe { self.cast_lifetime() })
-    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -212,11 +226,12 @@ pub struct Any<'id>(RawScm<'id>);
 impl<'id> ScmSubtype<'id> for Any<'id> {
     type This<'a> = Any<'a>;
 
-    fn from_raw(scm: RawScm<'id>) -> Self {
-        Self(scm)
+    unsafe fn as_ptr(&self) -> crate::sys::SCM {
+        unsafe { self.0.as_ptr() }
     }
-    fn into_scm(self) -> Scm<'id> {
-        Scm::Other(self)
+
+    unsafe fn from_ptr(ptr: crate::sys::SCM) -> Self {
+        Self(RawScm::from(ptr))
     }
 
     unsafe fn cast_lifetime<'b>(self) -> Self::This<'b> {
@@ -235,11 +250,12 @@ impl<'id> Bool<'id> {
 impl<'id> ScmSubtype<'id> for Bool<'id> {
     type This<'a> = Bool<'a>;
 
-    fn from_raw(scm: RawScm<'id>) -> Self {
-        Self(scm)
+    unsafe fn as_ptr(&self) -> crate::sys::SCM {
+        unsafe { self.0.as_ptr() }
     }
-    fn into_scm(self) -> Scm<'id> {
-        Scm::Bool(self)
+
+    unsafe fn from_ptr(ptr: crate::sys::SCM) -> Self {
+        Self(RawScm::from(ptr))
     }
 
     unsafe fn cast_lifetime<'b>(self) -> Self::This<'b> {
@@ -251,6 +267,29 @@ impl<'id> ScmSubtype<'id> for Bool<'id> {
 pub struct DeadScm<T>(T)
 where
     T: ScmSubtype<'static>;
+impl<T> From<T> for DeadScm<T>
+where
+    T: ScmSubtype<'static>,
+{
+    fn from(scm: T) -> Self {
+        unsafe { crate::sys::scm_gc_protect_object(scm.as_ptr()) };
+        Self(scm)
+    }
+}
+impl<T> Drop for DeadScm<T>
+where
+    T: ScmSubtype<'static>,
+{
+    fn drop(&mut self) {
+        unsafe {
+            crate::sys::scm_gc_unprotect_object(self.0.as_ptr());
+        }
+    }
+}
+/// # Safety
+///
+/// The pointer is protected.
+unsafe impl<T> Send for DeadScm<T> where T: ScmSubtype<'static> {}
 
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
@@ -261,15 +300,21 @@ pub enum Scm<'id> {
 
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
-pub struct RawScm<'id> {
+struct RawScm<'id> {
     scm: crate::sys::SCM,
     _marker: PhantomData<&'id ()>,
 }
 impl RawScm<'_> {
     /// # Safety
+    /// See [ScmSubtype::as_ptr]
+    unsafe fn as_ptr(self) -> crate::sys::SCM {
+        self.scm
+    }
+
+    /// # Safety
     ///
     /// See [ScmSubtype::cast_lifetime]
-    pub unsafe fn cast_lifetime<'b>(self) -> RawScm<'b> {
+    unsafe fn cast_lifetime<'b>(self) -> RawScm<'b> {
         RawScm {
             scm: self.scm,
             _marker: PhantomData,
@@ -332,5 +377,18 @@ mod tests {
     fn compilation() {
         let tests = trybuild::TestCases::new();
         tests.compile_fail("tests/fail/*.rs");
+    }
+
+    #[test]
+    fn dead_scm_send() {
+        with_guile(|api| {
+            let t = api.make_bool(true);
+            let t = api.kill(t);
+            thread::spawn(move || {
+                with_guile(move |api| {
+                    let _t = api.revive(t);
+                });
+            });
+        });
     }
 }
