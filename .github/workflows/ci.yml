@@ -33,7 +33,7 @@ jobs:
       - uses: msys2/setup-msys2@v2
         if: ${{ runner.os == 'Windows' }}
         with:
-          install: curl git nigw-w64-rustup
+          install: curl git mingw-w64-rustup
       - uses: actions/checkout@v4
       - name: Windows dependencies
         if: ${{ runner.os == 'Windows' && ! matrix.skip-dependencies }}
