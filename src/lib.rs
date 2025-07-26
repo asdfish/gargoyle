@@ -447,6 +447,7 @@ mod tests {
         }));
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn compilation() {
         let tests = trybuild::TestCases::new();
