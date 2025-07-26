@@ -6,15 +6,9 @@ description = "guile bindings for rust"
 license = "MIT"
 
 [features]
-default = ["guile_latest"]
-
-guile_2_2 = []
-guile_3_0 = []
-guile_latest = ["guile_3_0"]
 
 [build-dependencies]
 cc = { version = "1.2.30", default-features = false }
-cfg-if = { version = "1.0.1", default-features = false }
 
 [dependencies]
 allocator-api2 = { version = "0.3.0", default-features = false, features = ["alloc"] }

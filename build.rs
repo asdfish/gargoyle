@@ -18,28 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#[cfg(not(any(feature = "guile_2_2", feature = "guile_3_0")))]
-compile_error!("Neither of the `guile_*` features are selected.");
-
-use {
-    cfg_if::cfg_if,
-    std::{
-        error::Error,
-        ffi::OsStr,
-        fmt::{self, Display, Formatter},
-        io::{self, Write, stdout},
-        process::Command,
-    },
+use std::{
+    error::Error,
+    ffi::OsStr,
+    fmt::{self, Display, Formatter},
+    io::{self, Write, stdout},
+    process::Command,
 };
 
-cfg_if! {
-    if #[cfg(feature = "guile_3_0")] {
-        const PKG_CONFIG_GUILE: &str = "guile-3.0";
-    } else if #[cfg(feature = "guile_2_2")] {
-        const PKG_CONFIG_GUILE: &str = "guile-2.2";
-    }
-}
-const PKG_CONFIG_ARGS: [&str; 3] = ["--cflags", "--libs", PKG_CONFIG_GUILE];
+const PKG_CONFIG_ARGS: [&str; 3] = ["--cflags", "--libs", "guile-3.0"];
 
 pub fn pkg_config_guile() -> Result<Vec<u8>, PkgConfigError> {
     Command::new("pkg-config")
