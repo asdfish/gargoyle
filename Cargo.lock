@@ -47,6 +47,7 @@ version = "0.1.0"
 dependencies = [
  "allocator-api2",
  "cc",
+ "cfg-if",
  "generativity",
  "parking_lot",
  "string",
