@@ -33,7 +33,9 @@ jobs:
       - uses: msys2/setup-msys2@v2
         if: ${{ runner.os == 'Windows' }}
         with:
-          install: curl git mingw-w64-rustup
+          msystem: mingw64
+          install: curl git
+          pacboy: rustup:x
       - uses: actions/checkout@v4
       - name: Windows dependencies
         if: ${{ runner.os == 'Windows' && ! matrix.skip-dependencies }}
@@ -42,7 +44,7 @@ jobs:
       - name: Windows setup
         if: ${{ runner.os == 'Windows' }}
         run: |
-          mingw-w64-x86_64-rustup default stable
+          rustup default stable
 
       - name: Install linux dependencies
         if: ${{ runner.os == 'Linux' && ! matrix.skip-dependencies }}
