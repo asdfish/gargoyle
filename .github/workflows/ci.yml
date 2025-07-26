@@ -36,6 +36,7 @@ jobs:
           msystem: mingw64
           install: curl git
           pacboy: rustup:x
+          path-type: strict
       - uses: actions/checkout@v4
       - name: Windows dependencies
         if: ${{ runner.os == 'Windows' && ! matrix.skip-dependencies }}
@@ -44,7 +45,7 @@ jobs:
       - name: Windows setup
         if: ${{ runner.os == 'Windows' }}
         run: |
-          rustup default stable
+          rustup set default-host x86_64-pc-windows-gnu
 
       - name: Install linux dependencies
         if: ${{ runner.os == 'Linux' && ! matrix.skip-dependencies }}
