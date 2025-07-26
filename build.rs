@@ -21,60 +21,83 @@
 #[cfg(not(feature = "guile_3_0"))]
 compile_error!("Neither of the `guile_*` features are selected.");
 
-use std::str;
-
-fn compiler_args(
-    pkg_config::Library {
-        libs,
-        link_paths,
-        include_paths,
-        ld_args,
-        defines,
-        ..
-    }: pkg_config::Library,
-) -> impl Iterator<Item = Result<String, str::Utf8Error>> {
-    libs.into_iter()
-        .map(|lib| format!("-l{lib}"))
-        .map(Ok)
-        .chain(link_paths.into_iter().map(|dir| {
-            str::from_utf8(dir.as_os_str().as_encoded_bytes()).map(|dir| format!("-L{dir}"))
-        }))
-        .chain(include_paths.into_iter().map(|dir| {
-            str::from_utf8(dir.as_os_str().as_encoded_bytes()).map(|dir| format!("-I{dir}"))
-        }))
-        .chain(
-            ld_args
-                .into_iter()
-                .flatten()
-                .map(|arg| format!("-Wl,{arg}"))
-                .map(Ok),
-        )
-        .chain(
-            defines
-                .into_iter()
-                .map(|(key, val)| match val {
-                    Some(val) => format!("-D{key}={val}"),
-                    None => key,
-                })
-                .map(Ok),
-        )
-}
+use std::{
+    error::Error,
+    ffi::OsStr,
+    fmt::{self, Display, Formatter},
+    io::{self, Write, stdout},
+    process::Command,
+};
 
 #[cfg(feature = "guile_3_0")]
-const GUILE_VERSION: &str = "guile-3.0";
+const PKG_CONFIG_GUILE: &str = "guile-3.0";
+const PKG_CONFIG_ARGS: [&str; 3] = ["--cflags", "--libs", PKG_CONFIG_GUILE];
+
+pub fn pkg_config_guile() -> Result<Vec<u8>, PkgConfigError> {
+    Command::new("pkg-config")
+        .args(PKG_CONFIG_ARGS)
+        .output()
+        .map(|output| output.stdout)
+        .map_err(PkgConfigError)
+}
+
+#[derive(Debug)]
+pub struct PkgConfigError(io::Error);
+impl Display for PkgConfigError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "failed to execute `pkg-config")
+            .and_then(|_| {
+                PKG_CONFIG_ARGS
+                    .into_iter()
+                    .try_for_each(|arg| write!(f, " {arg}"))
+            })
+            .and_then(|_| write!(f, "`: {}", self.0))
+    }
+}
+impl Error for PkgConfigError {}
+
+fn die<T, U>(error: T) -> U
+where
+    T: Display,
+{
+    panic!("{error}")
+}
 
 fn main() {
-    let args = pkg_config::Config::new().probe(GUILE_VERSION).unwrap();
-    let args = compiler_args(args).collect::<Result<Vec<_>, _>>().unwrap();
-
-    println!(
-        "cargo:rerun-if-changed=build.rs
+    let mut stdout = stdout().lock();
+    stdout
+        .write_all(
+            b"cargo:rerun-if-changed=build.rs
 cargo:rerun-if-changed=src/reexports.h
-cargo:rerun-if-changed=src/reexports.c"
-    );
+cargo:rerun-if-changed=src/reexports.c\n",
+        )
+        .unwrap_or_else(die);
 
-    cc::Build::new()
-        .flags(args.clone())
+    pkg_config_guile()
+        .unwrap_or_else(die)
+        .split(u8::is_ascii_whitespace)
+        .filter(|arg| !arg.is_empty())
+        .try_fold(cc::Build::new(), |mut build, arg| {
+            if let Some(link_dir) = arg.strip_prefix(b"-L") {
+                stdout
+                    .write_all(b"cargo:rustc-link-dir=")
+                    .and_then(|_| stdout.write_all(link_dir))
+                    .and_then(|_| stdout.write_all(b"\n"))
+            } else if let Some(link_lib) = arg.strip_prefix(b"-l") {
+                stdout
+                    .write_all(b"cargo:rustc-link-lib=")
+                    .and_then(|_| stdout.write_all(link_lib))
+                    .and_then(|_| stdout.write_all(b"\n"))
+            } else {
+                Ok(())
+            }
+            .map(|_| {
+                build.flag_if_supported(unsafe { OsStr::from_encoded_bytes_unchecked(arg) });
+                build
+            })
+        })
+        .and_then(|build| stdout.flush().map(|_| drop(stdout)).map(|_| build))
+        .unwrap_or_else(die)
         .file("src/reexports.c")
         .compile("reexports");
 }
