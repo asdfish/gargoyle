@@ -1,0 +1,61 @@
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        host: [ubuntu-latest, windows-latest]
+        cargo-arguments:
+          - build
+          - fmt --check
+          - clippy --no-deps
+          - miri test
+          - test
+        include:
+          - cargo-arguments: fmt --check
+            skip-dependencies: true
+          - cargo-arguments: miri test
+            rustup-component: true
+            nightly: true
+
+          - host: ubuntu-latest
+            shell: bash
+          - host: windows-latest
+            shell: msys2 {0}
+
+    runs-on: ${{matrix.host}}
+    defaults:
+      run:
+        shell: ${{matrix.shell}}
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          install: curl git guile
+      - uses: actions/checkout@v4
+      - name: Windows setup
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          rustup set default-host x86_64-pc-windows-gnu
+
+      - name: Install linux dependencies
+        if: ${{ runner.os == 'Linux' && ! matrix.skip-dependencies }}
+        run: |
+          sudo apt update
+          sudo apt upgrade
+          sudo apt install -y guile-3.0-dev libclang-dev
+
+      - name: Install nightly toolchain
+        if: ${{matrix.nightly}}
+        run: rustup toolchain install nightly --profile minimal && rustup default nightly
+      # - name: Install rustup component
+      #   if: ${{ matrix.rustup-component && ! matrix.skip-dependencies }}
+      #   shell: bash
+      #   run: rustup component add `echo ${{matrix.cargo-arguments}} | awk '{ print $1; }'`
+      # - uses: Swatinem/rust-cache@v2
+      # - name: Run cargo
+      #   env:
+      #     RUSTFLAGS: -D warnings
+      #     RUSTDOCFLAGS: -D warnings
+      #   run: cargo ${{matrix.cargo-arguments}}
