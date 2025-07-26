@@ -419,6 +419,7 @@ mod tests {
         std::{ops::Deref, thread},
     };
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn multi_threading() {
         let spawn = || thread::spawn(|| with_guile(|_| {}));
@@ -430,12 +431,14 @@ mod tests {
             .unwrap();
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn with_guile_test() {
         assert!(with_guile(|_| true));
         assert!(with_guile(|_| { with_guile(|_| true) },));
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn without_guile() {
         assert!(with_guile(|api| {
@@ -449,6 +452,7 @@ mod tests {
         tests.compile_fail("tests/fail/*.rs");
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn dead_scm_send() {
         with_guile(|api| {
@@ -462,6 +466,7 @@ mod tests {
         });
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn bool_conversion() {
         with_guile(|api| {
@@ -470,6 +475,7 @@ mod tests {
         });
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn string_conversion() {
         with_guile(|api| {
