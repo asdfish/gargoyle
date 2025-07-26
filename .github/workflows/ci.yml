@@ -42,6 +42,7 @@ jobs:
         if: ${{ runner.os == 'Windows' && ! matrix.skip-dependencies }}
         run: |
           pacman -S --noconfirm guile
+          pacboy -S --noconfirm pkg-config:x
       - name: Windows setup
         if: ${{ runner.os == 'Windows' }}
         run: |
@@ -57,13 +58,12 @@ jobs:
       - name: Install nightly toolchain
         if: ${{matrix.nightly}}
         run: rustup toolchain install nightly --profile minimal && rustup default nightly
-      # - name: Install rustup component
-      #   if: ${{ matrix.rustup-component && ! matrix.skip-dependencies }}
-      #   shell: bash
-      #   run: rustup component add `echo ${{matrix.cargo-arguments}} | awk '{ print $1; }'`
-      # - uses: Swatinem/rust-cache@v2
-      # - name: Run cargo
-      #   env:
-      #     RUSTFLAGS: -D warnings
-      #     RUSTDOCFLAGS: -D warnings
-      #   run: cargo ${{matrix.cargo-arguments}}
+      - name: Install rustup component
+        if: ${{ matrix.rustup-component }}
+        run: rustup component add `echo ${{matrix.cargo-arguments}} | awk '{ print $1; }'`
+      - uses: Swatinem/rust-cache@v2
+      - name: Run cargo
+        env:
+          RUSTFLAGS: -D warnings
+          RUSTDOCFLAGS: -D warnings
+        run: cargo ${{matrix.cargo-arguments}}
