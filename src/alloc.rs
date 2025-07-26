@@ -12,10 +12,7 @@ pub struct CAllocator;
 unsafe impl Allocator for CAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         let size = layout.size();
-        size.try_into()
-            .ok()
-            // malloc does not acccept 0
-            .and_then(NonZeroUsize::new)
+        NonZeroUsize::new(size)
             .ok_or(AllocError)
             // SAFETY: bytes is not zero
             .map(|bytes| unsafe { malloc(bytes.get()) })
