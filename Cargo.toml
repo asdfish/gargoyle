@@ -12,7 +12,6 @@ cc = { version = "1.2.30", default-features = false }
 
 [dependencies]
 allocator-api2 = { version = "0.3.0", default-features = false, features = ["alloc"] }
-generativity = { version = "1.1.0", default-features = false }
 parking_lot = { version = "0.12.4", default-features = false }
 string = { version = "0.3.1", default-features = false }
 
