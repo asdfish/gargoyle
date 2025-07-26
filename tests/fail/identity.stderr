@@ -1,0 +1,8 @@
+error: implementation of `FnOnce` is not general enough
+ --> tests/fail/identity.rs:4:5
+  |
+4 |     with_guile(std::convert::identity);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+  |
+  = note: `fn(&'2 mut Api) -> &'2 mut Api {identity::<&'2 mut Api>}` must implement `FnOnce<(&'1 mut Api,)>`, for any lifetime `'1`...
+  = note: ...but it actually implements `FnOnce<(&'2 mut Api,)>`, for some specific lifetime `'2`

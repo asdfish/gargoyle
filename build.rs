@@ -18,13 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#[cfg(not(any(feature = "guile_2_2", feature = "guile_3_0")))]
+#[cfg(not(feature = "guile_3_0"))]
 compile_error!("Neither of the `guile_*` features are selected.");
 
-use {
-    cfg_if::cfg_if,
-    std::{env, path::PathBuf, str},
-};
+use std::{env, path::PathBuf, str};
 
 fn compiler_args(
     pkg_config::Library {
@@ -63,13 +60,8 @@ fn compiler_args(
         )
 }
 
-cfg_if! {
-    if #[cfg(feature = "guile_2_2")] {
-        const GUILE_VERSION: &str = "guile-2.2";
-    } else if #[cfg(feature = "guile_3_0")] {
-        const GUILE_VERSION: &str = "guile-3.0";
-    }
-}
+#[cfg(feature = "guile_3_0")]
+const GUILE_VERSION: &str = "guile-3.0";
 
 fn main() {
     let args = pkg_config::Config::new().probe(GUILE_VERSION).unwrap();

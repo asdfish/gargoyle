@@ -18,25 +18,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use {
-    parking_lot::Mutex,
-    std::{
-        marker::PhantomData,
-        sync::atomic::{self, AtomicBool},
-        thread_local,
-    },
-};
-
-pub struct Api<'a> {
-    _marker: PhantomData<&'a ()>,
+/// Raii guard that calls `F` on drop
+pub struct Guard<F>(F)
+where
+    F: FnMut();
+impl<F> Guard<F>
+where
+    F: FnMut(),
+{
+    pub const fn new(f: F) -> Self {
+        Self(f)
+    }
+}
+impl<F> Drop for Guard<F>
+where
+    F: FnMut(),
+{
+    fn drop(&mut self) {
+        (self.0)();
+    }
 }
 
-/// Lock for synchronizing thread initiation.
-static INIT_LOCK: Mutex<()> = Mutex::new(());
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-thread_local! {
-    /// Whether or not the current thread is in guile mode.
-    static GUILE_MODE: AtomicBool = const { AtomicBool::new(false) };
-    /// Whether or not the current thread has been initiated yet.
-    static THREAD_INIT: AtomicBool = const { AtomicBool::new(false) };
+    #[test]
+    fn guard() {
+        let mut x = false;
+        {
+            let _guard = Guard::new(|| x = true);
+        }
+        assert!(x);
+    }
 }
