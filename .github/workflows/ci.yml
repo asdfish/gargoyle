@@ -47,6 +47,7 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         run: |
           rustup set default-host x86_64-pc-windows-gnu
+          rustup update stable
 
       - name: Install linux dependencies
         if: ${{ runner.os == 'Linux' && ! matrix.skip-dependencies }}
