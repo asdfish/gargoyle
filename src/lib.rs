@@ -20,8 +20,12 @@
 
 //! Rust bindings to guile.
 
+mod alloc;
+mod guard;
+
 use {
-    crate::guard::Guard,
+    crate::{alloc::CAllocator, guard::Guard},
+    allocator_api2::{alloc::AllocError, vec::Vec as AllocVec},
     parking_lot::Mutex,
     std::{
         ffi::c_void,
@@ -102,8 +106,61 @@ pub struct Api {
     _marker: (),
 }
 impl Api {
-    fn new() -> Self {
+    /// # Safety
+    ///
+    /// The current thread must be in guile mode.
+    pub unsafe fn new_unchecked() -> Self {
         Self { _marker: () }
+    }
+
+    /// This will leak memory if you do not [Self::revive] the object.
+    pub fn kill<'id, T>(&self, scm: T) -> DeadScm<T::This<'static>>
+    where
+        T: ScmSubtype<'id>,
+    {
+        // SAFETY: the `DeadScm` type disables reading
+        DeadScm::new(unsafe { scm.cast_lifetime() })
+    }
+
+    pub fn revive<'id, T>(&'id self, scm: DeadScm<T>) -> T::This<'id>
+    where
+        T: ScmSubtype<'static>,
+    {
+        // SAFETY: we are back in guile mode
+        let ptr = unsafe { scm.0.as_ptr() };
+        unsafe {
+            crate::sys::scm_gc_unprotect_object(ptr);
+        }
+        unsafe { T::This::<'id>::from_ptr(ptr) }
+    }
+
+    pub fn without_guile<F, O>(&mut self, operation: F) -> O
+    where
+        F: FnOnce() -> O,
+    {
+        WithoutGuile::<F, O>::eval(operation)
+    }
+
+    pub fn make_bool<'id>(&'id self, b: bool) -> Bool<'id> {
+        let scm = RawScm::from(match b {
+            true => unsafe { crate::sys::G_REEXPORTS_SCM_BOOL_T },
+            false => unsafe { crate::sys::G_REEXPORTS_SCM_BOOL_F },
+        });
+
+        // SAFETY: the scm is a bool
+        unsafe { Bool::new_unchecked(scm) }
+    }
+    pub fn make_string<'id, S>(&'id self, string: &S) -> String<'id>
+    where
+        S: AsRef<str> + ?Sized,
+    {
+        let string = string.as_ref();
+
+        let scm =
+            unsafe { crate::sys::scm_from_utf8_stringn(string.as_ptr().cast(), string.len()) };
+        let scm = RawScm::from(scm);
+        // SAFETY: this is a string
+        unsafe { String::new_unchecked(scm) }
     }
 }
 
@@ -126,22 +183,6 @@ where
         operation()
     }
 }
-impl Api {
-    pub fn revive<'id, T>(&'id self, scm: DeadScm<T>) -> T::This<'id>
-    where
-        T: ScmSubtype<'static>,
-    {
-        // SAFETY: we are back in guile mode
-        unsafe { T::This::<'id>::from_ptr(scm.0.as_ptr()) }
-    }
-
-    pub fn without_guile<F, O>(&mut self, operation: F) -> O
-    where
-        F: FnOnce() -> O,
-    {
-        WithoutGuile::<F, O>::eval(operation)
-    }
-}
 
 struct WithGuile<F, O>
 where
@@ -159,7 +200,7 @@ where
     const GUILE_MODE_STATUS: bool = true;
 
     unsafe fn eval_unchecked(operation: Self::Fn) -> Self::Output {
-        operation(&mut Api::new())
+        operation(&mut unsafe { Api::new_unchecked() })
     }
 }
 pub fn with_guile<F, O>(operation: F) -> O
@@ -167,7 +208,8 @@ where
     F: FnOnce(&mut Api) -> O,
 {
     if GUILE_MODE.with(|on| on.load(atomic::Ordering::Acquire)) {
-        operation(&mut Api::new())
+        // SAFETY: we are in guile mode
+        operation(&mut unsafe { Api::new_unchecked() })
     } else {
         let _lock = THREAD_INIT
             .with(|init| !init.load(atomic::Ordering::Acquire))
@@ -181,28 +223,8 @@ where
     }
 }
 
-impl Api {
-    pub fn make_bool<'id>(&'id self, b: bool) -> Bool<'id> {
-        Bool::new(RawScm::from(match b {
-            true => unsafe { crate::sys::G_REEXPORTS_SCM_BOOL_T },
-            false => unsafe { crate::sys::G_REEXPORTS_SCM_BOOL_T },
-        }))
-    }
-
-    pub fn kill<'id, T>(&self, scm: T) -> DeadScm<T::This<'static>>
-    where
-        T: ScmSubtype<'id>,
-    {
-        // SAFETY: the `DeadScm` type disables reading
-        DeadScm::from(unsafe { scm.cast_lifetime() })
-    }
-}
-
 pub trait ScmSubtype<'id>: Sized {
     type This<'a>: ScmSubtype<'a>;
-
-    // fn from_raw(_: RawScm<'id>) -> Self;
-    // fn into_scm(self) -> Scm<'id>;
 
     /// # Safety
     ///
@@ -243,8 +265,12 @@ impl<'id> ScmSubtype<'id> for Any<'id> {
 #[repr(transparent)]
 pub struct Bool<'id>(RawScm<'id>);
 impl<'id> Bool<'id> {
-    fn new(scm: RawScm<'id>) -> Self {
+    unsafe fn new_unchecked(scm: RawScm<'id>) -> Self {
         Self(scm)
+    }
+
+    pub fn to_bool(self) -> bool {
+        unsafe { crate::sys::scm_to_bool(self.0.as_ptr()) }.eq(&1)
     }
 }
 impl<'id> ScmSubtype<'id> for Bool<'id> {
@@ -263,27 +289,69 @@ impl<'id> ScmSubtype<'id> for Bool<'id> {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct String<'id>(RawScm<'id>);
+impl<'id> String<'id> {
+    unsafe fn new_unchecked(scm: RawScm<'id>) -> Self {
+        Self(scm)
+    }
+
+    pub fn to_string(self) -> string::String<AllocVec<u8, CAllocator>> {
+        self.try_to_string().unwrap()
+    }
+
+    pub fn try_to_string(self) -> Result<string::String<AllocVec<u8, CAllocator>>, AllocError> {
+        let mut len: usize = 0;
+        // SAFETY: since we have the lifetime, we can assume we're in guile mode
+        let ptr = unsafe { crate::sys::scm_to_utf8_stringn(self.0.as_ptr(), &raw mut len) };
+        if ptr.is_null() {
+            Err(AllocError)
+        } else {
+            // SAFETY: we checked for null and since we don't know the capacity we must use length, and the pointer must be freed with [crate::sys::free]
+            let vec = unsafe { AllocVec::from_raw_parts_in(ptr.cast(), len, len, CAllocator) };
+
+            // this violates the contract so we should abort.
+            assert!(
+                str::from_utf8(&vec).is_ok(),
+                "The returned string from `scm_to_utf8_stringn` was not utf8. This is bug with guile."
+            );
+
+            // SAFETY: we have an assertion above
+            Ok(unsafe { string::String::from_utf8_unchecked(vec) })
+        }
+    }
+}
+impl<'id> ScmSubtype<'id> for String<'id> {
+    type This<'a> = String<'a>;
+
+    unsafe fn as_ptr(&self) -> crate::sys::SCM {
+        unsafe { self.0.as_ptr() }
+    }
+
+    unsafe fn from_ptr(ptr: crate::sys::SCM) -> Self {
+        Self(RawScm::from(ptr))
+    }
+
+    unsafe fn cast_lifetime<'b>(self) -> Self::This<'b> {
+        String(unsafe { self.0.cast_lifetime() })
+    }
+}
+
 #[repr(transparent)]
 pub struct DeadScm<T>(T)
 where
     T: ScmSubtype<'static>;
-impl<T> From<T> for DeadScm<T>
+impl<T> DeadScm<T>
 where
     T: ScmSubtype<'static>,
 {
-    fn from(scm: T) -> Self {
+    /// Take ownership of the current scm pointer and protect it against garbage collection.
+    ///
+    /// This will leak memory unless [Api::revive] is called
+    fn new(scm: T) -> Self {
         unsafe { crate::sys::scm_gc_protect_object(scm.as_ptr()) };
         Self(scm)
-    }
-}
-impl<T> Drop for DeadScm<T>
-where
-    T: ScmSubtype<'static>,
-{
-    fn drop(&mut self) {
-        unsafe {
-            crate::sys::scm_gc_unprotect_object(self.0.as_ptr());
-        }
     }
 }
 /// # Safety
@@ -295,6 +363,7 @@ unsafe impl<T> Send for DeadScm<T> where T: ScmSubtype<'static> {}
 #[non_exhaustive]
 pub enum Scm<'id> {
     Bool(Bool<'id>),
+    String(String<'id>),
     Other(Any<'id>),
 }
 
@@ -307,14 +376,14 @@ struct RawScm<'id> {
 impl RawScm<'_> {
     /// # Safety
     /// See [ScmSubtype::as_ptr]
-    unsafe fn as_ptr(self) -> crate::sys::SCM {
+    pub unsafe fn as_ptr(self) -> crate::sys::SCM {
         self.scm
     }
 
     /// # Safety
     ///
     /// See [ScmSubtype::cast_lifetime]
-    unsafe fn cast_lifetime<'b>(self) -> RawScm<'b> {
+    pub unsafe fn cast_lifetime<'b>(self) -> RawScm<'b> {
         RawScm {
             scm: self.scm,
             _marker: PhantomData,
@@ -330,12 +399,10 @@ impl From<crate::sys::SCM> for RawScm<'_> {
     }
 }
 
-mod guard;
-
 pub mod sys {
     //! Low level bindings to guile.
     //!
-    //! Only the `scm*` symbols can be guaranteed to exist.
+    //! Only the `scm*` and `g_reexports*` symbols can be guaranteed to exist.
 
     #![allow(improper_ctypes)]
     #![expect(non_camel_case_types)]
@@ -347,7 +414,10 @@ pub mod sys {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, std::thread};
+    use {
+        super::*,
+        std::{ops::Deref, thread},
+    };
 
     #[test]
     fn multi_threading() {
@@ -389,6 +459,25 @@ mod tests {
                     let _t = api.revive(t);
                 });
             });
+        });
+    }
+
+    #[test]
+    fn bool_conversion() {
+        with_guile(|api| {
+            assert_eq!(api.make_bool(true).to_bool(), true);
+            assert_eq!(api.make_bool(false).to_bool(), false);
+        });
+    }
+
+    #[test]
+    fn string_conversion() {
+        with_guile(|api| {
+            assert_eq!(
+                api.make_string("hello world").to_string().deref(),
+                "hello world"
+            );
+            assert_eq!(api.make_string("").to_string().deref(), "");
         });
     }
 }
