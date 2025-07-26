@@ -33,12 +33,16 @@ jobs:
       - uses: msys2/setup-msys2@v2
         if: ${{ runner.os == 'Windows' }}
         with:
-          install: curl git guile
+          install: curl git nigw-w64-rustup
       - uses: actions/checkout@v4
+      - name: Windows dependencies
+        if: ${{ runner.os == 'Windows' && ! matrix.skip-dependencies }}
+        run: |
+          pacman -S --noconfirm guile
       - name: Windows setup
         if: ${{ runner.os == 'Windows' }}
         run: |
-          rustup set default-host x86_64-pc-windows-gnu
+          mingw-w64-x86_64-rustup default stable
 
       - name: Install linux dependencies
         if: ${{ runner.os == 'Linux' && ! matrix.skip-dependencies }}
