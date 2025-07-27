@@ -20,12 +20,7 @@
 
 use std::ffi::{c_char, c_void};
 
-#[repr(C)]
-pub struct scm_unused_struct {
-    pub scm_unused_field: c_char,
-}
-
-pub type SCM = *mut scm_unused_struct;
+pub type SCM = *mut c_void;
 
 unsafe extern "C" {
     pub fn malloc(_: usize) -> *mut c_void;
