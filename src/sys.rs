@@ -60,8 +60,8 @@ unsafe extern "C" {
     pub fn scm_from_int64(_: i64) -> SCM;
     #[cfg(target_pointer_width = "64")]
     pub fn scm_from_uint64(_: u64) -> SCM;
-    pub fn gargoyle_reexports_scm_from_ssize_t(_: isize) -> SCM;
-    pub fn gargoyle_reexports_scm_from_size_t(_: usize) -> SCM;
+    pub fn gargoyle_reexports_scm_from_intptr_t(_: isize) -> SCM;
+    pub fn gargoyle_reexports_scm_from_uintptr_t(_: usize) -> SCM;
 
     pub fn scm_to_int8(_: SCM) -> i8;
     pub fn scm_to_uint8(_: SCM) -> u8;
@@ -73,8 +73,8 @@ unsafe extern "C" {
     pub fn scm_to_int64(_: SCM) -> i64;
     #[cfg(target_pointer_width = "64")]
     pub fn scm_to_uint64(_: SCM) -> u64;
-    pub fn gargoyle_reexports_scm_to_ssize_t(_: SCM) -> isize;
-    pub fn gargoyle_reexports_scm_to_size_t(_: SCM) -> usize;
+    pub fn gargoyle_reexports_scm_to_intptr_t(_: SCM) -> isize;
+    pub fn gargoyle_reexports_scm_to_uintptr_t(_: SCM) -> usize;
 
     pub fn scm_is_signed_integer(_: SCM, _: isize, _: isize) -> bool;
     pub fn scm_is_unsigned_integer(_: SCM, _: usize, _: usize) -> bool;
@@ -90,8 +90,8 @@ unsafe extern "C" {
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_T as SCM_BOOL_T;
 pub use GARGOYLE_REEXPORTS_SCM_UNDEFINED as SCM_UNDEFINED;
-pub use gargoyle_reexports_scm_from_size_t as scm_from_size_t;
-pub use gargoyle_reexports_scm_from_ssize_t as scm_from_ssize_t;
+pub use gargoyle_reexports_scm_from_intptr_t as scm_from_intptr_t;
+pub use gargoyle_reexports_scm_from_uintptr_t as scm_from_uintptr_t;
 pub use gargoyle_reexports_scm_is_true as scm_is_true;
-pub use gargoyle_reexports_scm_to_size_t as scm_to_size_t;
-pub use gargoyle_reexports_scm_to_ssize_t as scm_to_ssize_t;
+pub use gargoyle_reexports_scm_to_intptr_t as scm_to_intptr_t;
+pub use gargoyle_reexports_scm_to_uintptr_t as scm_to_uintptr_t;

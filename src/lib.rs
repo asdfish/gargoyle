@@ -417,8 +417,8 @@ impl_scm_ty_for_int!([
         isize,
         isize,
         sys::scm_is_signed_integer,
-        sys::scm_from_ssize_t,
-        sys::scm_to_ssize_t
+        sys::scm_from_intptr_t,
+        sys::scm_to_intptr_t
     ),
     (
         u8,
@@ -445,8 +445,8 @@ impl_scm_ty_for_int!([
         usize,
         usize,
         sys::scm_is_unsigned_integer,
-        sys::scm_from_size_t,
-        sys::scm_to_size_t
+        sys::scm_from_uintptr_t,
+        sys::scm_to_uintptr_t
     ),
 ]);
 #[cfg(target_pointer_width = "64")]
