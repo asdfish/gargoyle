@@ -116,7 +116,7 @@ impl Api {
     }
 
     /// This will leak memory if you do not [Self::revive] the object.
-    pub fn kill<'id>(&self, scm: Scm) -> DeadScm {
+    pub fn kill(&self, scm: Scm) -> DeadScm {
         // SAFETY: the `DeadScm` type disables reading
         DeadScm::new(scm)
     }
@@ -257,7 +257,7 @@ impl Scm<'_> {
         let api = unsafe { Api::new_unchecked() };
 
         if self.is::<T>() {
-            Some(unsafe { T::get_unchecked(&api, &self) })
+            Some(unsafe { T::get_unchecked(&api, self) })
         } else {
             None
         }
