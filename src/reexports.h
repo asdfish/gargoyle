@@ -31,4 +31,10 @@ extern const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED;
 
 extern _Bool gargoyle_reexports_scm_is_true(SCM);
 
+extern size_t gargoyle_reexports_scm_to_size_t(SCM);
+extern ssize_t gargoyle_reexports_scm_to_ssize_t(SCM);
+
+extern SCM gargoyle_reexports_scm_from_size_t(size_t);
+extern SCM gargoyle_reexports_scm_from_ssize_t(ssize_t);
+
 #endif // GARGOYLE_REEXPORTS_H

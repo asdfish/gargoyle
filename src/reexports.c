@@ -29,3 +29,17 @@ const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED = SCM_UNDEFINED;
 _Bool gargoyle_reexports_scm_is_true(SCM b) {
   return scm_is_true(b);
 }
+
+extern size_t gargoyle_reexports_scm_to_size_t(SCM scm) {
+  return scm_to_size_t(scm);
+}
+extern ssize_t gargoyle_reexports_scm_to_ssize_t(SCM scm) {
+  return scm_to_ssize_t(scm);
+}
+
+extern SCM gargoyle_reexports_scm_from_size_t(size_t i) {
+  return scm_from_size_t(i);
+}
+extern SCM gargoyle_reexports_scm_from_ssize_t(ssize_t i) {
+  return scm_from_ssize_t(i);
+}
