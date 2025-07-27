@@ -550,31 +550,31 @@ mod tests {
     }
 
     trait ApiExt {
-        fn test_ty<T>(&self, _: T, _: T::Output)
+        fn test_ty<T>(&self, _: T, _: T::Output) -> Scm
         where
-            T: Clone + ScmTy,
+            T: ScmTy,
             T::Output: Debug + PartialEq;
 
         fn test_ty_equal<T>(&self, val: T)
         where
             T: Clone + Debug + PartialEq + ScmTy<Output = T>,
         {
-            self.test_ty(val.clone(), val.clone());
-            with_guile(|api| {
-                assert!(api.make(val.clone()).is_eqv(&api.make(val.clone())));
-            });
+            let scm = self.test_ty(val.clone(), val);
+            assert!(scm.is_eqv(&scm));
         }
     }
     impl ApiExt for Api {
-        fn test_ty<T>(&self, val: T, output: T::Output)
+        fn test_ty<T>(&self, val: T, output: T::Output) -> Scm
         where
-            T: Clone + ScmTy,
+            T: ScmTy,
             T::Output: Debug + PartialEq,
         {
-            let scm = self.make(val.clone());
+            let scm = self.make(val);
             assert!(T::predicate(self, &scm));
-            assert_eq!(scm, self.make(val.clone()));
+            assert!(scm.eq(&scm));
             assert_eq!(unsafe { T::get_unchecked(self, &scm) }, output);
+
+            scm
         }
     }
 
