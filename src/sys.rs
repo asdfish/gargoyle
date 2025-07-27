@@ -46,12 +46,38 @@ unsafe extern "C" {
     pub fn scm_to_bool(_: SCM) -> bool;
     pub fn scm_not(_: SCM) -> SCM;
 
-    pub fn scm_from_uint32(_: u32) -> SCM;
-    pub fn scm_to_uint32(_: SCM) -> u32;
-
     pub fn scm_integer_to_char(_: SCM) -> SCM;
     pub fn scm_char_to_integer(_: SCM) -> SCM;
     pub fn scm_char_p(_: SCM) -> SCM;
+
+    pub fn scm_from_int8(_: i8) -> SCM;
+    pub fn scm_from_uint8(_: u8) -> SCM;
+    pub fn scm_from_int16(_: i16) -> SCM;
+    pub fn scm_from_uint16(_: u16) -> SCM;
+    pub fn scm_from_int32(_: i32) -> SCM;
+    pub fn scm_from_uint32(_: u32) -> SCM;
+    #[cfg(target_pointer_width = "64")]
+    pub fn scm_from_int64(_: i64) -> SCM;
+    #[cfg(target_pointer_width = "64")]
+    pub fn scm_from_uint64(_: u64) -> SCM;
+    pub fn scm_from_intptr_t(_: isize) -> SCM;
+    pub fn scm_from_uintptr_t(_: usize) -> SCM;
+
+    pub fn scm_to_int8(_: SCM) -> i8;
+    pub fn scm_to_uint8(_: SCM) -> u8;
+    pub fn scm_to_int16(_: SCM) -> i16;
+    pub fn scm_to_uint16(_: SCM) -> u16;
+    pub fn scm_to_int32(_: SCM) -> i32;
+    pub fn scm_to_uint32(_: SCM) -> u32;
+    #[cfg(target_pointer_width = "64")]
+    pub fn scm_to_int64(_: SCM) -> i64;
+    #[cfg(target_pointer_width = "64")]
+    pub fn scm_to_uint64(_: SCM) -> u64;
+    pub fn scm_to_intptr_t(_: SCM) -> isize;
+    pub fn scm_to_uintptr_t(_: SCM) -> usize;
+
+    pub fn scm_is_signed_integer(_: SCM, _: isize, _: isize) -> bool;
+    pub fn scm_is_unsigned_integer(_: SCM, _: usize, _: usize) -> bool;
 
     pub fn scm_is_bool(_: SCM) -> bool;
     pub fn scm_is_string(_: SCM) -> bool;

@@ -365,6 +365,107 @@ impl ScmTy for &str {
     }
 }
 
+macro_rules! impl_scm_ty_for_int {
+    ([ $(($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr)),+ $(,)? ]) => {
+        $(impl_scm_ty_for_int!($ty, $ptr, $predicate, $to_scm, $to_int);)+
+    };
+    ($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr) => {
+        impl ScmTy for $ty {
+            type Output = Self;
+
+            fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+                Scm::from(unsafe { ($to_scm)(self) })
+            }
+            fn predicate(_: &Api, scm: &Scm) -> bool {
+                unsafe {
+                    ($predicate)(
+                        scm.as_ptr(),
+                        <$ptr>::MIN,
+                        <$ty>::MAX as $ptr,
+                    )
+                }
+            }
+            unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
+                unsafe { ($to_int)(scm.as_ptr()) }
+            }
+        }
+    };
+}
+impl_scm_ty_for_int!([
+    (
+        i8,
+        isize,
+        sys::scm_is_signed_integer,
+        sys::scm_from_int8,
+        sys::scm_to_int8
+    ),
+    (
+        i16,
+        isize,
+        sys::scm_is_signed_integer,
+        sys::scm_from_int16,
+        sys::scm_to_int16
+    ),
+    (
+        i32,
+        isize,
+        sys::scm_is_signed_integer,
+        sys::scm_from_int32,
+        sys::scm_to_int32
+    ),
+    (
+        isize,
+        isize,
+        sys::scm_is_signed_integer,
+        sys::scm_from_intptr_t,
+        sys::scm_to_intptr_t
+    ),
+    (
+        u8,
+        usize,
+        sys::scm_is_unsigned_integer,
+        sys::scm_from_uint8,
+        sys::scm_to_uint8
+    ),
+    (
+        u16,
+        usize,
+        sys::scm_is_unsigned_integer,
+        sys::scm_from_uint16,
+        sys::scm_to_uint16
+    ),
+    (
+        u32,
+        usize,
+        sys::scm_is_unsigned_integer,
+        sys::scm_from_uint32,
+        sys::scm_to_uint32
+    ),
+    (
+        usize,
+        usize,
+        sys::scm_is_unsigned_integer,
+        sys::scm_from_uintptr_t,
+        sys::scm_to_uintptr_t
+    ),
+]);
+#[cfg(target_pointer_width = "64")]
+impl_scm_ty_for_int!(
+    u64,
+    usize,
+    sys::scm_is_unsigned_integer,
+    sys::scm_from_uint64,
+    sys::scm_to_uint64
+);
+#[cfg(target_pointer_width = "64")]
+impl_scm_ty_for_int!(
+    i64,
+    isize,
+    sys::scm_is_signed_integer,
+    sys::scm_from_int64,
+    sys::scm_to_int64
+);
+
 #[cfg(test)]
 mod tests {
     use {
