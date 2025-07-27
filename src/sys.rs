@@ -89,6 +89,10 @@ unsafe extern "C" {
     pub fn scm_eq_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_eqv_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_equal_p(_: SCM, _: SCM) -> SCM;
+
+    pub fn scm_num_eq_p(_: SCM, _: SCM) -> SCM;
+    pub fn scm_less_p(_: SCM, _: SCM) -> SCM;
+    pub fn scm_gr_p(_: SCM, _: SCM) -> SCM;
 }
 
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;

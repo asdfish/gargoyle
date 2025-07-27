@@ -29,6 +29,7 @@ use {
     allocator_api2::{alloc::AllocError, vec::Vec as AllocVec},
     parking_lot::Mutex,
     std::{
+        cmp::Ordering,
         ffi::c_void,
         marker::PhantomData,
         ops::Not,
@@ -281,6 +282,24 @@ impl Scm<'_> {
     /// Check equality with `equal?` semantics
     pub fn is_equal(&self, r: &Self) -> bool {
         Self::from(unsafe { sys::scm_equal_p(self.as_ptr(), r.as_ptr()) }).is_true()
+    }
+}
+impl PartialOrd for Scm<'_> {
+    fn partial_cmp(&self, r: &Self) -> Option<Ordering> {
+        [
+            (
+                sys::scm_less_p as unsafe extern "C" fn(_: sys::SCM, _: sys::SCM) -> sys::SCM,
+                Ordering::Less,
+            ),
+            (sys::scm_num_eq_p, Ordering::Equal),
+            (sys::scm_gr_p, Ordering::Greater),
+        ]
+        .into_iter()
+        .find_map(|(predicate, output)| {
+            Self::from(unsafe { (predicate)(self.as_ptr(), r.as_ptr()) })
+                .is_true()
+                .then_some(output)
+        })
     }
 }
 impl From<crate::sys::SCM> for Scm<'_> {
@@ -632,6 +651,29 @@ mod tests {
             test_ty!(api, [i8, i16, i32, isize, u8, u16, u32, usize]);
             #[cfg(target_pointer_width = "64")]
             test_ty!(api, [i64, u64]);
+        });
+    }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn int_ord() {
+        with_guile(|api| {
+            let [ref one, ref two, ref three] =
+                (1..=3).map(|i| api.make(i)).collect::<Vec<_>>()[..]
+            else {
+                unreachable!()
+            };
+
+            assert!(one < two);
+            assert!(one < three);
+            assert!(one <= one);
+            assert!(one <= two);
+            assert!(one <= three);
+            assert!(three > two);
+            assert!(three > one);
+            assert!(three >= two);
+            assert!(three >= one);
+            assert!(three >= three);
         });
     }
 }
