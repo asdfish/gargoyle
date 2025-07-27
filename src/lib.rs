@@ -406,19 +406,20 @@ mod tests {
         }));
     }
 
-    // #[cfg_attr(miri, ignore)]
-    // #[test]
-    // fn dead_scm_send() {
-    //     with_guile(|api| {
-    //         let t = api.make_bool(true);
-    //         let t = api.kill(t);
-    //         thread::spawn(move || {
-    //             with_guile(move |api| {
-    //                 let _t = api.revive(t);
-    //             });
-    //         });
-    //     });
-    // }
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn dead_scm_send() {
+        with_guile(|api| {
+            let t = api.make(true);
+            let t = api.kill(t);
+            thread::spawn(move || {
+                with_guile(move |api| {
+                    let t = api.revive(t);
+                    assert_eq!(t.get::<bool>(), Some(true));
+                });
+            });
+        });
+    }
 
     trait ApiExt {
         fn test_ty<T>(&self, _: T, _: T::Output)
