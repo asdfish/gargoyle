@@ -366,7 +366,7 @@ impl ScmTy for &str {
 }
 
 macro_rules! impl_scm_ty_for_int {
-    ([ $(($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr)),+ $(,)? ]) => {
+    ([ $(($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr $(,)?)),+ $(,)? ]) => {
         $(impl_scm_ty_for_int!($ty, $ptr, $predicate, $to_scm, $to_int);)+
     };
     ($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr) => {
@@ -450,21 +450,22 @@ impl_scm_ty_for_int!([
     ),
 ]);
 #[cfg(target_pointer_width = "64")]
-impl_scm_ty_for_int!(
-    u64,
-    usize,
-    sys::scm_is_unsigned_integer,
-    sys::scm_from_uint64,
-    sys::scm_to_uint64
-);
-#[cfg(target_pointer_width = "64")]
-impl_scm_ty_for_int!(
-    i64,
-    isize,
-    sys::scm_is_signed_integer,
-    sys::scm_from_int64,
-    sys::scm_to_int64
-);
+impl_scm_ty_for_int!([
+    (
+        u64,
+        usize,
+        sys::scm_is_unsigned_integer,
+        sys::scm_from_uint64,
+        sys::scm_to_uint64,
+    ),
+    (
+        i64,
+        isize,
+        sys::scm_is_signed_integer,
+        sys::scm_from_int64,
+        sys::scm_to_int64,
+    ),
+]);
 
 #[cfg(test)]
 mod tests {
@@ -590,6 +591,8 @@ mod tests {
         }
         with_guile(|api| {
             test_ty!(api, [i8, i16, i32, isize, u8, u16, u32, usize]);
+            #[cfg(target_pointer_width = "64")]
+            test_ty!(api, [i64, u64]);
         });
     }
 }
