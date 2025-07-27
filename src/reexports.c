@@ -30,16 +30,16 @@ _Bool gargoyle_reexports_scm_is_true(SCM b) {
   return scm_is_true(b);
 }
 
-extern uintptr_t gargoyle_reexports_scm_to_uintptr_t(SCM scm) {
+uintptr_t gargoyle_reexports_scm_to_uintptr_t(SCM scm) {
   return scm_to_uintptr_t(scm);
 }
-extern intptr_t gargoyle_reexports_scm_to_intptr_t(SCM scm) {
+intptr_t gargoyle_reexports_scm_to_intptr_t(SCM scm) {
   return scm_to_intptr_t(scm);
 }
 
-extern SCM gargoyle_reexports_scm_from_uintptr_t(uintptr_t i) {
+SCM gargoyle_reexports_scm_from_uintptr_t(uintptr_t i) {
   return scm_from_uintptr_t(i);
 }
-extern SCM gargoyle_reexports_scm_from_intptr_t(intptr_t i) {
+SCM gargoyle_reexports_scm_from_intptr_t(intptr_t i) {
   return scm_from_intptr_t(i);
 }
