@@ -29,4 +29,6 @@ extern const SCM GARGOYLE_REEXPORTS_SCM_BOOL_T;
 extern const SCM GARGOYLE_REEXPORTS_SCM_BOOL_F;
 extern const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED;
 
+extern _Bool gargoyle_reexports_scm_is_true(SCM);
+
 #endif // GARGOYLE_REEXPORTS_H

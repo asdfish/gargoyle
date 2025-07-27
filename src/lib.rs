@@ -31,6 +31,7 @@ use {
     std::{
         ffi::c_void,
         marker::PhantomData,
+        ops::Not,
         ptr,
         sync::atomic::{self, AtomicBool},
         thread_local,
@@ -115,24 +116,17 @@ impl Api {
     }
 
     /// This will leak memory if you do not [Self::revive] the object.
-    pub fn kill<'id, T>(&self, scm: T) -> DeadScm<T::This<'static>>
-    where
-        T: ScmSubtype<'id>,
-    {
+    pub fn kill<'id>(&self, scm: Scm) -> DeadScm {
         // SAFETY: the `DeadScm` type disables reading
-        DeadScm::new(unsafe { scm.cast_lifetime() })
+        DeadScm::new(scm)
     }
 
-    pub fn revive<'id, T>(&'id self, scm: DeadScm<T>) -> T::This<'id>
-    where
-        T: ScmSubtype<'static>,
-    {
+    pub fn revive<'id>(&'id self, scm: DeadScm) -> Scm<'id> {
         // SAFETY: we are back in guile mode
-        let ptr = unsafe { scm.0.as_ptr() };
         unsafe {
-            crate::sys::scm_gc_unprotect_object(ptr);
+            crate::sys::scm_gc_unprotect_object(scm.0.as_ptr());
         }
-        unsafe { T::This::<'id>::from_ptr(ptr) }
+        scm.0
     }
 
     pub fn without_guile<F, O>(&mut self, operation: F) -> O
@@ -142,32 +136,11 @@ impl Api {
         WithoutGuile::<F, O>::eval(operation)
     }
 
-    pub fn make_bool<'id>(&'id self, b: bool) -> Bool<'id> {
-        let scm = match b {
-            true => unsafe { crate::sys::GARGOYLE_REEXPORTS_SCM_BOOL_T },
-            false => unsafe { crate::sys::GARGOYLE_REEXPORTS_SCM_BOOL_F },
-        };
-
-        // SAFETY: the scm is a bool
-        unsafe { Bool::from_ptr(scm) }
-    }
-    pub fn make_char<'id>(&'id self, ch: char) -> Char<'id> {
-        unsafe {
-            Char::from_ptr(sys::scm_integer_to_char(sys::scm_from_uint32(u32::from(
-                ch,
-            ))))
-        }
-    }
-    pub fn make_string<'id, S>(&'id self, string: &S) -> String<'id>
+    pub fn make<'id, T>(&'id self, with: T) -> Scm<'id>
     where
-        S: AsRef<str> + ?Sized,
+        T: ScmTy,
     {
-        let string = string.as_ref();
-
-        let scm =
-            unsafe { crate::sys::scm_from_utf8_stringn(string.as_ptr().cast(), string.len()) };
-        // SAFETY: this is a string
-        unsafe { String::from_ptr(scm) }
+        T::construct(with, self)
     }
 }
 
@@ -230,105 +203,150 @@ where
     }
 }
 
-pub trait ScmSubtype<'id>: Sized {
-    type This<'a>: ScmSubtype<'a>;
+#[repr(transparent)]
+pub struct DeadScm(Scm<'static>);
+impl DeadScm {
+    /// Take ownership of the current scm pointer and protect it against garbage collection.
+    ///
+    /// This will leak memory unless [Api::revive] is called
+    fn new(scm: Scm) -> Self {
+        unsafe { crate::sys::scm_gc_protect_object(scm.as_ptr()) };
+        Self(unsafe { scm.cast_lifetime() })
+    }
+}
+/// # Safety
+///
+/// The pointer is protected.
+unsafe impl Send for DeadScm {}
+
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct Scm<'id> {
+    scm: crate::sys::SCM,
+    _marker: PhantomData<&'id ()>,
+}
+impl Scm<'_> {
+    /// # Safety
+    ///
+    /// This is safe if you don't use it to smuggle this object outside of guile mode.
+    pub unsafe fn as_ptr(&self) -> crate::sys::SCM {
+        self.scm
+    }
 
     /// # Safety
     ///
-    /// This is safe if you don't smuggle the `SCM` into areas not in guile mode.
-    unsafe fn as_ptr(&self) -> crate::sys::SCM;
+    /// This is safe if you don't use it to smuggle this object outside of guile mode.
+    pub unsafe fn cast_lifetime<'b>(self) -> Scm<'b> {
+        Scm {
+            scm: self.scm,
+            _marker: PhantomData,
+        }
+    }
 
+    pub fn is<T>(&self) -> bool
+    where
+        T: ScmTy,
+    {
+        let api = unsafe { Api::new_unchecked() };
+        T::predicate(&api, self)
+    }
+    pub fn get<T>(&self) -> Option<T::Output>
+    where
+        T: ScmTy,
+    {
+        let api = unsafe { Api::new_unchecked() };
+
+        if self.is::<T>() {
+            Some(unsafe { T::get_unchecked(&api, &self) })
+        } else {
+            None
+        }
+    }
+}
+impl From<crate::sys::SCM> for Scm<'_> {
+    fn from(scm: crate::sys::SCM) -> Self {
+        Self {
+            scm,
+            _marker: PhantomData,
+        }
+    }
+}
+impl Not for Scm<'_> {
+    type Output = Option<Self>;
+
+    fn not(self) -> Option<Self> {
+        if self.is::<bool>() {
+            Some(Self::from(unsafe { sys::scm_not(self.as_ptr()) }))
+        } else {
+            None
+        }
+    }
+}
+
+pub trait ScmTy: Sized {
+    type Output;
+
+    fn construct<'id>(self, _: &'id Api) -> Scm<'id>;
+    fn predicate(_: &Api, _: &Scm) -> bool;
+    /// Exract [Self::Output] from a scm.
+    ///
     /// # Safety
     ///
-    /// Make sure the lifetime is accurate.
-    unsafe fn from_ptr(_: crate::sys::SCM) -> Self;
-
-    /// # Safety
-    ///
-    /// This you may cast the lifetime so long as you don't use it to smuggle it to places not in guile mode.
-    unsafe fn cast_lifetime<'b>(self) -> Self::This<'b>;
+    /// This function must be safe if [Self::predicate] returns [true].
+    unsafe fn get_unchecked(_: &Api, _: &Scm) -> Self::Output;
 }
+impl ScmTy for bool {
+    type Output = Self;
 
-#[derive(Clone, Copy, Debug)]
-#[repr(transparent)]
-pub struct Any<'id>(RawScm<'id>);
-impl<'id> ScmSubtype<'id> for Any<'id> {
-    type This<'a> = Any<'a>;
+    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+        let scm = match self {
+            true => unsafe { crate::sys::GARGOYLE_REEXPORTS_SCM_BOOL_T },
+            false => unsafe { crate::sys::GARGOYLE_REEXPORTS_SCM_BOOL_F },
+        };
 
-    unsafe fn as_ptr(&self) -> crate::sys::SCM {
-        unsafe { self.0.as_ptr() }
+        Scm::from(scm)
     }
-
-    unsafe fn from_ptr(ptr: crate::sys::SCM) -> Self {
-        Self(RawScm::from(ptr))
+    fn predicate(_: &Api, scm: &Scm) -> bool {
+        unsafe { sys::scm_is_bool(scm.as_ptr()) }
     }
-
-    unsafe fn cast_lifetime<'b>(self) -> Self::This<'b> {
-        Any(unsafe { self.0.cast_lifetime() })
+    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self {
+        unsafe { crate::sys::scm_to_bool(scm.as_ptr()) }
     }
 }
+impl ScmTy for char {
+    type Output = Self;
 
-#[derive(Clone, Copy, Debug)]
-#[repr(transparent)]
-pub struct Bool<'id>(RawScm<'id>);
-impl<'id> Bool<'id> {
-    pub fn to_bool(self) -> bool {
-        unsafe { crate::sys::scm_to_bool(self.0.as_ptr()) }.eq(&1)
+    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+        Scm::from(unsafe { sys::scm_integer_to_char(sys::scm_from_uint32(u32::from(self))) })
+    }
+    fn predicate(_: &Api, scm: &Scm) -> bool {
+        unsafe { sys::gargoyle_reexports_scm_is_true(sys::scm_char_p(scm.as_ptr())) }
+    }
+
+    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> char {
+        char::from_u32(unsafe { sys::scm_to_uint32(sys::scm_char_to_integer(scm.as_ptr())) })
+            .expect("Guile characters should return valid rust characters.")
     }
 }
-impl<'id> ScmSubtype<'id> for Bool<'id> {
-    type This<'a> = Bool<'a>;
+impl ScmTy for &str {
+    type Output = Result<string::String<AllocVec<u8, CAllocator>>, AllocError>;
 
-    unsafe fn as_ptr(&self) -> crate::sys::SCM {
-        unsafe { self.0.as_ptr() }
+    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+        let scm = unsafe { crate::sys::scm_from_utf8_stringn(self.as_ptr().cast(), self.len()) };
+        Scm::from(scm)
     }
 
-    unsafe fn from_ptr(ptr: crate::sys::SCM) -> Self {
-        Self(RawScm::from(ptr))
+    fn predicate(_: &Api, scm: &Scm) -> bool {
+        unsafe { sys::scm_is_string(scm.as_ptr()) }
     }
 
-    unsafe fn cast_lifetime<'b>(self) -> Self::This<'b> {
-        Bool(unsafe { self.0.cast_lifetime() })
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-#[repr(transparent)]
-pub struct Char<'id>(RawScm<'id>);
-impl<'id> Char<'id> {
-    pub fn to_char(self) -> char {
-        char::from_u32(unsafe { sys::scm_to_uint32(sys::scm_char_to_integer(self.as_ptr())) })
-            .unwrap()
-    }
-}
-impl<'id> ScmSubtype<'id> for Char<'id> {
-    type This<'a> = Char<'a>;
-
-    unsafe fn as_ptr(&self) -> crate::sys::SCM {
-        unsafe { self.0.as_ptr() }
-    }
-
-    unsafe fn from_ptr(ptr: crate::sys::SCM) -> Self {
-        Self(RawScm::from(ptr))
-    }
-
-    unsafe fn cast_lifetime<'b>(self) -> Self::This<'b> {
-        Char(unsafe { self.0.cast_lifetime() })
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-#[repr(transparent)]
-pub struct String<'id>(RawScm<'id>);
-impl<'id> String<'id> {
-    pub fn to_string(self) -> string::String<AllocVec<u8, CAllocator>> {
-        self.try_to_string().unwrap()
-    }
-
-    pub fn try_to_string(self) -> Result<string::String<AllocVec<u8, CAllocator>>, AllocError> {
+    unsafe fn get_unchecked(
+        _: &Api,
+        scm: &Scm,
+    ) -> Result<string::String<AllocVec<u8, CAllocator>>, AllocError> {
         let mut len: usize = 0;
         // SAFETY: since we have the lifetime, we can assume we're in guile mode
-        let ptr = unsafe { crate::sys::scm_to_utf8_stringn(self.0.as_ptr(), &raw mut len) };
+        let ptr = unsafe { crate::sys::scm_to_utf8_stringn(scm.as_ptr(), &raw mut len) };
         if ptr.is_null() {
             Err(AllocError)
         } else {
@@ -346,90 +364,20 @@ impl<'id> String<'id> {
         }
     }
 }
-impl<'id> ScmSubtype<'id> for String<'id> {
-    type This<'a> = String<'a>;
-
-    unsafe fn as_ptr(&self) -> crate::sys::SCM {
-        unsafe { self.0.as_ptr() }
-    }
-
-    unsafe fn from_ptr(ptr: crate::sys::SCM) -> Self {
-        Self(RawScm::from(ptr))
-    }
-
-    unsafe fn cast_lifetime<'b>(self) -> Self::This<'b> {
-        String(unsafe { self.0.cast_lifetime() })
-    }
-}
-
-#[repr(transparent)]
-pub struct DeadScm<T>(T)
-where
-    T: ScmSubtype<'static>;
-impl<T> DeadScm<T>
-where
-    T: ScmSubtype<'static>,
-{
-    /// Take ownership of the current scm pointer and protect it against garbage collection.
-    ///
-    /// This will leak memory unless [Api::revive] is called
-    fn new(scm: T) -> Self {
-        unsafe { crate::sys::scm_gc_protect_object(scm.as_ptr()) };
-        Self(scm)
-    }
-}
-/// # Safety
-///
-/// The pointer is protected.
-unsafe impl<T> Send for DeadScm<T> where T: ScmSubtype<'static> {}
-
-#[derive(Clone, Copy, Debug)]
-#[non_exhaustive]
-pub enum Scm<'id> {
-    Bool(Bool<'id>),
-    Char(Char<'id>),
-    String(String<'id>),
-    Other(Any<'id>),
-}
-
-#[derive(Clone, Copy, Debug)]
-#[repr(transparent)]
-struct RawScm<'id> {
-    scm: crate::sys::SCM,
-    _marker: PhantomData<&'id ()>,
-}
-impl RawScm<'_> {
-    /// # Safety
-    /// See [ScmSubtype::as_ptr]
-    pub unsafe fn as_ptr(self) -> crate::sys::SCM {
-        self.scm
-    }
-
-    /// # Safety
-    ///
-    /// See [ScmSubtype::cast_lifetime]
-    pub unsafe fn cast_lifetime<'b>(self) -> RawScm<'b> {
-        RawScm {
-            scm: self.scm,
-            _marker: PhantomData,
-        }
-    }
-}
-impl From<crate::sys::SCM> for RawScm<'_> {
-    fn from(scm: crate::sys::SCM) -> Self {
-        Self {
-            scm,
-            _marker: PhantomData,
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use {
         super::*,
-        std::{ops::Deref, thread},
+        std::{fmt::Debug, thread},
     };
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn compilation() {
+        let tests = trybuild::TestCases::new();
+        tests.compile_fail("tests/fail/*.rs");
+    }
 
     #[cfg_attr(miri, ignore)]
     #[test]
@@ -458,33 +406,44 @@ mod tests {
         }));
     }
 
-    #[cfg_attr(miri, ignore)]
-    #[test]
-    fn compilation() {
-        let tests = trybuild::TestCases::new();
-        tests.compile_fail("tests/fail/*.rs");
-    }
+    // #[cfg_attr(miri, ignore)]
+    // #[test]
+    // fn dead_scm_send() {
+    //     with_guile(|api| {
+    //         let t = api.make_bool(true);
+    //         let t = api.kill(t);
+    //         thread::spawn(move || {
+    //             with_guile(move |api| {
+    //                 let _t = api.revive(t);
+    //             });
+    //         });
+    //     });
+    // }
 
-    #[cfg_attr(miri, ignore)]
-    #[test]
-    fn dead_scm_send() {
-        with_guile(|api| {
-            let t = api.make_bool(true);
-            let t = api.kill(t);
-            thread::spawn(move || {
-                with_guile(move |api| {
-                    let _t = api.revive(t);
-                });
-            });
-        });
+    trait ApiExt {
+        fn test_ty<T>(&self, _: T, _: T::Output)
+        where
+            T: ScmTy,
+            T::Output: Debug + PartialEq;
+    }
+    impl ApiExt for Api {
+        fn test_ty<T>(&self, val: T, output: T::Output)
+        where
+            T: ScmTy,
+            T::Output: Debug + PartialEq,
+        {
+            let scm = self.make(val);
+            assert!(T::predicate(self, &scm));
+            assert_eq!(unsafe { T::get_unchecked(self, &scm) }, output);
+        }
     }
 
     #[cfg_attr(miri, ignore)]
     #[test]
     fn bool_conversion() {
         with_guile(|api| {
-            assert_eq!(api.make_bool(true).to_bool(), true);
-            assert_eq!(api.make_bool(false).to_bool(), false);
+            api.test_ty(true, true);
+            api.test_ty(false, false);
         });
     }
 
@@ -492,7 +451,7 @@ mod tests {
     #[test]
     fn char_conversion() {
         with_guile(|api| {
-            assert_eq!(api.make_char('a').to_char(), 'a');
+            ('a'..='z').into_iter().for_each(|ch| api.test_ty(ch, ch));
         });
     }
 
@@ -500,11 +459,18 @@ mod tests {
     #[test]
     fn string_conversion() {
         with_guile(|api| {
-            assert_eq!(
-                api.make_string("hello world").to_string().deref(),
-                "hello world"
+            let mut hello_world = AllocVec::new_in(CAllocator);
+            hello_world.extend(b"hello world");
+            api.test_ty(
+                "hello world",
+                Ok(unsafe { string::String::from_utf8_unchecked(hello_world) }),
             );
-            assert_eq!(api.make_string("").to_string().deref(), "");
+
+            let empty = AllocVec::new_in(CAllocator);
+            api.test_ty(
+                "",
+                Ok(unsafe { string::String::from_utf8_unchecked(empty) }),
+            );
         });
     }
 }

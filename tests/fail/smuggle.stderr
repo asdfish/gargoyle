@@ -1,7 +1,7 @@
 error[E0502]: cannot borrow `*api` as mutable because it is also borrowed as immutable
  --> tests/fail/smuggle.rs:6:9
   |
-5 |         let t = api.make_bool(true);
+5 |         let t = api.make(true);
   |                 --- immutable borrow occurs here
 6 |         api.without_guile(|| println!("{t:?}"));
   |         ^^^^-------------^^^^^^^^^^^^^^^^^^^^^^
@@ -12,7 +12,7 @@ error[E0502]: cannot borrow `*api` as mutable because it is also borrowed as imm
 error[E0502]: cannot borrow `*api` as mutable because it is also borrowed as immutable
   --> tests/fail/smuggle.rs:11:9
    |
-10 |         let t = api.make_bool(true);
+10 |         let t = api.make(true);
    |                 --- immutable borrow occurs here
 11 |         api.without_guile(|| {});
    |         ^^^^^^^^^^^^^^^^^^^^^^^^ mutable borrow occurs here
