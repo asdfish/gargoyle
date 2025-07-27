@@ -329,10 +329,6 @@ impl Scm<'_> {
     pub fn is_real_number(&self) -> bool {
         unsafe { sys::scm_is_real(self.as_ptr()) }
     }
-
-    pub fn is_undefined(&self) -> bool {
-        unsafe { self.as_ptr() == sys::SCM_UNDEFINED }
-    }
 }
 impl PartialOrd for Scm<'_> {
     fn partial_cmp(&self, r: &Self) -> Option<Ordering> {
@@ -469,30 +465,6 @@ impl ScmTy for &str {
 
             // SAFETY: we have an assertion above
             Ok(unsafe { string::String::from_utf8_unchecked(vec) })
-        }
-    }
-}
-impl<T> ScmTy for Option<T>
-where
-    T: ScmTy,
-{
-    type Output = Option<T::Output>;
-
-    fn construct<'id>(self, api: &'id Api) -> Scm<'id> {
-        match self {
-            Some(t) => t.construct(api),
-            None => Scm::from(unsafe { sys::SCM_UNDEFINED }),
-        }
-    }
-
-    fn predicate(api: &Api, scm: &Scm) -> bool {
-        scm.is_undefined() || T::predicate(api, scm)
-    }
-    unsafe fn get_unchecked(api: &Api, scm: &Scm) -> Self::Output {
-        if scm.is_undefined() {
-            None
-        } else {
-            Some(unsafe { T::get_unchecked(api, scm) })
         }
     }
 }
