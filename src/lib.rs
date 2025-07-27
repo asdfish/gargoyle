@@ -30,7 +30,7 @@ use {
     parking_lot::Mutex,
     std::{
         cmp::Ordering,
-        ffi::c_void,
+        ffi::{c_double, c_void},
         marker::PhantomData,
         ops::Not,
         ptr,
@@ -283,6 +283,13 @@ impl Scm<'_> {
     pub fn is_equal(&self, r: &Self) -> bool {
         Self::from(unsafe { sys::scm_equal_p(self.as_ptr(), r.as_ptr()) }).is_true()
     }
+
+    pub fn is_number(&self) -> bool {
+        unsafe { sys::scm_is_number(self.as_ptr()) }
+    }
+    pub fn is_real_number(&self) -> bool {
+        unsafe { sys::scm_is_real(self.as_ptr()) }
+    }
 }
 impl PartialOrd for Scm<'_> {
     fn partial_cmp(&self, r: &Self) -> Option<Ordering> {
@@ -352,7 +359,7 @@ impl ScmTy for bool {
         Scm::from(scm)
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {
-        unsafe { sys::scm_is_bool(scm.as_ptr()) }
+        unsafe { crate::sys::scm_is_bool(scm.as_ptr()) }
     }
     unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self {
         unsafe { crate::sys::scm_to_bool(scm.as_ptr()) }
@@ -371,6 +378,19 @@ impl ScmTy for char {
     unsafe fn get_unchecked(_: &Api, scm: &Scm) -> char {
         char::from_u32(unsafe { sys::scm_to_uint32(sys::scm_char_to_integer(scm.as_ptr())) })
             .expect("Guile characters should return valid rust characters.")
+    }
+}
+impl ScmTy for c_double {
+    type Output = Self;
+
+    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+        Scm::from(unsafe { sys::scm_from_double(self) })
+    }
+    fn predicate(_: &Api, scm: &Scm) -> bool {
+        scm.is_real_number()
+    }
+    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self {
+        unsafe { crate::sys::scm_to_double(scm.as_ptr()) }
     }
 }
 impl ScmTy for &str {
@@ -574,12 +594,13 @@ mod tests {
             T: ScmTy,
             T::Output: Debug + PartialEq;
 
-        fn test_ty_equal<T>(&self, val: T)
+        fn test_ty_equal<T>(&self, val: T) -> Scm
         where
             T: Clone + Debug + PartialEq + ScmTy<Output = T>,
         {
             let scm = self.test_ty(val.clone(), val);
             assert!(scm.is_eqv(&scm));
+            scm
         }
     }
     impl ApiExt for Api {
@@ -612,7 +633,10 @@ mod tests {
         with_guile(|api| {
             api.test_ty_equal(char::MIN);
             api.test_ty_equal(char::MAX);
-            ('a'..='z').into_iter().for_each(|ch| api.test_ty_equal(ch));
+            ('a'..='z')
+                .into_iter()
+                .map(|ch| api.test_ty_equal(ch))
+                .for_each(drop);
         });
     }
 
@@ -644,11 +668,12 @@ mod tests {
             };
             ($api:expr, $ty:ty) => {
                 $api.test_ty_equal(<$ty>::MIN);
-                $api.test_ty_equal(<$ty>::MAX);
+                let scm = $api.test_ty_equal(<$ty>::MAX);
+                assert!(scm.is_number());
             };
         }
         with_guile(|api| {
-            test_ty!(api, [i8, i16, i32, isize, u8, u16, u32, usize]);
+            test_ty!(api, [c_double, i8, i16, i32, isize, u8, u16, u32, usize]);
             #[cfg(target_pointer_width = "64")]
             test_ty!(api, [i64, u64]);
         });

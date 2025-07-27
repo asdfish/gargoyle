@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use std::ffi::{c_char, c_void};
+use std::ffi::{c_char, c_double, c_void};
 
 #[repr(C)]
 pub struct scm_unused_struct {
@@ -50,6 +50,7 @@ unsafe extern "C" {
     pub fn scm_char_to_integer(_: SCM) -> SCM;
     pub fn scm_char_p(_: SCM) -> SCM;
 
+    pub fn scm_from_double(_: c_double) -> SCM;
     pub fn scm_from_int8(_: i8) -> SCM;
     pub fn scm_from_uint8(_: u8) -> SCM;
     pub fn scm_from_int16(_: i16) -> SCM;
@@ -63,6 +64,7 @@ unsafe extern "C" {
     pub fn gargoyle_reexports_scm_from_intptr_t(_: isize) -> SCM;
     pub fn gargoyle_reexports_scm_from_uintptr_t(_: usize) -> SCM;
 
+    pub fn scm_to_double(_: SCM) -> c_double;
     pub fn scm_to_int8(_: SCM) -> i8;
     pub fn scm_to_uint8(_: SCM) -> u8;
     pub fn scm_to_int16(_: SCM) -> i16;
@@ -89,6 +91,9 @@ unsafe extern "C" {
     pub fn scm_eq_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_eqv_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_equal_p(_: SCM, _: SCM) -> SCM;
+
+    pub fn scm_is_number(_: SCM) -> bool;
+    pub fn scm_is_real(_: SCM) -> bool;
 
     pub fn scm_num_eq_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_less_p(_: SCM, _: SCM) -> SCM;
