@@ -70,8 +70,9 @@ trait GuileModeToggle {
             crate::sys::scm_with_guile(Some(Self::driver), (&raw mut data).cast());
         }
 
-        data.output
-            .expect("`Self::driver` should be called by `scm_with_guile`")
+        data.output.expect(
+            "`Self::driver` should be called by `scm_with_guile` which populates `data.output`",
+        )
     }
 
     /// # Safety
@@ -243,6 +244,10 @@ impl Scm<'_> {
         }
     }
 
+    pub fn is_true(&self) -> bool {
+        unsafe { sys::scm_is_true(self.as_ptr()) }
+    }
+
     pub fn is<T>(&self) -> bool
     where
         T: ScmTy,
@@ -262,6 +267,21 @@ impl Scm<'_> {
             None
         }
     }
+
+    /// Check equality with `eq?` semantics
+    pub fn is_eq(&self, r: &Self) -> bool {
+        Self::from(unsafe { sys::scm_eq_p(self.as_ptr(), r.as_ptr()) }).is_true()
+    }
+
+    /// Check equality with `eqv?` semantics
+    pub fn is_eqv(&self, r: &Self) -> bool {
+        Self::from(unsafe { sys::scm_eqv_p(self.as_ptr(), r.as_ptr()) }).is_true()
+    }
+
+    /// Check equality with `equal?` semantics
+    pub fn is_equal(&self, r: &Self) -> bool {
+        Self::from(unsafe { sys::scm_equal_p(self.as_ptr(), r.as_ptr()) }).is_true()
+    }
 }
 impl From<crate::sys::SCM> for Scm<'_> {
     fn from(scm: crate::sys::SCM) -> Self {
@@ -269,6 +289,12 @@ impl From<crate::sys::SCM> for Scm<'_> {
             scm,
             _marker: PhantomData,
         }
+    }
+}
+impl PartialEq for Scm<'_> {
+    /// See [Self::is_equal].
+    fn eq(&self, r: &Self) -> bool {
+        self.is_equal(r)
     }
 }
 impl Not for Scm<'_> {
@@ -526,24 +552,28 @@ mod tests {
     trait ApiExt {
         fn test_ty<T>(&self, _: T, _: T::Output)
         where
-            T: ScmTy,
+            T: Clone + ScmTy,
             T::Output: Debug + PartialEq;
 
-        fn test_ty_eq<T>(&self, val: T)
+        fn test_ty_equal<T>(&self, val: T)
         where
             T: Clone + Debug + PartialEq + ScmTy<Output = T>,
         {
-            self.test_ty(val.clone(), val);
+            self.test_ty(val.clone(), val.clone());
+            with_guile(|api| {
+                assert!(api.make(val.clone()).is_eqv(&api.make(val.clone())));
+            });
         }
     }
     impl ApiExt for Api {
         fn test_ty<T>(&self, val: T, output: T::Output)
         where
-            T: ScmTy,
+            T: Clone + ScmTy,
             T::Output: Debug + PartialEq,
         {
-            let scm = self.make(val);
+            let scm = self.make(val.clone());
             assert!(T::predicate(self, &scm));
+            assert_eq!(scm, self.make(val.clone()));
             assert_eq!(unsafe { T::get_unchecked(self, &scm) }, output);
         }
     }
@@ -552,8 +582,8 @@ mod tests {
     #[test]
     fn bool_conversion() {
         with_guile(|api| {
-            api.test_ty_eq(true);
-            api.test_ty_eq(false);
+            api.test_ty_equal(true);
+            api.test_ty_equal(false);
         });
     }
 
@@ -561,9 +591,9 @@ mod tests {
     #[test]
     fn char_conversion() {
         with_guile(|api| {
-            api.test_ty_eq(char::MIN);
-            api.test_ty_eq(char::MAX);
-            ('a'..='z').into_iter().for_each(|ch| api.test_ty(ch, ch));
+            api.test_ty_equal(char::MIN);
+            api.test_ty_equal(char::MAX);
+            ('a'..='z').into_iter().for_each(|ch| api.test_ty_equal(ch));
         });
     }
 
@@ -594,8 +624,8 @@ mod tests {
                 $(test_ty!($api, $ty);)+
             };
             ($api:expr, $ty:ty) => {
-                $api.test_ty_eq(<$ty>::MIN);
-                $api.test_ty_eq(<$ty>::MAX);
+                $api.test_ty_equal(<$ty>::MIN);
+                $api.test_ty_equal(<$ty>::MAX);
             };
         }
         with_guile(|api| {
