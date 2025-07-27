@@ -30,7 +30,7 @@ use {
     parking_lot::Mutex,
     std::{
         cmp::Ordering,
-        ffi::{c_double, c_void},
+        ffi::{CStr, c_double, c_void},
         marker::PhantomData,
         ops::Not,
         ptr,
@@ -38,6 +38,45 @@ use {
         thread_local,
     },
 };
+
+/// Implement [GuileFn] for a function.
+///
+/// # Argument types
+///
+/// ## Optional arguments
+///
+/// If you want the rest of the arguments to be optional, use the `optional` attribute on the eariliest one.
+///
+/// The optional argument types must implement [OptionalScm].
+///
+/// ```
+/// #[gargoyle::guile_fn]
+/// fn foo(#[optional] l: Option<bool>, r: Option<bool>) {
+///     println!("{} {}", l.is_some(), r.is_some());
+/// }
+/// // (foo 1 2) -> "true true"
+/// // (foo 1) -> "true false"
+/// // (foo) -> "false false"
+/// ```
+///
+/// # Input
+///
+/// This attribute takes the following arguments.
+/// - `guile_ident = "foo"` Change the symbol used in the guile runtime.
+/// - `struct_ident = "bar"` Change the identifier used to make a newtype that implements [GuileFn].
+///
+/// # Examples
+///
+/// ```
+/// # use gargoyle::Scm;
+/// #[gargoyle::guile_fn(struct_ident = "bar")]
+/// fn foo(#[optional] _: Option<bool>, _: Option<i32>, #[rest] _rest: Scm) -> bool { true }
+/// assert_eq!(Foo::REQUIRED, 0);
+/// assert_eq!(Foo::OPTIONAL, 2);
+/// assert!(Foo::REST);
+/// assert_eq!(Foo::NAME, "bar");
+/// ```
+pub use proc_macros::guile_fn;
 
 /// Lock for synchronizing thread initiation.
 static INIT_LOCK: Mutex<()> = Mutex::new(());
@@ -560,6 +599,36 @@ impl_scm_ty_for_int!([
     ),
 ]);
 
+pub trait OptionalScm<'a, T>
+where
+    Self: Into<Option<T>>,
+    T: ScmTy,
+{
+    unsafe fn from_ptr(_: sys::SCM) -> Self;
+}
+impl<'a, T> OptionalScm<'a, T> for Option<T>
+where
+    T: ScmTy,
+{
+    unsafe fn from_ptr(_: sys::SCM) -> Self {
+        todo!()
+    }
+}
+
+/// Marker trait for types that can be used in a rest position in the [guile_fn] macro.
+pub trait RestScm<'a>: From<Scm<'a>> {}
+impl<'a> RestScm<'a> for Scm<'a> {}
+
+pub trait GuileFn {
+    /// The function pointer to an `extern "C"` function with an arity of `Self::REQUIRED + Self::OPTIONAL + Self::REST` that takes [sys::SCM]s
+    const ADDR: *mut c_void;
+    const NAME: &CStr;
+
+    const REQUIRED: usize;
+    const OPTIONAL: usize;
+    const REST: bool;
+}
+
 #[cfg(test)]
 mod tests {
     use {
@@ -671,7 +740,7 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     #[test]
     fn string_conversion() {
-        with_guile(|api| {
+        (with_guile(|api| {
             let mut hello_world = AllocVec::new_in(CAllocator);
             hello_world.extend(b"hello world");
             api.test_ty(
@@ -684,12 +753,14 @@ mod tests {
                 "",
                 Ok(unsafe { string::String::from_utf8_unchecked(empty) }),
             );
-        });
+        }));
     }
 
     #[cfg_attr(miri, ignore)]
     #[test]
     fn int_conversion() {
+        // let x = true;
+
         macro_rules! test_ty {
             ($api:expr, [ $($ty:ty),+ $(,)? ]) => {
                 $(test_ty!($api, $ty);)+

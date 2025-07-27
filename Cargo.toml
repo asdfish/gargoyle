@@ -14,6 +14,7 @@ cc = { version = "1.2.30", default-features = false }
 allocator-api2 = { version = "0.3.0", default-features = false, features = ["alloc"] }
 parking_lot = { version = "0.12.4", default-features = false }
 string = { version = "0.3.1", default-features = false }
+proc_macros = { path = "proc_macros" }
 
 [dev-dependencies]
 trybuild = { version = "1.0.106", default-features = false }
