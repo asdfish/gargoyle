@@ -26,7 +26,7 @@ const SCM GARGOYLE_REEXPORTS_SCM_BOOL_T = SCM_BOOL_T;
 const SCM GARGOYLE_REEXPORTS_SCM_BOOL_F = SCM_BOOL_F;
 const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED = SCM_UNDEFINED;
 
-_Bool gargoyle_reexports_scm_is_true(SCM b) {
+bool gargoyle_reexports_scm_is_true(SCM b) {
   return scm_is_true(b);
 }
 
