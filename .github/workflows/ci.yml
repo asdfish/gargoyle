@@ -8,6 +8,7 @@ jobs:
       matrix:
         cargo-arguments:
           - build
+          - doc --no-deps
           - fmt --check
           - clippy --no-deps
           - miri test
