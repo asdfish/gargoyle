@@ -13,8 +13,6 @@ jobs:
           - miri test
           - test
         include:
-          - cargo-arguments: clippy --no-deps
-            skip-dependencies: true
           - cargo-arguments: fmt --check
             skip-dependencies: true
           - cargo-arguments: miri test
