@@ -528,6 +528,13 @@ mod tests {
         where
             T: ScmTy,
             T::Output: Debug + PartialEq;
+
+        fn test_ty_eq<T>(&self, val: T)
+        where
+            T: Clone + Debug + PartialEq + ScmTy<Output = T>,
+        {
+            self.test_ty(val.clone(), val);
+        }
     }
     impl ApiExt for Api {
         fn test_ty<T>(&self, val: T, output: T::Output)
@@ -545,8 +552,8 @@ mod tests {
     #[test]
     fn bool_conversion() {
         with_guile(|api| {
-            api.test_ty(true, true);
-            api.test_ty(false, false);
+            api.test_ty_eq(true);
+            api.test_ty_eq(false);
         });
     }
 
@@ -554,6 +561,8 @@ mod tests {
     #[test]
     fn char_conversion() {
         with_guile(|api| {
+            api.test_ty_eq(char::MIN);
+            api.test_ty_eq(char::MAX);
             ('a'..='z').into_iter().for_each(|ch| api.test_ty(ch, ch));
         });
     }
@@ -585,8 +594,8 @@ mod tests {
                 $(test_ty!($api, $ty);)+
             };
             ($api:expr, $ty:ty) => {
-                $api.test_ty(<$ty>::MIN, <$ty>::MIN);
-                $api.test_ty(<$ty>::MAX, <$ty>::MAX);
+                $api.test_ty_eq(<$ty>::MIN);
+                $api.test_ty_eq(<$ty>::MAX);
             };
         }
         with_guile(|api| {
