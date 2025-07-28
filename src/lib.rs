@@ -195,6 +195,8 @@ impl Api {
         T::construct(with, self)
     }
 
+    /// Define a function in the guile environment making it accessible to all threads.
+    ///
     /// # Panics
     ///
     /// This function will panic if [GuileFn::REQUIRED] and [GuileFn::OPTIONAL] are not convertible into a [c_int] but that should not be possible unless you overwrote the [GuileFn::_LENGTH_CHECK] field.
@@ -237,12 +239,9 @@ impl Api {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{guile_fn, with_guile};
-    /// #[guile_fn]
-    /// fn return_true() -> bool { true }
+    /// # use gargoyle::with_guile;
     /// with_guile(|api| {
-    ///    api.define_fn(ReturnTrue);
-    ///    assert_eq!(api.eval(c"(return-true)"), api.make(true));
+    ///    assert_eq!(api.eval(c"#t"), api.make(true));
     /// });
     /// ```
     pub fn eval<'id, S>(&'id self, expr: &S) -> Scm<'id>
