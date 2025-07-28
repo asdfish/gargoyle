@@ -106,7 +106,9 @@ unsafe extern "C" {
         _: c_int,
         _: *mut c_void,
     ) -> SCM;
+
     pub fn scm_c_eval_string(_: *const c_char) -> SCM;
+    pub fn scm_c_primitive_load(_: *const c_char) -> SCM;
 
     pub fn scm_call_n(_: SCM, _: *mut SCM, _: usize) -> SCM;
 

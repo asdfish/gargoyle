@@ -285,6 +285,32 @@ impl Api {
     {
         unsafe { Scm::from_ptr(sys::scm_c_eval_string(expr.as_ref().as_ptr())) }
     }
+
+    /// Evaluate the contents file.
+    ///
+    /// This is preferable over [Self::c_eval] for configuration files since the file may be compiled.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{guile_fn, with_guile};
+    /// # use std::{io::Write, ffi::CString};
+    /// # use tempfile::NamedTempFile;
+    /// #[guile_fn]
+    /// fn return_true() -> bool { true }
+    /// # #[cfg(not(miri))]
+    /// with_guile(|api| {
+    ///     let mut file = NamedTempFile::new().unwrap();
+    ///     write!(file, "(return-true)").unwrap();
+    ///     assert_eq!(api.c_load(&CString::new(file.path().as_os_str().as_encoded_bytes()).unwrap()), api.make(true));
+    /// });
+    /// ```
+    pub fn c_load<'id, S>(&'id self, expr: &S) -> Scm<'id>
+    where
+        S: AsRef<CStr> + ?Sized,
+    {
+        unsafe { Scm::from_ptr(sys::scm_c_primitive_load(expr.as_ref().as_ptr())) }
+    }
 }
 
 struct WithoutGuile<F, O>
