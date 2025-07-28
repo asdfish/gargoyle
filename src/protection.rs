@@ -90,12 +90,12 @@ impl<'id> Guardian<'id> {
     ///
     /// with_guile_protected(|_, g1| {
     ///     let mut counter = IncrCounter;
-    ///     g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
+    ///     g1.protect(Pin::new(&mut counter));
     ///
     ///     assert_eq!(0, COUNTER.load(atomic::Ordering::Acquire));
     ///     let output = with_guile_protected(|_, _| {
     ///         let mut counter = IncrCounter;
-    ///         g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
+    ///         g1.protect(Pin::new(&mut counter));
     ///     }); // drop
     ///     assert_eq!(1, COUNTER.load(atomic::Ordering::Acquire));
     ///     assert_eq!(output, Some(()));
@@ -105,12 +105,12 @@ impl<'id> Guardian<'id> {
     /// COUNTER.store(0, atomic::Ordering::Release);
     /// with_guile_protected(|api, g1| {
     ///     let mut counter = IncrCounter;
-    ///     g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
+    ///     g1.protect(Pin::new(&mut counter));
     ///
     ///     assert_eq!(0, COUNTER.load(atomic::Ordering::Acquire));
     ///     let output = with_guile_protected(|_, _| {
     ///         let mut counter = IncrCounter;
-    ///         g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
+    ///         g1.protect(Pin::new(&mut counter));
     ///         api.c_eval(c"variable-that-does-not-exist");
     ///     }); // drop
     ///     assert_eq!(1, COUNTER.load(atomic::Ordering::Acquire));
