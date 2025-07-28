@@ -704,7 +704,7 @@ impl ScmTy for &str {
             // this violates the contract so we should abort.
             assert!(
                 str::from_utf8(&vec).is_ok(),
-                "The returned string from `scm_to_utf8_stringn` was not utf8. This is bug with guile."
+                "The returned string from `scm_to_utf8_stringn` was not utf8. This is a bug with guile."
             );
 
             // SAFETY: we have an assertion above
