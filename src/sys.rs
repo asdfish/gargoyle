@@ -101,6 +101,15 @@ unsafe extern "C" {
 
     pub fn scm_wrong_type_arg(_: *const c_char, _: c_int, _: SCM);
 
+    pub fn scm_c_define_gsubr(
+        _: *const c_char,
+        _: c_int,
+        _: c_int,
+        _: c_int,
+        _: *mut c_void,
+    ) -> SCM;
+    pub fn scm_c_eval_string(_: *const c_char) -> SCM;
+
     pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> bool;
 }
 

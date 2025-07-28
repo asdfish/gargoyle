@@ -30,7 +30,7 @@ use {
     parking_lot::Mutex,
     std::{
         cmp::Ordering,
-        ffi::{CStr, c_double, c_void},
+        ffi::{CStr, c_double, c_int, c_void},
         marker::PhantomData,
         ops::Not,
         ptr,
@@ -187,6 +187,44 @@ impl Api {
         T: ScmTy,
     {
         T::construct(with, self)
+    }
+
+    /// # Panics
+    ///
+    /// This function will panic if [GuileFn::REQUIRED] and [GuileFn::OPTIONAL] are not convertible into a [c_int] but that should not be possible unless you overwrote the [GuileFn::_LENGTH_CHECK] field.
+    pub fn define_fn<'id, F>(&'id self, _: F) -> Scm<'id>
+    where
+        F: GuileFn,
+    {
+        unsafe {
+            Scm::from_ptr(sys::scm_c_define_gsubr(
+                F::NAME.as_ptr(),
+                c_int::try_from(F::REQUIRED).unwrap(),
+                c_int::try_from(F::OPTIONAL).unwrap(),
+                c_int::from(F::REST),
+                F::ADDR,
+            ))
+        }
+    }
+
+    /// Evaluate an expression and return its result.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{guile_fn, with_guile};
+    /// #[guile_fn]
+    /// fn return_true() -> bool { true }
+    /// with_guile(|api| {
+    ///    api.define_fn(ReturnTrue);
+    ///    assert_eq!(api.eval(c"(return-true)"), api.make(true));
+    /// })
+    /// ```
+    pub fn eval<'id, S>(&'id self, expr: &S) -> Scm<'id>
+    where
+        S: AsRef<CStr> + ?Sized,
+    {
+        unsafe { Scm::from_ptr(sys::scm_c_eval_string(expr.as_ref().as_ptr())) }
     }
 }
 
@@ -394,6 +432,17 @@ pub trait ScmTy: Sized {
     /// This function must be safe if [Self::predicate] returns [true].
     unsafe fn get_unchecked(_: &Api, _: &Scm) -> Self::Output;
 }
+impl ScmTy for () {
+    type Output = ();
+
+    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+        unsafe { Scm::from_ptr(sys::SCM_UNDEFINED) }
+    }
+    fn predicate(_: &Api, scm: &Scm) -> bool {
+        unsafe { crate::sys::SCM_UNBNDP(scm.as_ptr()) }
+    }
+    unsafe fn get_unchecked(_: &Api, _: &Scm) -> Self {}
+}
 impl ScmTy for bool {
     type Output = Self;
 
@@ -588,22 +637,12 @@ where
     Self: From<Option<Self::Inner>> + Into<Option<Self::Inner>>,
 {
     type Inner: ScmTy;
-
-    // unsafe fn from_ptr(_: &Api, _: sys::SCM) -> Self;
 }
 impl<T> OptionalScm for Option<T>
 where
     T: ScmTy,
 {
     type Inner = T;
-
-    // unsafe fn from_ptr(api: &Api, scm: sys::SCM) -> Self {
-    //     if unsafe { sys::SCM_UNBNDP(scm) } {
-    //         None
-    //     } else {
-    //         Some(unsafe { T::get_unchecked(api, &Scm::from(scm)) })
-    //     }
-    // }
 }
 
 pub trait RestScm<'a>: From<Scm<'a>> {}
@@ -617,6 +656,12 @@ pub trait GuileFn {
     const REQUIRED: usize;
     const OPTIONAL: usize;
     const REST: bool;
+
+    /// Assert that [Self::REQUIRED] and [Self::OPTIONAL] are convertible to [c_int]s.
+    const _LENGTH_CHECK: () = {
+        assert!(Self::REQUIRED <= c_int::MAX as usize);
+        assert!(Self::OPTIONAL <= c_int::MAX as usize);
+    };
 }
 
 #[cfg(test)]
