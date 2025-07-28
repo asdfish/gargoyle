@@ -148,6 +148,7 @@ trait GuileModeToggle {
     unsafe fn eval_unchecked(_: Self::Fn) -> Self::Output;
 }
 
+/// Struct that gives access to guile functions.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct Api {
@@ -167,6 +168,7 @@ impl Api {
         DeadScm::new(scm)
     }
 
+    /// Revive a [DeadScm] once you're back in guile mode.
     pub fn revive<'id>(&'id self, scm: DeadScm) -> Scm<'id> {
         // SAFETY: we are back in guile mode
         unsafe {
@@ -175,6 +177,9 @@ impl Api {
         scm.0
     }
 
+    /// Execute a function without access to the guile api.
+    ///
+    /// If you went a long time without calling a `sys::scm_*` function, the garbage collection would not occur.
     pub fn without_guile<F, O>(&mut self, operation: F) -> O
     where
         F: FnOnce() -> O,
@@ -182,6 +187,7 @@ impl Api {
         WithoutGuile::<F, O>::eval(operation)
     }
 
+    /// Create a [Scm].
     pub fn make<'id, T>(&'id self, with: T) -> Scm<'id>
     where
         T: ScmTy,
@@ -267,6 +273,7 @@ where
         operation(&mut unsafe { Api::new_unchecked() })
     }
 }
+/// Execute a function with access to the guile api.
 pub fn with_guile<F, O>(operation: F) -> O
 where
     F: FnOnce(&mut Api) -> O,
@@ -287,6 +294,11 @@ where
     }
 }
 
+/// Protect a [Scm] from garbage collection and then make it unreadable.
+///
+/// To get the [Scm] back, use [Api::revive].
+///
+/// This is the equivalent of [Weak][std::rc::Weak] for [Rc][std::rc::Rc].
 #[repr(transparent)]
 pub struct DeadScm(Scm<'static>);
 impl DeadScm {
@@ -303,6 +315,7 @@ impl DeadScm {
 /// The pointer is protected.
 unsafe impl Send for DeadScm {}
 
+/// A newtype for [SCM][sys::SCM] pointers.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct Scm<'id> {
@@ -327,10 +340,12 @@ impl Scm<'_> {
         }
     }
 
+    /// Check if this [Scm] is truthy.
     pub fn is_true(&self) -> bool {
         unsafe { sys::scm_is_true(self.as_ptr()) }
     }
 
+    /// Check whether or not this [Scm] is a `T`
     pub fn is<T>(&self) -> bool
     where
         T: ScmTy,
@@ -423,7 +438,9 @@ impl Not for Scm<'_> {
     }
 }
 
+/// Marker trait for types that can be converted to/from a [Scm].
 pub trait ScmTy: Sized {
+    /// The output of [Self::get_unchecked]. If unsure, you should default to `Self`.
     type Output;
 
     /// Create a [Scm] from the current type.
@@ -655,6 +672,7 @@ where
 pub trait RestScm<'a>: From<Scm<'a>> {}
 impl<'a> RestScm<'a> for Scm<'a> {}
 
+/// Trait for describing functions that can be added into the runtime with [Api::define_fn].
 pub trait GuileFn {
     /// The function pointer to an `extern "C"` function with an arity of `Self::REQUIRED + Self::OPTIONAL + Self::REST` that takes [sys::SCM]s
     const ADDR: *mut c_void;
