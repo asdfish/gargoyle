@@ -669,12 +669,12 @@ mod tests {
     }
 
     trait ApiExt {
-        fn test_ty<T>(&self, _: T, _: T::Output) -> Scm
+        fn test_ty<'id, T>(&'id self, _: T, _: T::Output) -> Scm<'id>
         where
             T: ScmTy,
             T::Output: Debug + PartialEq;
 
-        fn test_ty_equal<T>(&self, val: T) -> Scm
+        fn test_ty_equal<'id, T>(&'id self, val: T) -> Scm<'id>
         where
             T: Clone + Debug + PartialEq + ScmTy<Output = T>,
         {
@@ -684,7 +684,7 @@ mod tests {
         }
     }
     impl ApiExt for Api {
-        fn test_ty<T>(&self, val: T, output: T::Output) -> Scm
+        fn test_ty<'id, T>(&'id self, val: T, output: T::Output) -> Scm<'id>
         where
             T: ScmTy,
             T::Output: Debug + PartialEq,
