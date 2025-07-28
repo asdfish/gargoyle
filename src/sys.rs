@@ -28,9 +28,6 @@ pub struct scm_unused_struct {
 pub type SCM = *mut scm_unused_struct;
 
 unsafe extern "C" {
-    pub fn malloc(_: usize) -> *mut c_void;
-    pub fn free(_: *mut c_void);
-
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_T: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_F: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_UNDEFINED: SCM;

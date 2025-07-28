@@ -19,12 +19,16 @@
 // THE SOFTWARE.
 
 use {
-    crate::sys::{free, malloc},
     allocator_api2::alloc::{AllocError, Allocator, Layout},
-    std::{num::NonZeroUsize, ptr::NonNull},
+    std::{ffi::c_void, num::NonZeroUsize, ptr::NonNull},
 };
 
-/// Allocator that allocates using [malloc] and [free] from [crate::sys].
+unsafe extern "C" {
+    fn malloc(_: usize) -> *mut c_void;
+    fn free(_: *mut c_void);
+}
+
+/// Allocator that allocates using [malloc] and [free].
 ///
 /// You should use this over the global allocator since that may be changed.
 pub struct CAllocator;
