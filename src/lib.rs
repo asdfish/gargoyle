@@ -286,9 +286,7 @@ impl Api {
         unsafe { Scm::from_ptr(sys::scm_c_eval_string(expr.as_ref().as_ptr())) }
     }
 
-    /// Evaluate the contents file.
-    ///
-    /// This is preferable over [Self::c_eval] for configuration files since the file may be compiled.
+    /// Evaluate the contents of a file.
     ///
     /// # Examples
     ///
