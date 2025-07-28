@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#![expect(non_camel_case_types)]
+
 use std::ffi::{c_char, c_double, c_int, c_void};
 
 #[repr(C)]
@@ -27,10 +29,12 @@ pub struct scm_unused_struct {
 
 pub type SCM = *mut scm_unused_struct;
 
-#[expect(non_camel_case_types)]
 pub type scm_t_dynwind_flags = c_int;
-#[expect(non_camel_case_types)]
 pub type scm_t_wind_flags = c_int;
+
+pub type scm_t_thunk = Option<unsafe extern "C" fn(*mut c_void) -> SCM>;
+pub type scm_t_catch_body = scm_t_thunk;
+pub type scm_t_catch_handler = Option<unsafe extern "C" fn(*mut c_void, SCM, SCM) -> SCM>;
 
 unsafe extern "C" {
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_T: SCM;
@@ -107,6 +111,7 @@ unsafe extern "C" {
     pub fn scm_gr_p(_: SCM, _: SCM) -> SCM;
 
     pub fn scm_wrong_type_arg_msg(_: *const c_char, _: c_int, _: SCM, _: *const c_char);
+    pub fn scm_misc_error(_subr: *const c_char, _msg: *const c_char, _args: SCM);
 
     pub fn scm_c_make_gsubr(_: *const c_char, _: c_int, _: c_int, _: c_int, _: *mut c_void) -> SCM;
     pub fn scm_c_define_gsubr(
@@ -136,7 +141,13 @@ unsafe extern "C" {
     );
     pub fn scm_dynwind_end();
 
-    pub fn scm_catch(_tag: SCM, _thunk: SCM, _handler: SCM) -> SCM;
+    pub fn scm_internal_catch(
+        _tag: SCM,
+        _body: scm_t_catch_body,
+        _body_data: *mut c_void,
+        _handler: scm_t_catch_handler,
+        _handler_data: *mut c_void,
+    ) -> SCM;
 }
 
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;

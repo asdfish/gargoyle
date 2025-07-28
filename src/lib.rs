@@ -21,6 +21,7 @@
 //! Rust bindings to guile.
 
 mod alloc;
+mod catch;
 mod guard;
 mod protection;
 pub mod sys;
@@ -42,6 +43,8 @@ use {
     },
 };
 
+#[doc(inline)]
+pub use catch::*;
 /// Implement [GuileFn] for a function.
 ///
 /// # Argument types
@@ -101,7 +104,7 @@ thread_local! {
     static THREAD_INIT: AtomicBool = const { AtomicBool::new(false) };
 }
 
-struct GuileModeToggleCallbackData<F, O> {
+struct CallbackData<F, O> {
     operation: Option<F>,
     output: Option<O>,
 }
@@ -115,7 +118,7 @@ trait GuileModeToggle {
 
     /// This may return [None] in the case of errors.
     fn eval(operation: Self::Fn) -> Option<Self::Output> {
-        let mut data = GuileModeToggleCallbackData {
+        let mut data = CallbackData {
             operation: Some(operation),
             output: None,
         };
@@ -129,14 +132,14 @@ trait GuileModeToggle {
 
     /// # Safety
     ///
-    /// `ptr` must be of type `GuileModeToggleCallbackData<Self::Fn, Self::Output>`
+    /// `ptr` must be of type `CallbackData<Self::Fn, Self::Output>`
     unsafe extern "C" fn driver(ptr: *mut c_void) -> *mut c_void {
         GUILE_MODE.with(|on| on.store(Self::GUILE_MODE_STATUS, atomic::Ordering::Release));
         let _guard = Guard::new(|| {
             GUILE_MODE.with(|on| on.store(!Self::GUILE_MODE_STATUS, atomic::Ordering::Release));
         });
 
-        let data = ptr.cast::<GuileModeToggleCallbackData<Self::Fn, Self::Output>>();
+        let data = ptr.cast::<CallbackData<Self::Fn, Self::Output>>();
         if let Some(data) = unsafe { data.as_mut() } {
             if data.output.is_none() {
                 data.output = data
@@ -313,6 +316,35 @@ impl Api {
         S: AsRef<CStr> + ?Sized,
     {
         unsafe { Scm::from_ptr(sys::scm_c_primitive_load(expr.as_ref().as_ptr())) }
+    }
+
+    /// Throw an error for having the wrong type.
+    pub fn wrong_type_arg<F, E>(&self, name: &F, idx: usize, arg: Scm, expected: &E) -> !
+    where
+        F: AsRef<CStr> + ?Sized,
+        E: AsRef<CStr> + ?Sized,
+    {
+        assert!(idx <= 10, "cannot have more than 10 arguments");
+
+        unsafe {
+            sys::scm_wrong_type_arg_msg(
+                name.as_ref().as_ptr(),
+                idx as c_int,
+                arg.as_ptr(),
+                expected.as_ref().as_ptr(),
+            );
+        }
+
+        unreachable!()
+    }
+
+    pub fn misc_error<F, M>(&self, name: &F, msg: &M, args: Scm) -> !
+    where
+        F: AsRef<CStr> + ?Sized,
+        M: AsRef<CStr> + ?Sized,
+    {
+        unsafe { sys::scm_misc_error(name.as_ref().as_ptr(), msg.as_ref().as_ptr(), args.as_ptr()) }
+        unreachable!()
     }
 }
 
