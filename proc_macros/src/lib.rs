@@ -285,7 +285,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                     const fn assert_scm_ty<T>()
                                     where
                                         T: ::gargoyle::ScmTy {}
-                                    assert_scmty::<#required>()
+                                    assert_scm_ty::<#required>()
                                 };)*
                                 const _: () = {
                                     const fn assert_scm_ty<T>()
@@ -310,11 +310,13 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                     #(unsafe { ::gargoyle::Scm::from_ptr(#required_idents) }
                                       .get::<#required>()
                                       .unwrap_or_else(|| {
-                                          ::gargoyle::sys::scm_wrong_type_arg(
-                                              #guile_ident.as_ptr(),
-                                              #required_index,
-                                              #required_idents
-                                          );
+                                          unsafe {
+                                              ::gargoyle::sys::scm_wrong_type_arg(
+                                                  #guile_ident.as_ptr(),
+                                                  #required_index,
+                                                  #required_idents
+                                              );
+                                          }
                                           ::core::panic!()
                                       }),)*
                                     #({

@@ -105,7 +105,8 @@ trait GuileModeToggle {
     /// The status of guile mode in the current thread.
     const GUILE_MODE_STATUS: bool;
 
-    fn eval(operation: Self::Fn) -> Self::Output {
+    /// This may return [None] in the case of errors.
+    fn eval(operation: Self::Fn) -> Option<Self::Output> {
         let mut data = GuileModeToggleCallbackData {
             operation: Some(operation),
             output: None,
@@ -115,9 +116,7 @@ trait GuileModeToggle {
             crate::sys::scm_with_guile(Some(Self::driver), (&raw mut data).cast());
         }
 
-        data.output.expect(
-            "`Self::driver` should be called by `scm_with_guile` which populates `data.output`",
-        )
+        data.output
     }
 
     /// # Safety
@@ -185,6 +184,7 @@ impl Api {
         F: FnOnce() -> O,
     {
         WithoutGuile::<F, O>::eval(operation)
+            .expect("running outside of guile mode should not be able to get guile errors")
     }
 
     /// Create a [Scm].
@@ -224,7 +224,7 @@ impl Api {
     /// with_guile(|api| {
     ///    api.define_fn(ReturnTrue);
     ///    assert_eq!(api.eval(c"(return-true)"), api.make(true));
-    /// })
+    /// });
     /// ```
     pub fn eval<'id, S>(&'id self, expr: &S) -> Scm<'id>
     where
@@ -274,13 +274,15 @@ where
     }
 }
 /// Execute a function with access to the guile api.
-pub fn with_guile<F, O>(operation: F) -> O
+///
+/// This may return [None] in the event of errors.
+pub fn with_guile<F, O>(operation: F) -> Option<O>
 where
     F: FnOnce(&mut Api) -> O,
 {
     if GUILE_MODE.with(|on| on.load(atomic::Ordering::Acquire)) {
         // SAFETY: we are in guile mode
-        operation(&mut unsafe { Api::new_unchecked() })
+        Some(operation(&mut unsafe { Api::new_unchecked() }))
     } else {
         let _lock = THREAD_INIT
             .with(|init| !init.load(atomic::Ordering::Acquire))
@@ -715,23 +717,25 @@ mod tests {
             .map(|_| spawn())
             .into_iter()
             .map(|thread| thread.join())
-            .collect::<Result<(), _>>()
+            .collect::<Result<Option<Vec<_>>, _>>()
+            .unwrap()
             .unwrap();
     }
 
     #[cfg_attr(miri, ignore)]
     #[test]
     fn with_guile_test() {
-        assert!(with_guile(|_| true));
-        assert!(with_guile(|_| { with_guile(|_| true) },));
+        assert_eq!(with_guile(|_| true), Some(true));
+        assert_eq!(with_guile(|_| { with_guile(|_| true) }), Some(Some(true)));
     }
 
     #[cfg_attr(miri, ignore)]
     #[test]
     fn without_guile() {
-        assert!(with_guile(|api| {
-            api.without_guile(|| with_guile(|_| true))
-        }));
+        assert_eq!(
+            with_guile(|api| { api.without_guile(|| with_guile(|_| true)) }),
+            Some(Some(true))
+        );
     }
 
     #[cfg_attr(miri, ignore)]
