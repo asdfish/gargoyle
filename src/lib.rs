@@ -302,7 +302,8 @@ impl Api {
     /// with_guile(|api| {
     ///     let mut file = NamedTempFile::new().unwrap();
     ///     write!(file, "(return-true)").unwrap();
-    ///     assert_eq!(api.c_load(&CString::new(file.path().as_os_str().as_encoded_bytes()).unwrap()), api.make(true));
+    ///     let output = api.c_load(&CString::new(file.path().as_os_str().as_encoded_bytes()).unwrap());
+    ///     assert_eq!(output, api.make(true));
     /// });
     /// ```
     pub fn c_load<'id, S>(&'id self, expr: &S) -> Scm<'id>
