@@ -136,6 +136,7 @@ unsafe extern "C" {
     );
     pub fn scm_dynwind_end();
 
+    pub fn scm_catch(_tag: SCM, _thunk: SCM, _handler: SCM) -> SCM;
 }
 
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;

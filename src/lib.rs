@@ -83,8 +83,8 @@ use {
 /// # #[cfg(not(miri))]
 /// with_guile(|api| {
 ///     api.define_fn(SomeP);
-///     assert_eq!(api.c_eval(c"(some? 1)"), api.make(true));
-///     assert_eq!(api.c_eval(c"(some?)"), api.make(false));
+///     assert_eq!(api.eval_c(c"(some? 1)"), api.make(true));
+///     assert_eq!(api.eval_c(c"(some?)"), api.make(false));
 /// });
 /// ```
 pub use proc_macros::guile_fn;
@@ -215,7 +215,7 @@ impl Api {
     /// let output = with_guile(|api| {
     ///     let my_hidden_fn = api.make_fn(MyHiddenFn);
     ///     assert_eq!(my_hidden_fn.call(&mut []), api.make(()));
-    ///     api.c_eval(c"(my-hidden-fn)");
+    ///     api.eval_c(c"(my-hidden-fn)");
     /// });
     /// assert_eq!(output, None);
     /// # }
@@ -250,10 +250,10 @@ impl Api {
     ///     api.define_fn(MyNot);
     ///     thread::spawn(|| {
     ///         with_guile(|api| {
-    ///             assert_eq!(api.c_eval(c"(my-not #f)"), api.make(true));
+    ///             assert_eq!(api.eval_c(c"(my-not #f)"), api.make(true));
     ///         });
     ///     });
-    ///     assert_eq!(api.c_eval(c"(my-not #t)"), api.make(false));
+    ///     assert_eq!(api.eval_c(c"(my-not #t)"), api.make(false));
     /// });
     /// ```
     pub fn define_fn<'id, F>(&'id self, _: F) -> Scm<'id>
@@ -279,10 +279,10 @@ impl Api {
     /// # use gargoyle::with_guile;
     /// # #[cfg(not(miri))]
     /// with_guile(|api| {
-    ///    assert_eq!(api.c_eval(c"#t"), api.make(true));
+    ///    assert_eq!(api.eval_c(c"#t"), api.make(true));
     /// });
     /// ```
-    pub fn c_eval<'id, S>(&'id self, expr: &S) -> Scm<'id>
+    pub fn eval_c<'id, S>(&'id self, expr: &S) -> Scm<'id>
     where
         S: AsRef<CStr> + ?Sized,
     {
@@ -303,18 +303,16 @@ impl Api {
     /// with_guile(|api| {
     ///     let mut file = NamedTempFile::new().unwrap();
     ///     write!(file, "(return-true)").unwrap();
-    ///     let output = api.c_load(&CString::new(file.path().as_os_str().as_encoded_bytes()).unwrap());
+    ///     let output = api.load_c(&CString::new(file.path().as_os_str().as_encoded_bytes()).unwrap());
     ///     assert_eq!(output, api.make(true));
     /// });
     /// ```
-    pub fn c_load<'id, S>(&'id self, expr: &S) -> Scm<'id>
+    pub fn load_c<'id, S>(&'id self, expr: &S) -> Scm<'id>
     where
         S: AsRef<CStr> + ?Sized,
     {
         unsafe { Scm::from_ptr(sys::scm_c_primitive_load(expr.as_ref().as_ptr())) }
     }
-
-    // pub fn unwind_scope<>
 }
 
 struct WithoutGuile<F, O>
@@ -369,13 +367,13 @@ where
 /// # #[cfg(not(miri))]
 /// let output = with_guile(|api| {
 ///     api.define_fn(MySub);
-///     api.c_eval(c"(my-sub #f \"bar\")"); // type error
+///     api.eval_c(c"(my-sub #f \"bar\")"); // type error
 /// });
 /// # #[cfg(not(miri))]
 /// assert_eq!(output, None);
 /// # #[cfg(not(miri))]
 /// let output = with_guile(|api| {
-///     api.c_eval(c"(my-sub 3 2)").get::<i32>()
+///     api.eval_c(c"(my-sub 3 2)").get::<i32>()
 /// });
 /// # #[cfg(not(miri))]
 /// assert_eq!(output, Some(Some(1)));

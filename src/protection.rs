@@ -111,7 +111,7 @@ impl<'id> Guardian<'id> {
     ///     let output = with_guile_protected(|_, _| {
     ///         let mut counter = IncrCounter;
     ///         g1.protect(Pin::new(&mut counter));
-    ///         api.c_eval(c"variable-that-does-not-exist");
+    ///         api.eval_c(c"variable-that-does-not-exist");
     ///     }); // drop
     ///     assert_eq!(1, COUNTER.load(atomic::Ordering::Acquire));
     ///     assert_eq!(output, None);
