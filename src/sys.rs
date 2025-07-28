@@ -129,7 +129,7 @@ unsafe extern "C" {
     pub fn scm_write(_: SCM, _: SCM) -> SCM;
 
     pub fn scm_dynwind_begin(_: scm_t_dynwind_flags);
-    pub fn scm_dynwind_rewind_handler(
+    pub fn scm_dynwind_unwind_handler(
         _: Option<unsafe extern "C" fn(_: *mut c_void)>,
         _: *mut c_void,
         _: scm_t_wind_flags,

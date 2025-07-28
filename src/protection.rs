@@ -67,27 +67,36 @@ impl<'id> Guardian<'id> {
     /// impl Drop for IncrCounter {
     ///     fn drop(&mut self) { COUNTER.fetch_add(1, atomic::Ordering::Release); }
     /// }
+    ///
     /// with_guile_protected(|_, g1| {
+    ///     let mut counter = IncrCounter;
+    ///     g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
+    ///
     ///     assert_eq!(0, COUNTER.load(atomic::Ordering::Acquire));
     ///     let output = with_guile_protected(|_, _| {
     ///         let mut counter = IncrCounter;
     ///         g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
-    ///     }); // counter gets dropped here
+    ///     }); // drop
     ///     assert_eq!(1, COUNTER.load(atomic::Ordering::Acquire));
     ///     assert_eq!(output, Some(()));
-    /// });
+    /// }); //drop
+    /// assert_eq!(2, COUNTER.load(atomic::Ordering::Acquire));
     ///
     /// COUNTER.store(0, atomic::Ordering::Release);
     /// with_guile_protected(|api, g1| {
+    ///     let mut counter = IncrCounter;
+    ///     g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
+    ///
     ///     assert_eq!(0, COUNTER.load(atomic::Ordering::Acquire));
     ///     let output = with_guile_protected(|_, _| {
     ///         let mut counter = IncrCounter;
     ///         g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
-    ///         api.c_eval(c"variable-that-probably-does-not-exist");
-    ///     }); // counter gets dropped here
+    ///         api.c_eval(c"variable-that-does-not-exist");
+    ///     }); // drop
     ///     assert_eq!(1, COUNTER.load(atomic::Ordering::Acquire));
     ///     assert_eq!(output, None);
-    /// });
+    /// }); // drop
+    /// assert_eq!(2, COUNTER.load(atomic::Ordering::Acquire));
     /// # }
     /// ```
     pub fn protect<'pin, T>(&'pin self, mut ptr: Pin<&'pin mut T>) -> Pin<&'pin mut T>
@@ -97,7 +106,7 @@ impl<'id> Guardian<'id> {
         let drop_ptr = ptr::from_mut(unsafe { ptr.as_mut().get_unchecked_mut() }).cast::<c_void>();
         // Guile should not know move the pointer and [protect_driver] does not move it.
         unsafe {
-            crate::sys::scm_dynwind_rewind_handler(
+            crate::sys::scm_dynwind_unwind_handler(
                 Some(Self::protect_driver::<T>),
                 drop_ptr,
                 // use 0 since if it succeeds, we use the normal rust drop
