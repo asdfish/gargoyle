@@ -1,0 +1,7 @@
+#+LANGUAGE: en
+#+TITLE: gargoyle
+
+guile bindings for rust
+
+* Status
+This project is still in development, so the api may still change. As of right now, *DO NOT* rely on the api.
