@@ -307,48 +307,35 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                 };)*
 
                                 let output = #ident(
-                                    #(if unsafe {
-                                        <<#required>::Inner as ::gargoyle::ScmTy>::predicate(
-                                            &::gargoyle::Api::new_unchecked(),
-                                            &::gargoyle::Scm::from_ptr(#required_idents),
-                                        )
-                                    } {
-                                        unsafe {
-                                            <<#required>::Inner as ::gargoyle::ScmTy>::get_unchecked(
-                                                &::gargoyle::Api::new_unchecked(),
-                                                &::gargoyle::Scm::from_ptr(#required_idents),
-                                            )
-                                        }
-                                    } else {
-                                        unsafe {
-                                            ::gargoyle::sys::scm_wrong_type_arg(#guile_ident.as_ptr(), #required_index, #required_idents)
-                                        }
-                                        panic!()
-                                    },)*
+                                    #(unsafe { ::gargoyle::Scm::from_ptr(#required_idents) }
+                                      .get::<#required>()
+                                      .unwrap_or_else(|| {
+                                          ::gargoyle::sys::scm_wrong_type_arg(
+                                              #guile_ident.as_ptr(),
+                                              #required_index,
+                                              #required_idents
+                                          );
+                                          ::core::panic!()
+                                      }),)*
                                     #({
                                         type Inner = <#optional as ::gargoyle::OptionalScm>::Inner;
-                                        if unsafe { ::gargoyle::sys::SCM_UNBNDP(#optional_idents) } {
-                                            None
-                                        } else if unsafe {
-                                            <Inner as ::gargoyle::ScmTy>::predicate(
-                                                &::gargoyle::Api::new_unchecked(),
-                                                &::gargoyle::Scm::from_ptr(#optional_idents)
-                                            )
-                                        } {
-                                            Some(unsafe {
-                                                <Inner as ::gargoyle::ScmTy>::get_unchecked(
-                                                    &::gargoyle::Api::new_unchecked(),
-                                                    &::gargoyle::Scm::from_ptr(#optional_idents),
-                                                )
-                                            })
+                                        let scm = unsafe { ::gargoyle::Scm::from_ptr(#optional_idents) };
+                                        if scm.is::<()>() {
+                                            ::core::option::Option::None
+                                        } else if let ::core::option::Option::Some(#optional_idents) = scm.get::<Inner>() {
+                                            ::core::option::Option::Some(#optional_idents)
                                         } else {
                                             unsafe {
-                                                ::gargoyle::sys::scm_wrong_type_arg(#guile_ident.as_ptr(), #optional_index, #optional_idents)
-                                            };
-                                            None
+                                                ::gargoyle::sys::scm_wrong_type_arg(
+                                                    #guile_ident.as_ptr(),
+                                                    #optional_index,
+                                                    #optional_idents
+                                                );
+                                            }
+                                            ::core::panic!()
                                         }
                                     },)*
-                                    #(unsafe { Scm::from_ptr(#rest_ident) },)*
+                                    #(unsafe { ::gargoyle::Scm::from_ptr(#rest_ident) },)*
                                 );
 
                                 unsafe { <#output as ::gargoyle::ScmTy>::construct(output, &::gargoyle::Api::new_unchecked()).as_ptr() }

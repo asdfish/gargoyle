@@ -338,6 +338,7 @@ impl Scm<'_> {
         let api = unsafe { Api::new_unchecked() };
         T::predicate(&api, self)
     }
+    /// Attempt to get `T` from a scm
     pub fn get<T>(&self) -> Option<T::Output>
     where
         T: ScmTy,
@@ -366,9 +367,11 @@ impl Scm<'_> {
         unsafe { Self::from_ptr(sys::scm_equal_p(self.as_ptr(), r.as_ptr())) }.is_true()
     }
 
+    /// Check whether or not the [Scm] is a number.
     pub fn is_number(&self) -> bool {
         unsafe { sys::scm_is_number(self.as_ptr()) }
     }
+    /// Check whether or not the [Scm] is a real number.
     pub fn is_real_number(&self) -> bool {
         unsafe { sys::scm_is_real(self.as_ptr()) }
     }
@@ -423,7 +426,9 @@ impl Not for Scm<'_> {
 pub trait ScmTy: Sized {
     type Output;
 
+    /// Create a [Scm] from the current type.
     fn construct<'id>(self, _: &'id Api) -> Scm<'id>;
+    /// Check whether or not a [Scm] is of this type.
     fn predicate(_: &Api, _: &Scm) -> bool;
     /// Exract [Self::Output] from a scm.
     ///
