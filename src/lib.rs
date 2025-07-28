@@ -198,6 +198,25 @@ impl Api {
     /// # Panics
     ///
     /// This function will panic if [GuileFn::REQUIRED] and [GuileFn::OPTIONAL] are not convertible into a [c_int] but that should not be possible unless you overwrote the [GuileFn::_LENGTH_CHECK] field.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{guile_fn, with_guile};
+    /// # use std::thread;
+    ///
+    /// #[guile_fn]
+    /// fn my_not(b: bool) -> bool { !b }
+    /// with_guile(|api| {
+    ///     api.define_fn(MyNot);
+    ///     thread::spawn(|| {
+    ///         with_guile(|api| {
+    ///             assert_eq!(api.eval(c"(my-not #f)"), api.make(true));
+    ///         });
+    ///     });
+    ///     assert_eq!(api.eval(c"(my-not #t)"), api.make(false));
+    /// });
+    /// ```
     pub fn define_fn<'id, F>(&'id self, _: F) -> Scm<'id>
     where
         F: GuileFn,
