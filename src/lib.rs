@@ -276,6 +276,19 @@ where
 /// Execute a function with access to the guile api.
 ///
 /// This may return [None] in the event of errors.
+///
+/// # Examples
+///
+/// ```
+/// # use gargoyle::{guile_fn, with_guile};
+/// #[guile_fn]
+/// fn my_sub(l: i32, r: i32) -> i32 { l - r }
+/// let output = with_guile(|api| {
+///     api.define_fn(MySub);
+///     api.eval(c"(my-sub #f \"bar\")"); // type error
+/// });
+/// assert_eq!(output, None);
+/// ```
 pub fn with_guile<F, O>(operation: F) -> Option<O>
 where
     F: FnOnce(&mut Api) -> O,
