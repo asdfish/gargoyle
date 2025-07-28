@@ -311,10 +311,11 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                       .get::<#required>()
                                       .unwrap_or_else(|| {
                                           unsafe {
-                                              ::gargoyle::sys::scm_wrong_type_arg(
+                                              ::gargoyle::sys::scm_wrong_type_arg_msg(
                                                   #guile_ident.as_ptr(),
                                                   #required_index,
-                                                  #required_idents
+                                                  #required_idents,
+                                                  <#required as ::gargoyle::ScmTy>::TYPE_NAME.as_ptr(),
                                               );
                                           }
                                           ::core::panic!()
@@ -328,10 +329,11 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                             ::core::option::Option::Some(#optional_idents)
                                         } else {
                                             unsafe {
-                                                ::gargoyle::sys::scm_wrong_type_arg(
+                                                ::gargoyle::sys::scm_wrong_type_arg_msg(
                                                     #guile_ident.as_ptr(),
                                                     #optional_index,
-                                                    #optional_idents
+                                                    #optional_idents,
+                                                    <Inner as ::gargoyle::ScmTy>::TYPE_NAME.as_ptr(),
                                                 );
                                             }
                                             ::core::panic!()

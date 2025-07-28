@@ -489,6 +489,8 @@ pub trait ScmTy: Sized {
     /// The output of [Self::get_unchecked]. If unsure, you should default to `Self`.
     type Output;
 
+    const TYPE_NAME: &CStr;
+
     /// Create a [Scm] from the current type.
     fn construct<'id>(self, _: &'id Api) -> Scm<'id>;
     /// Check whether or not a [Scm] is of this type.
@@ -503,6 +505,8 @@ pub trait ScmTy: Sized {
 impl ScmTy for () {
     type Output = ();
 
+    const TYPE_NAME: &CStr = c"<#undefined>";
+
     fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
         unsafe { Scm::from_ptr(sys::SCM_UNDEFINED) }
     }
@@ -513,6 +517,8 @@ impl ScmTy for () {
 }
 impl ScmTy for bool {
     type Output = Self;
+
+    const TYPE_NAME: &CStr = c"bool";
 
     fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
         let scm = match self {
@@ -531,6 +537,8 @@ impl ScmTy for bool {
 }
 impl ScmTy for char {
     type Output = Self;
+
+    const TYPE_NAME: &CStr = c"char";
 
     fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
         unsafe {
@@ -551,6 +559,8 @@ impl ScmTy for char {
 impl ScmTy for c_double {
     type Output = Self;
 
+    const TYPE_NAME: &CStr = c"double";
+
     fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
         unsafe { Scm::from_ptr(sys::scm_from_double(self)) }
     }
@@ -563,6 +573,8 @@ impl ScmTy for c_double {
 }
 impl ScmTy for &str {
     type Output = Result<string::String<AllocVec<u8, CAllocator>>, AllocError>;
+
+    const TYPE_NAME: &'static CStr = c"string";
 
     fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
         let scm = unsafe { crate::sys::scm_from_utf8_stringn(self.as_ptr().cast(), self.len()) };
@@ -605,6 +617,9 @@ macro_rules! impl_scm_ty_for_int {
     ($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr) => {
         impl ScmTy for $ty {
             type Output = Self;
+
+            // SAFETY: this is in a const context and there is a null byte concatted at the end.
+            const TYPE_NAME: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(concat!(stringify!($ty), "\0").as_bytes()) };
 
             fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
                 unsafe { Scm::from_ptr(($to_scm)(self)) }

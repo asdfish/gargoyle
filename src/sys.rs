@@ -96,7 +96,7 @@ unsafe extern "C" {
     pub fn scm_less_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_gr_p(_: SCM, _: SCM) -> SCM;
 
-    pub fn scm_wrong_type_arg(_: *const c_char, _: c_int, _: SCM);
+    pub fn scm_wrong_type_arg_msg(_: *const c_char, _: c_int, _: SCM, _: *const c_char);
 
     pub fn scm_c_define_gsubr(
         _: *const c_char,
