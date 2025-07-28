@@ -26,7 +26,7 @@ jobs:
         if: ${{ runner.os == 'Linux' && ! matrix.skip-dependencies }}
         run: |
           sudo apt update
-          sudo apt upgrade
+          # sudo apt upgrade
           sudo apt install -y guile-3.0-dev
       - name: Install nightly toolchain
         if: ${{matrix.nightly}}
