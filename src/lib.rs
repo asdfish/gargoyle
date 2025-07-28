@@ -31,6 +31,7 @@ use {
     std::{
         cmp::Ordering,
         ffi::{CStr, c_double, c_int, c_void},
+        fmt::{self, Display, Formatter},
         marker::PhantomData,
         ops::Not,
         ptr,
@@ -198,11 +199,40 @@ impl Api {
         T::construct(with, self)
     }
 
+    /// Create a function but do not create a binding to it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{guile_fn, with_guile};
+    /// #[guile_fn]
+    /// fn my_hidden_fn() {}
+    /// # #[cfg(not(miri))]
+    /// # {
+    /// let output = with_guile(|api| {
+    ///     let my_hidden_fn = api.make_fn(MyHiddenFn);
+    ///     assert_eq!(my_hidden_fn.call(&mut []), api.make(()));
+    ///     api.eval(c"(my-hidden-fn)");
+    /// });
+    /// assert_eq!(output, None);
+    /// # }
+    /// ```
+    pub fn make_fn<'id, F>(&'id self, _: F) -> Scm<'id>
+    where
+        F: GuileFn,
+    {
+        unsafe {
+            Scm::from_ptr(sys::scm_c_make_gsubr(
+                F::NAME.as_ptr(),
+                c_int::try_from(F::REQUIRED).unwrap(),
+                c_int::try_from(F::OPTIONAL).unwrap(),
+                c_int::from(F::REST),
+                F::ADDR,
+            ))
+        }
+    }
+
     /// Define a function in the guile environment making it accessible to all threads.
-    ///
-    /// # Panics
-    ///
-    /// This function will panic if [GuileFn::REQUIRED] and [GuileFn::OPTIONAL] are not convertible into a [c_int] but that should not be possible unless you overwrote the [GuileFn::_LENGTH_CHECK] field.
     ///
     /// # Examples
     ///
@@ -438,6 +468,19 @@ impl Scm<'_> {
     }
 
     /// Call a function
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{guile_fn, with_guile};
+    /// #[guile_fn]
+    /// fn my_mul(l: i32, r: i32) -> i32 { l * r }
+    /// # #[cfg(not(miri))]
+    /// with_guile(|api| {
+    ///     let my_mul = api.define_fn(MyMul);
+    ///     assert_eq!(my_mul.call(&mut [api.make(4), api.make(2)]), api.make(8));
+    /// });
+    /// ```
     pub fn call<T>(&self, args: &mut T) -> Self
     where
         T: AsMut<[Self]>,
@@ -452,6 +495,24 @@ impl Scm<'_> {
                 args.len(),
             ))
         }
+    }
+
+    /// # Safety
+    ///
+    /// The lifetime should be associated with an [Api] object.
+    pub unsafe fn from_ptr(scm: crate::sys::SCM) -> Self {
+        Self {
+            scm,
+            _marker: PhantomData,
+        }
+    }
+}
+impl Display for Scm<'_> {
+    fn fmt(&self, _f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        with_guile(|_api| {
+            // let mut bytes = se
+        })
+        .ok_or(fmt::Error)
     }
 }
 impl PartialOrd for Scm<'_> {
@@ -470,17 +531,6 @@ impl PartialOrd for Scm<'_> {
                 .is_true()
                 .then_some(output)
         })
-    }
-}
-impl Scm<'_> {
-    /// # Safety
-    ///
-    /// The lifetime should be associated with an [Api] object.
-    pub unsafe fn from_ptr(scm: crate::sys::SCM) -> Self {
-        Self {
-            scm,
-            _marker: PhantomData,
-        }
     }
 }
 impl PartialEq for Scm<'_> {
@@ -764,10 +814,9 @@ pub trait GuileFn {
     /// Whether or not there are `&rest` arguments.
     const REST: bool;
 
-    /// Assert that [Self::REQUIRED] and [Self::OPTIONAL] are convertible to [c_int]s.
-    const _LENGTH_CHECK: () = {
-        assert!(Self::REQUIRED <= c_int::MAX as usize);
-        assert!(Self::OPTIONAL <= c_int::MAX as usize);
+    /// Assert that [Self::REQUIRED] and [Self::OPTIONAL] are less than 10.
+    const _ARITY_CHECK: () = {
+        assert!(Self::REQUIRED + Self::OPTIONAL + Self::REST as usize <= 10);
     };
 }
 
