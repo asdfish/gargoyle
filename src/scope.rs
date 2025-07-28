@@ -1,4 +1,4 @@
-use {crate::Api, std::marker::PhantomData};
+// use {crate::Api, std::marker::PhantomData};
 
 // impl Api {
 //     fn scope<'id>(&'id self) -> Scope<'id> {
