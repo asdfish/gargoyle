@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use std::ffi::{c_char, c_double, c_void};
+use std::ffi::{c_char, c_double, c_int, c_void};
 
 #[repr(C)]
 pub struct scm_unused_struct {
@@ -98,10 +98,15 @@ unsafe extern "C" {
     pub fn scm_num_eq_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_less_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_gr_p(_: SCM, _: SCM) -> SCM;
+
+    pub fn scm_wrong_type_arg(_: *const c_char, _: c_int, _: SCM);
+
+    pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> bool;
 }
 
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_T as SCM_BOOL_T;
+pub use GARGOYLE_REEXPORTS_SCM_UNBNDP as SCM_UNBNDP;
 pub use GARGOYLE_REEXPORTS_SCM_UNDEFINED as SCM_UNDEFINED;
 pub use gargoyle_reexports_scm_from_intptr_t as scm_from_intptr_t;
 pub use gargoyle_reexports_scm_from_uintptr_t as scm_from_uintptr_t;

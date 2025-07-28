@@ -51,13 +51,18 @@ use {
 ///
 /// ```
 /// #[gargoyle::guile_fn]
-/// fn foo(#[optional] l: Option<bool>, r: Option<bool>) {
+/// fn foo(#[optional] l: Option<bool>, r: Option<bool>) -> bool {
 ///     println!("{} {}", l.is_some(), r.is_some());
+///     true
 /// }
 /// // (foo 1 2) -> "true true"
 /// // (foo 1) -> "true false"
 /// // (foo) -> "false false"
 /// ```
+///
+/// ## Rest arguments
+///
+/// Rest arguments must be annotated with `#[rest]` and have their type implement [RestScm].
 ///
 /// # Input
 ///
@@ -68,13 +73,13 @@ use {
 /// # Examples
 ///
 /// ```
-/// # use gargoyle::Scm;
-/// #[gargoyle::guile_fn(struct_ident = "bar")]
+/// # use gargoyle::{GuileFn, Scm};
+/// #[gargoyle::guile_fn(guile_ident = "bar")]
 /// fn foo(#[optional] _: Option<bool>, _: Option<i32>, #[rest] _rest: Scm) -> bool { true }
 /// assert_eq!(Foo::REQUIRED, 0);
 /// assert_eq!(Foo::OPTIONAL, 2);
 /// assert!(Foo::REST);
-/// assert_eq!(Foo::NAME, "bar");
+/// assert_eq!(Foo::NAME, c"bar");
 /// ```
 pub use proc_macros::guile_fn;
 
@@ -571,23 +576,29 @@ impl_scm_ty_for_int!([
     ),
 ]);
 
-pub trait OptionalScm<'a, T>
+pub trait OptionalScm
 where
-    Self: Into<Option<T>>,
-    T: ScmTy,
+    Self: From<Option<Self::Inner>> + Into<Option<Self::Inner>>,
 {
-    unsafe fn from_ptr(_: sys::SCM) -> Self;
+    type Inner: ScmTy;
+
+    // unsafe fn from_ptr(_: &Api, _: sys::SCM) -> Self;
 }
-impl<'a, T> OptionalScm<'a, T> for Option<T>
+impl<T> OptionalScm for Option<T>
 where
     T: ScmTy,
 {
-    unsafe fn from_ptr(_: sys::SCM) -> Self {
-        todo!()
-    }
+    type Inner = T;
+
+    // unsafe fn from_ptr(api: &Api, scm: sys::SCM) -> Self {
+    //     if unsafe { sys::SCM_UNBNDP(scm) } {
+    //         None
+    //     } else {
+    //         Some(unsafe { T::get_unchecked(api, &Scm::from(scm)) })
+    //     }
+    // }
 }
 
-/// Marker trait for types that can be used in a rest position in the [guile_fn] macro.
 pub trait RestScm<'a>: From<Scm<'a>> {}
 impl<'a> RestScm<'a> for Scm<'a> {}
 

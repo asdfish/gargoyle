@@ -30,6 +30,7 @@ extern const SCM GARGOYLE_REEXPORTS_SCM_BOOL_F;
 extern const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED;
 
 extern _Bool gargoyle_reexports_scm_is_true(SCM);
+extern _Bool GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM);
 
 extern uintptr_t gargoyle_reexports_scm_to_uintptr_t(SCM);
 extern intptr_t gargoyle_reexports_scm_to_intptr_t(SCM);

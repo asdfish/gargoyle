@@ -29,6 +29,9 @@ const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED = SCM_UNDEFINED;
 _Bool gargoyle_reexports_scm_is_true(SCM b) {
   return scm_is_true(b);
 }
+_Bool GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM scm) {
+  return SCM_UNBNDP(scm);
+}
 
 uintptr_t gargoyle_reexports_scm_to_uintptr_t(SCM scm) {
   return scm_to_uintptr_t(scm);
