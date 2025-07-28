@@ -273,6 +273,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 
                 Ok(quote! {
                     #vis struct #struct_ident;
+                    #[automatically_derived]
                     impl ::gargoyle::GuileFn for #struct_ident {
                         const ADDR: *mut ::core::ffi::c_void = {
                             extern "C" fn driver(
