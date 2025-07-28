@@ -22,6 +22,7 @@
 
 mod alloc;
 mod guard;
+pub mod scope;
 pub mod sys;
 
 use {
@@ -310,6 +311,8 @@ impl Api {
     {
         unsafe { Scm::from_ptr(sys::scm_c_primitive_load(expr.as_ref().as_ptr())) }
     }
+
+    // pub fn unwind_scope<>
 }
 
 struct WithoutGuile<F, O>
@@ -992,8 +995,6 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     #[test]
     fn int_conversion() {
-        // let x = true;
-
         macro_rules! test_ty {
             ($api:expr, [ $($ty:ty),+ $(,)? ]) => {
                 $(test_ty!($api, $ty);)+

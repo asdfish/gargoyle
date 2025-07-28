@@ -27,10 +27,20 @@ pub struct scm_unused_struct {
 
 pub type SCM = *mut scm_unused_struct;
 
+#[expect(non_camel_case_types)]
+pub type scm_t_dynwind_flags = c_int;
+#[expect(non_camel_case_types)]
+pub type scm_t_wind_flags = c_int;
+
 unsafe extern "C" {
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_T: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_F: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_UNDEFINED: SCM;
+
+    pub static GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE: c_int;
+    pub static GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY: c_int;
+
+    pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> bool;
 
     pub fn scm_with_guile(
         _: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
@@ -118,11 +128,20 @@ unsafe extern "C" {
     pub fn scm_close_port(_: SCM) -> SCM;
     pub fn scm_write(_: SCM, _: SCM) -> SCM;
 
-    pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> bool;
+    pub fn scm_dynwind_begin(_: scm_t_dynwind_flags);
+    pub fn scm_dynwind_rewind_handler(
+        _: extern "C" fn(_: *mut c_void),
+        _: *mut c_void,
+        _: scm_t_wind_flags,
+    );
+    pub fn scm_dynwind_end();
+
 }
 
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_T as SCM_BOOL_T;
+pub use GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE as SCM_F_DYNWIND_REWINDABLE;
+pub use GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY as SCM_F_WIND_EXPLICITLY;
 pub use GARGOYLE_REEXPORTS_SCM_UNBNDP as SCM_UNBNDP;
 pub use GARGOYLE_REEXPORTS_SCM_UNDEFINED as SCM_UNDEFINED;
 pub use gargoyle_reexports_scm_from_intptr_t as scm_from_intptr_t;
