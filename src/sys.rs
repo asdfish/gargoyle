@@ -107,6 +107,8 @@ unsafe extern "C" {
     ) -> SCM;
     pub fn scm_c_eval_string(_: *const c_char) -> SCM;
 
+    pub fn scm_call_n(_: SCM, _: *mut SCM, _: usize) -> SCM;
+
     pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> bool;
 }
 

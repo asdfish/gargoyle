@@ -436,6 +436,23 @@ impl Scm<'_> {
     pub fn is_real_number(&self) -> bool {
         unsafe { sys::scm_is_real(self.as_ptr()) }
     }
+
+    /// Call a function
+    pub fn call<T>(&self, args: &mut T) -> Self
+    where
+        T: AsMut<[Self]>,
+    {
+        let args = args.as_mut();
+
+        unsafe {
+            Scm::from_ptr(sys::scm_call_n(
+                self.as_ptr(),
+                // SAFETY: Scm is `repr(transparent)` to a [SCM].
+                args.as_mut_ptr().cast(),
+                args.len(),
+            ))
+        }
+    }
 }
 impl PartialOrd for Scm<'_> {
     fn partial_cmp(&self, r: &Self) -> Option<Ordering> {
