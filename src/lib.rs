@@ -364,19 +364,17 @@ where
 /// # use gargoyle::{guile_fn, with_guile};
 /// #[guile_fn]
 /// fn my_sub(l: i32, r: i32) -> i32 { l - r }
-/// # #[cfg(not(miri))]
+/// # #[cfg(not(miri))] {
 /// let output = with_guile(|api| {
 ///     api.define_fn(MySub);
 ///     api.eval_c(c"(my-sub #f \"bar\")"); // type error
 /// });
-/// # #[cfg(not(miri))]
 /// assert_eq!(output, None);
-/// # #[cfg(not(miri))]
 /// let output = with_guile(|api| {
 ///     api.eval_c(c"(my-sub 3 2)").get::<i32>()
 /// });
-/// # #[cfg(not(miri))]
 /// assert_eq!(output, Some(Some(1)));
+/// # }
 /// ```
 pub fn with_guile<F, O>(operation: F) -> Option<O>
 where
