@@ -545,7 +545,7 @@ macro_rules! impl_scm_ty_for_int {
                 unsafe {
                     ($predicate)(
                         scm.as_ptr(),
-                        <$ptr>::MIN,
+                        <$ty>::MIN as $ptr,
                         <$ty>::MAX as $ptr,
                     )
                 }
@@ -632,6 +632,7 @@ impl_scm_ty_for_int!([
     ),
 ]);
 
+/// Marker trait for types that can be used with the `#[optional]` attribute in [guile_fn]
 pub trait OptionalScm
 where
     Self: From<Option<Self::Inner>> + Into<Option<Self::Inner>>,
@@ -645,16 +646,21 @@ where
     type Inner = T;
 }
 
+/// Marker trait for types that can be used with the `#[rest]` attribute in [guile_fn]
 pub trait RestScm<'a>: From<Scm<'a>> {}
 impl<'a> RestScm<'a> for Scm<'a> {}
 
 pub trait GuileFn {
     /// The function pointer to an `extern "C"` function with an arity of `Self::REQUIRED + Self::OPTIONAL + Self::REST` that takes [sys::SCM]s
     const ADDR: *mut c_void;
+    /// The name of this function in guile.
     const NAME: &CStr;
 
+    /// The amount of required arguments.
     const REQUIRED: usize;
+    /// The amount of `&optional` arguments.
     const OPTIONAL: usize;
+    /// Whether or not there are `&rest` arguments.
     const REST: bool;
 
     /// Assert that [Self::REQUIRED] and [Self::OPTIONAL] are convertible to [c_int]s.
