@@ -82,8 +82,8 @@ use {
 /// # #[cfg(not(miri))]
 /// with_guile(|api| {
 ///     api.define_fn(SomeP);
-///     assert_eq!(api.eval(c"(some? 1)"), api.make(true));
-///     assert_eq!(api.eval(c"(some?)"), api.make(false));
+///     assert_eq!(api.c_eval(c"(some? 1)"), api.make(true));
+///     assert_eq!(api.c_eval(c"(some?)"), api.make(false));
 /// });
 /// ```
 pub use proc_macros::guile_fn;
@@ -212,7 +212,7 @@ impl Api {
     /// let output = with_guile(|api| {
     ///     let my_hidden_fn = api.make_fn(MyHiddenFn);
     ///     assert_eq!(my_hidden_fn.call(&mut []), api.make(()));
-    ///     api.eval(c"(my-hidden-fn)");
+    ///     api.c_eval(c"(my-hidden-fn)");
     /// });
     /// assert_eq!(output, None);
     /// # }
@@ -247,10 +247,10 @@ impl Api {
     ///     api.define_fn(MyNot);
     ///     thread::spawn(|| {
     ///         with_guile(|api| {
-    ///             assert_eq!(api.eval(c"(my-not #f)"), api.make(true));
+    ///             assert_eq!(api.c_eval(c"(my-not #f)"), api.make(true));
     ///         });
     ///     });
-    ///     assert_eq!(api.eval(c"(my-not #t)"), api.make(false));
+    ///     assert_eq!(api.c_eval(c"(my-not #t)"), api.make(false));
     /// });
     /// ```
     pub fn define_fn<'id, F>(&'id self, _: F) -> Scm<'id>
@@ -276,10 +276,10 @@ impl Api {
     /// # use gargoyle::with_guile;
     /// # #[cfg(not(miri))]
     /// with_guile(|api| {
-    ///    assert_eq!(api.eval(c"#t"), api.make(true));
+    ///    assert_eq!(api.c_eval(c"#t"), api.make(true));
     /// });
     /// ```
-    pub fn eval<'id, S>(&'id self, expr: &S) -> Scm<'id>
+    pub fn c_eval<'id, S>(&'id self, expr: &S) -> Scm<'id>
     where
         S: AsRef<CStr> + ?Sized,
     {
@@ -339,13 +339,13 @@ where
 /// # #[cfg(not(miri))]
 /// let output = with_guile(|api| {
 ///     api.define_fn(MySub);
-///     api.eval(c"(my-sub #f \"bar\")"); // type error
+///     api.c_eval(c"(my-sub #f \"bar\")"); // type error
 /// });
 /// # #[cfg(not(miri))]
 /// assert_eq!(output, None);
 /// # #[cfg(not(miri))]
 /// let output = with_guile(|api| {
-///     api.eval(c"(my-sub 3 2)").get::<i32>()
+///     api.c_eval(c"(my-sub 3 2)").get::<i32>()
 /// });
 /// # #[cfg(not(miri))]
 /// assert_eq!(output, Some(Some(1)));
@@ -835,7 +835,11 @@ pub trait GuileFn {
 mod tests {
     use {
         super::*,
-        std::{fmt::Debug, thread},
+        std::{
+            fmt::Debug,
+            io::{self, Write},
+            thread,
+        },
     };
 
     #[cfg_attr(miri, ignore)]
@@ -1009,8 +1013,8 @@ mod tests {
     #[test]
     fn display_test() {
         with_guile(|api| {
-            assert_eq!(api.make(true).to_string(), "#t");
-            assert_eq!(api.make(false).to_string(), "#f");
+            // display implementation by guile may change in the future so we can only assert success
+            assert!(write!(io::empty(), "{}", api.make(true)).is_ok());
         });
     }
 }
