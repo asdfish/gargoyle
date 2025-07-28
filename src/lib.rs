@@ -49,17 +49,6 @@ use {
 ///
 /// The optional argument types must implement [OptionalScm].
 ///
-/// ```
-/// #[gargoyle::guile_fn]
-/// fn foo(#[optional] l: Option<bool>, r: Option<bool>) -> bool {
-///     println!("{} {}", l.is_some(), r.is_some());
-///     true
-/// }
-/// // (foo 1 2) -> "true true"
-/// // (foo 1) -> "true false"
-/// // (foo) -> "false false"
-/// ```
-///
 /// ## Rest arguments
 ///
 /// Rest arguments must be annotated with `#[rest]` and have their type implement [RestScm].
@@ -80,6 +69,19 @@ use {
 /// assert_eq!(Foo::OPTIONAL, 2);
 /// assert!(Foo::REST);
 /// assert_eq!(Foo::NAME, c"bar");
+/// ```
+///
+/// ```
+/// # use gargoyle::{guile_fn, with_guile};
+/// #[guile_fn(guile_ident = "some?")]
+/// fn some_p(#[optional] opt: Option<bool>) -> bool {
+///     opt.is_some()
+/// }
+/// with_guile(|api| {
+///     api.define_fn(SomeP);
+///     assert_eq!(api.eval(c"(some? 1)"), api.make(true));
+///     assert_eq!(api.eval(c"(some?)"), api.make(false));
+/// });
 /// ```
 pub use proc_macros::guile_fn;
 
