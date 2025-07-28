@@ -857,10 +857,10 @@ mod tests {
             assert!(one <= one);
             assert!(one <= two);
             assert!(one <= three);
-            assert!(three > two);
             assert!(three > one);
-            assert!(three >= two);
+            assert!(three > two);
             assert!(three >= one);
+            assert!(three >= two);
             assert!(three >= three);
         });
     }
