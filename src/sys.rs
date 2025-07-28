@@ -110,6 +110,12 @@ unsafe extern "C" {
 
     pub fn scm_call_n(_: SCM, _: *mut SCM, _: usize) -> SCM;
 
+    pub fn scm_open_output_string() -> SCM;
+    pub fn scm_strport_to_string(_: SCM) -> SCM;
+
+    pub fn scm_close_port(_: SCM) -> SCM;
+    pub fn scm_write(_: SCM, _: SCM) -> SCM;
+
     pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> bool;
 }
 

@@ -30,6 +30,7 @@ use {
     parking_lot::Mutex,
     std::{
         cmp::Ordering,
+        convert::identity,
         ffi::{CStr, c_double, c_int, c_void},
         fmt::{self, Display, Formatter},
         marker::PhantomData,
@@ -207,8 +208,7 @@ impl Api {
     /// # use gargoyle::{guile_fn, with_guile};
     /// #[guile_fn]
     /// fn my_hidden_fn() {}
-    /// # #[cfg(not(miri))]
-    /// # {
+    /// # #[cfg(not(miri))] {
     /// let output = with_guile(|api| {
     ///     let my_hidden_fn = api.make_fn(MyHiddenFn);
     ///     assert_eq!(my_hidden_fn.call(&mut []), api.make(()));
@@ -508,11 +508,22 @@ impl Scm<'_> {
     }
 }
 impl Display for Scm<'_> {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         with_guile(|_api| {
-            // let mut bytes = se
+            unsafe {
+                let port = sys::scm_open_output_string();
+                sys::scm_write(self.as_ptr(), port);
+                let text = sys::scm_strport_to_string(port);
+                sys::scm_close_port(port);
+                Scm::from_ptr(text)
+            }
+            .get::<&str>()
+            .ok_or(fmt::Error)
+            .and_then(|result| result.map_err(|_| fmt::Error))
+            .and_then(|display| display.fmt(f))
         })
         .ok_or(fmt::Error)
+        .and_then(identity)
     }
 }
 impl PartialOrd for Scm<'_> {
@@ -991,6 +1002,15 @@ mod tests {
             assert!(three >= one);
             assert!(three >= two);
             assert!(three >= three);
+        });
+    }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn display_test() {
+        with_guile(|api| {
+            assert_eq!(api.make(true).to_string(), "#t");
+            assert_eq!(api.make(false).to_string(), "#f");
         });
     }
 }
