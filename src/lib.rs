@@ -288,6 +288,10 @@ where
 ///     api.eval(c"(my-sub #f \"bar\")"); // type error
 /// });
 /// assert_eq!(output, None);
+/// let output = with_guile(|api| {
+///     api.eval(c"(my-sub 3 2)").get::<i32>()
+/// });
+/// assert_eq!(output, Some(Some(1)));
 /// ```
 pub fn with_guile<F, O>(operation: F) -> Option<O>
 where
