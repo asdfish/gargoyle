@@ -1,8 +1,35 @@
-error: implementation of `FnOnce` is not general enough
- --> tests/fail/identity.rs:4:5
+error: lifetime may not live long enough
+ --> tests/fail/identity.rs:8:33
   |
-4 |     with_guile(std::convert::identity);
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+8 |     with_guile_protected(|l, _| l);
+  |                           -   - ^ returning this value requires that `'1` must outlive `'2`
+  |                           |   |
+  |                           |   return type of closure is &'2 mut Api
+  |                           has type `&'1 mut Api`
+
+error: lifetime may not live long enough
+ --> tests/fail/identity.rs:9:33
+  |
+9 |     with_guile_protected(|_, r| r);
+  |                              -- ^ returning this value requires that `'1` must outlive `'2`
+  |                              ||
+  |                              |return type of closure is &'2 Guardian<'_>
+  |                              has type `&'1 Guardian<'_>`
+
+error: lifetime may not live long enough
+ --> tests/fail/identity.rs:9:33
+  |
+9 |     with_guile_protected(|_, r| r);
+  |                              -- ^ returning this value requires that `'3` must outlive `'4`
+  |                              ||
+  |                              |return type of closure is &Guardian<'4>
+  |                              has type `&Guardian<'3>`
+
+error: implementation of `FnOnce` is not general enough
+ --> tests/fail/identity.rs:7:5
+  |
+7 |     with_guile(identity);
+  |     ^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
   |
   = note: `fn(&'2 mut Api) -> &'2 mut Api {identity::<&'2 mut Api>}` must implement `FnOnce<(&'1 mut Api,)>`, for any lifetime `'1`...
   = note: ...but it actually implements `FnOnce<(&'2 mut Api,)>`, for some specific lifetime `'2`

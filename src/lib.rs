@@ -22,7 +22,7 @@
 
 mod alloc;
 mod guard;
-pub mod scope;
+mod protection;
 pub mod sys;
 
 use {
@@ -88,6 +88,8 @@ use {
 /// });
 /// ```
 pub use proc_macros::guile_fn;
+#[doc(inline)]
+pub use protection::*;
 
 /// Lock for synchronizing thread initiation.
 static INIT_LOCK: Mutex<()> = Mutex::new(());
