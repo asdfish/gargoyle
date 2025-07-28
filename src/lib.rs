@@ -83,9 +83,9 @@ use {
 /// # #[cfg(not(miri))]
 /// with_guile(|api| {
 ///     api.define_fn(SomeP);
-///     assert_eq!(api.eval_c(c"(some? 1)"), api.make(true));
+///     assert_eq!(api.eval_c(c"(some? #f)"), api.make(true));
 ///     assert_eq!(api.eval_c(c"(some?)"), api.make(false));
-/// });
+/// }).unwrap();
 /// ```
 pub use proc_macros::guile_fn;
 #[doc(inline)]
@@ -251,10 +251,10 @@ impl Api {
     ///     thread::spawn(|| {
     ///         with_guile(|api| {
     ///             assert_eq!(api.eval_c(c"(my-not #f)"), api.make(true));
-    ///         });
+    ///         }).unwrap();
     ///     });
     ///     assert_eq!(api.eval_c(c"(my-not #t)"), api.make(false));
-    /// });
+    /// }).unwrap();
     /// ```
     pub fn define_fn<'id, F>(&'id self, _: F) -> Scm<'id>
     where
@@ -280,7 +280,7 @@ impl Api {
     /// # #[cfg(not(miri))]
     /// with_guile(|api| {
     ///    assert_eq!(api.eval_c(c"#t"), api.make(true));
-    /// });
+    /// }).unwrap();
     /// ```
     pub fn eval_c<'id, S>(&'id self, expr: &S) -> Scm<'id>
     where
@@ -301,11 +301,12 @@ impl Api {
     /// fn return_true() -> bool { true }
     /// # #[cfg(not(miri))]
     /// with_guile(|api| {
+    ///     api.define_fn(ReturnTrue);
     ///     let mut file = NamedTempFile::new().unwrap();
     ///     write!(file, "(return-true)").unwrap();
     ///     let output = api.load_c(&CString::new(file.path().as_os_str().as_encoded_bytes()).unwrap());
     ///     assert_eq!(output, api.make(true));
-    /// });
+    /// }).unwrap();
     /// ```
     pub fn load_c<'id, S>(&'id self, expr: &S) -> Scm<'id>
     where
@@ -505,7 +506,7 @@ impl Scm<'_> {
     /// with_guile(|api| {
     ///     let my_mul = api.define_fn(MyMul);
     ///     assert_eq!(my_mul.call(&mut [api.make(4), api.make(2)]), api.make(8));
-    /// });
+    /// }).unwrap();
     /// ```
     pub fn call<T>(&self, args: &mut T) -> Self
     where
@@ -914,7 +915,8 @@ mod tests {
                 with_guile(move |api| {
                     let t = api.revive(t);
                     assert_eq!(t.get::<bool>(), Some(true));
-                });
+                })
+                .unwrap();
             });
         });
     }
@@ -955,7 +957,8 @@ mod tests {
         with_guile(|api| {
             api.test_ty_equal(true);
             api.test_ty_equal(false);
-        });
+        })
+        .unwrap();
     }
 
     #[cfg_attr(miri, ignore)]
@@ -968,13 +971,14 @@ mod tests {
                 .into_iter()
                 .map(|ch| api.test_ty_equal(ch))
                 .for_each(drop);
-        });
+        })
+        .unwrap();
     }
 
     #[cfg_attr(miri, ignore)]
     #[test]
     fn string_conversion() {
-        (with_guile(|api| {
+        with_guile(|api| {
             let mut hello_world = AllocVec::new_in(CAllocator);
             hello_world.extend(b"hello world");
             api.test_ty(
@@ -987,7 +991,8 @@ mod tests {
                 "",
                 Ok(unsafe { string::String::from_utf8_unchecked(empty) }),
             );
-        }));
+        })
+        .unwrap();
     }
 
     #[cfg_attr(miri, ignore)]
@@ -1007,7 +1012,8 @@ mod tests {
             test_ty!(api, [c_double, i8, i16, i32, isize, u8, u16, u32, usize]);
             #[cfg(target_pointer_width = "64")]
             test_ty!(api, [i64, u64]);
-        });
+        })
+        .unwrap();
     }
 
     #[cfg_attr(miri, ignore)]
@@ -1030,7 +1036,8 @@ mod tests {
             assert!(three >= one);
             assert!(three >= two);
             assert!(three >= three);
-        });
+        })
+        .unwrap();
     }
 
     #[cfg_attr(miri, ignore)]
@@ -1039,6 +1046,7 @@ mod tests {
         with_guile(|api| {
             // display implementation by guile may change in the future so we can only assert success
             assert!(write!(io::empty(), "{}", api.make(true)).is_ok());
-        });
+        })
+        .unwrap();
     }
 }
