@@ -101,6 +101,7 @@ impl Api {
         data.output
     }
 
+    /// Short for `Self::catch(api.make(true), thunk)`
     pub fn catch_all<'id, F, O>(&'id self, thunk: F) -> Result<O, Exception<'id>>
     where
         F: FnOnce(&Self) -> O,
