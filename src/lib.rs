@@ -77,6 +77,7 @@ use {
 /// fn some_p(#[optional] opt: Option<bool>) -> bool {
 ///     opt.is_some()
 /// }
+/// # #[cfg(not(miri))]
 /// with_guile(|api| {
 ///     api.define_fn(SomeP);
 ///     assert_eq!(api.eval(c"(some? 1)"), api.make(true));
@@ -145,7 +146,7 @@ trait GuileModeToggle {
 
     /// # Safety
     ///
-    /// This function should be safe to call so long as [GUILE_MODE] is currently [Self::STATUS]
+    /// This function should be safe to call so long as [GUILE_MODE] is currently [Self::GUILE_MODE_STATUS].
     unsafe fn eval_unchecked(_: Self::Fn) -> Self::Output;
 }
 
@@ -208,9 +209,10 @@ impl Api {
     /// ```
     /// # use gargoyle::{guile_fn, with_guile};
     /// # use std::thread;
-    ///
+    /// #
     /// #[guile_fn]
     /// fn my_not(b: bool) -> bool { !b }
+    /// # #[cfg(not(miri))]
     /// with_guile(|api| {
     ///     api.define_fn(MyNot);
     ///     thread::spawn(|| {
@@ -242,6 +244,7 @@ impl Api {
     ///
     /// ```
     /// # use gargoyle::with_guile;
+    /// # #[cfg(not(miri))]
     /// with_guile(|api| {
     ///    assert_eq!(api.eval(c"#t"), api.make(true));
     /// });
@@ -303,14 +306,18 @@ where
 /// # use gargoyle::{guile_fn, with_guile};
 /// #[guile_fn]
 /// fn my_sub(l: i32, r: i32) -> i32 { l - r }
+/// # #[cfg(not(miri))]
 /// let output = with_guile(|api| {
 ///     api.define_fn(MySub);
 ///     api.eval(c"(my-sub #f \"bar\")"); // type error
 /// });
+/// # #[cfg(not(miri))]
 /// assert_eq!(output, None);
+/// # #[cfg(not(miri))]
 /// let output = with_guile(|api| {
 ///     api.eval(c"(my-sub 3 2)").get::<i32>()
 /// });
+/// # #[cfg(not(miri))]
 /// assert_eq!(output, Some(Some(1)));
 /// ```
 pub fn with_guile<F, O>(operation: F) -> Option<O>
