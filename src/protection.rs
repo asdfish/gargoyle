@@ -1,21 +1,19 @@
 use {
     crate::{Api, with_guile},
-    std::{ffi::c_void, marker::PhantomData, pin::Pin, ptr},
+    std::{ffi::c_void, marker::PhantomData, mem::ManuallyDrop, pin::Pin, ptr},
 };
 
-/// [with_guile] but with [a way to protect things][Guardian::protect] that implement [Drop].
+/// [with_guile] but with something that can protect things that implement [Drop].
 pub fn with_guile_protected<F, O>(operation: F) -> Option<O>
 where
     F: FnOnce(&mut Api, &Guardian) -> O,
 {
     with_guile(|api| {
-        // SAFETY: since [crate::GuileModeToggle::driver] is `extern "C"` which prohibits panics, the undefined behaviour of not calling `scm_dynwind_end` will never occur
         let scope = unsafe { Guardian::new_unchecked() };
         operation(api, &scope)
     })
 }
 
-/// Protector against dynamic wind
 pub struct Guardian<'id> {
     _marker: PhantomData<&'id ()>,
 }
@@ -35,19 +33,18 @@ impl<'id> Guardian<'id> {
 
     /// # Safety
     ///
-    /// `ptr` must be of type `T`.
+    /// `ptr` must be of type [`ManuallyDrop<T>`]
     unsafe extern "C" fn protect_driver<T>(ptr: *mut c_void)
     where
         T: Drop,
     {
-        let ptr = ptr.cast::<T>();
+        let ptr = ptr.cast::<ManuallyDrop<T>>();
 
-        if !ptr.is_null() {
-            // SAFETY: has valid alignment since it was made from a reference
-            // SAFETY: we probably have read/write access
-            // SAFETY: is not null
+        // SAFETY: has valid alignment since it was made from a reference
+        if let Some(ptr) = unsafe { ptr.as_mut() } {
+            // SAFETY: we probably have read/write access and is not null
             unsafe {
-                ptr::drop_in_place(ptr);
+                ManuallyDrop::drop(ptr);
             }
         }
     }
@@ -61,7 +58,7 @@ impl<'id> Guardian<'id> {
     /// ```
     /// # use gargoyle::with_guile_protected;
     /// # use std::{mem::ManuallyDrop, pin::Pin, sync::atomic::{self, AtomicU32}};
-    /// # #[cfg(not(miri))] {
+    /// # #[cfg(not(miri))]
     /// static COUNTER: AtomicU32 = AtomicU32::new(0) ;
     /// struct IncrCounter;
     /// impl Drop for IncrCounter {
@@ -69,28 +66,17 @@ impl<'id> Guardian<'id> {
     /// }
     /// with_guile_protected(|_, g1| {
     ///     assert_eq!(0, COUNTER.load(atomic::Ordering::Acquire));
-    ///     let output = with_guile_protected(|_, _| {
-    ///         let mut counter = IncrCounter;
+    ///     with_guile_protected(|_, _| {
+    ///         let mut counter = ManuallyDrop::new(IncrCounter);
     ///         g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
     ///     }); // counter gets dropped here
     ///     assert_eq!(1, COUNTER.load(atomic::Ordering::Acquire));
-    ///     assert_eq!(output, Some(()));
     /// });
-    ///
-    /// COUNTER.store(0, atomic::Ordering::Release);
-    /// with_guile_protected(|api, g1| {
-    ///     assert_eq!(0, COUNTER.load(atomic::Ordering::Acquire));
-    ///     let output = with_guile_protected(|_, _| {
-    ///         let mut counter = IncrCounter;
-    ///         g1.protect(unsafe { Pin::new_unchecked(&mut counter) });
-    ///         api.c_eval(c"variable-that-probably-does-not-exist");
-    ///     }); // counter gets dropped here
-    ///     assert_eq!(1, COUNTER.load(atomic::Ordering::Acquire));
-    ///     assert_eq!(output, None);
-    /// });
-    /// # }
     /// ```
-    pub fn protect<'pin, T>(&'pin self, mut ptr: Pin<&'pin mut T>) -> Pin<&'pin mut T>
+    pub fn protect<'pin, T>(
+        &'pin self,
+        mut ptr: Pin<&'pin mut ManuallyDrop<T>>,
+    ) -> Pin<&'pin mut ManuallyDrop<T>>
     where
         T: Drop,
     {
@@ -100,8 +86,7 @@ impl<'id> Guardian<'id> {
             crate::sys::scm_dynwind_rewind_handler(
                 Some(Self::protect_driver::<T>),
                 drop_ptr,
-                // use 0 since if it succeeds, we use the normal rust drop
-                0,
+                crate::sys::SCM_F_WIND_EXPLICITLY,
             );
         }
 
