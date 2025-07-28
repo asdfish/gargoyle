@@ -63,12 +63,12 @@ use {
 ///
 /// ```
 /// # use gargoyle::{GuileFn, Scm};
-/// #[gargoyle::guile_fn(guile_ident = "bar")]
-/// fn foo(#[optional] _: Option<bool>, _: Option<i32>, #[rest] _rest: Scm) -> bool { true }
-/// assert_eq!(Foo::REQUIRED, 0);
-/// assert_eq!(Foo::OPTIONAL, 2);
-/// assert!(Foo::REST);
-/// assert_eq!(Foo::NAME, c"bar");
+/// #[gargoyle::guile_fn(guile_ident = "bar", struct_ident = "Baz")]
+/// fn foo() {}
+/// assert_eq!(Baz::REQUIRED, 0);
+/// assert_eq!(Baz::OPTIONAL, 0);
+/// assert!(!Baz::REST);
+/// assert_eq!(Baz::NAME, c"bar");
 /// ```
 ///
 /// ```
