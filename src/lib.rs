@@ -315,17 +315,17 @@ impl Scm<'_> {
 
     /// Check equality with `eq?` semantics
     pub fn is_eq(&self, r: &Self) -> bool {
-        Self::from(unsafe { sys::scm_eq_p(self.as_ptr(), r.as_ptr()) }).is_true()
+        unsafe { Self::from_ptr(sys::scm_eq_p(self.as_ptr(), r.as_ptr())) }.is_true()
     }
 
     /// Check equality with `eqv?` semantics
     pub fn is_eqv(&self, r: &Self) -> bool {
-        Self::from(unsafe { sys::scm_eqv_p(self.as_ptr(), r.as_ptr()) }).is_true()
+        unsafe { Self::from_ptr(sys::scm_eqv_p(self.as_ptr(), r.as_ptr())) }.is_true()
     }
 
     /// Check equality with `equal?` semantics
     pub fn is_equal(&self, r: &Self) -> bool {
-        Self::from(unsafe { sys::scm_equal_p(self.as_ptr(), r.as_ptr()) }).is_true()
+        unsafe { Self::from_ptr(sys::scm_equal_p(self.as_ptr(), r.as_ptr())) }.is_true()
     }
 
     pub fn is_number(&self) -> bool {
@@ -347,14 +347,14 @@ impl PartialOrd for Scm<'_> {
         ]
         .into_iter()
         .find_map(|(predicate, output)| {
-            Self::from(unsafe { (predicate)(self.as_ptr(), r.as_ptr()) })
+            unsafe { Self::from_ptr((predicate)(self.as_ptr(), r.as_ptr())) }
                 .is_true()
                 .then_some(output)
         })
     }
 }
-impl From<crate::sys::SCM> for Scm<'_> {
-    fn from(scm: crate::sys::SCM) -> Self {
+impl Scm<'_> {
+    pub unsafe fn from_ptr(scm: crate::sys::SCM) -> Self {
         Self {
             scm,
             _marker: PhantomData,
@@ -372,7 +372,7 @@ impl Not for Scm<'_> {
 
     fn not(self) -> Option<Self> {
         if self.is::<bool>() {
-            Some(Self::from(unsafe { sys::scm_not(self.as_ptr()) }))
+            Some(unsafe { Self::from_ptr(sys::scm_not(self.as_ptr())) })
         } else {
             None
         }
@@ -400,7 +400,7 @@ impl ScmTy for bool {
             false => unsafe { crate::sys::SCM_BOOL_F },
         };
 
-        Scm::from(scm)
+        unsafe { Scm::from_ptr(scm) }
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {
         unsafe { crate::sys::scm_is_bool(scm.as_ptr()) }
@@ -413,7 +413,11 @@ impl ScmTy for char {
     type Output = Self;
 
     fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
-        Scm::from(unsafe { sys::scm_integer_to_char(sys::scm_from_uint32(u32::from(self))) })
+        unsafe {
+            Scm::from_ptr(sys::scm_integer_to_char(sys::scm_from_uint32(u32::from(
+                self,
+            ))))
+        }
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {
         unsafe { sys::gargoyle_reexports_scm_is_true(sys::scm_char_p(scm.as_ptr())) }
@@ -428,7 +432,7 @@ impl ScmTy for c_double {
     type Output = Self;
 
     fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
-        Scm::from(unsafe { sys::scm_from_double(self) })
+        unsafe { Scm::from_ptr(sys::scm_from_double(self)) }
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {
         scm.is_real_number()
@@ -442,7 +446,7 @@ impl ScmTy for &str {
 
     fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
         let scm = unsafe { crate::sys::scm_from_utf8_stringn(self.as_ptr().cast(), self.len()) };
-        Scm::from(scm)
+        unsafe { Scm::from_ptr(scm) }
     }
 
     fn predicate(_: &Api, scm: &Scm) -> bool {
@@ -483,7 +487,7 @@ macro_rules! impl_scm_ty_for_int {
             type Output = Self;
 
             fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
-                Scm::from(unsafe { ($to_scm)(self) })
+                unsafe { Scm::from_ptr(($to_scm)(self)) }
             }
             fn predicate(_: &Api, scm: &Scm) -> bool {
                 unsafe {

@@ -310,13 +310,13 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                     #(if unsafe {
                                         <<#required>::Inner as ::gargoyle::ScmTy>::predicate(
                                             &::gargoyle::Api::new_unchecked(),
-                                            &::gargoyle::Scm::from(#required_idents),
+                                            &::gargoyle::Scm::from_ptr(#required_idents),
                                         )
                                     } {
                                         unsafe {
                                             <<#required>::Inner as ::gargoyle::ScmTy>::get_unchecked(
                                                 &::gargoyle::Api::new_unchecked(),
-                                                &::gargoyle::Scm::from(#required_idents),
+                                                &::gargoyle::Scm::from_ptr(#required_idents),
                                             )
                                         }
                                     } else {
@@ -332,13 +332,13 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                         } else if unsafe {
                                             <Inner as ::gargoyle::ScmTy>::predicate(
                                                 &::gargoyle::Api::new_unchecked(),
-                                                &::gargoyle::Scm::from(#optional_idents)
+                                                &::gargoyle::Scm::from_ptr(#optional_idents)
                                             )
                                         } {
                                             Some(unsafe {
                                                 <Inner as ::gargoyle::ScmTy>::get_unchecked(
                                                     &::gargoyle::Api::new_unchecked(),
-                                                    &::gargoyle::Scm::from(#optional_idents),
+                                                    &::gargoyle::Scm::from_ptr(#optional_idents),
                                                 )
                                             })
                                         } else {
@@ -348,7 +348,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                             None
                                         }
                                     },)*
-                                    #(Scm::from(#rest_ident),)*
+                                    #(unsafe { Scm::from_ptr(#rest_ident) },)*
                                 );
 
                                 unsafe { <#output as ::gargoyle::ScmTy>::construct(output, &::gargoyle::Api::new_unchecked()).as_ptr() }
