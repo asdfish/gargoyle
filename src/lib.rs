@@ -354,6 +354,9 @@ impl PartialOrd for Scm<'_> {
     }
 }
 impl Scm<'_> {
+    /// # Safety
+    ///
+    /// The lifetime should be associated with an [Api] object.
     pub unsafe fn from_ptr(scm: crate::sys::SCM) -> Self {
         Self {
             scm,
