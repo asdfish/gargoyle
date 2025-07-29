@@ -124,7 +124,7 @@ macro_rules! impl_op_for_scm_num {
 impl_scm_num!(complex::Complex<'id>);
 impl_scm_num!(rational::Rational<'id>);
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct ExactInteger<'id>(Scm<'id>);
 impl<'id> ExactIntegerTy<'id> for ExactInteger<'id> {}
@@ -160,7 +160,7 @@ impl_op_for_scm_num!(ExactInteger<'id>, BitAnd, bitand, sys::scm_logand);
 impl_op_for_scm_num!(ExactInteger<'id>, BitOr, bitor, sys::scm_logior);
 impl_op_for_scm_num!(ExactInteger<'id>, BitXor, bitxor, sys::scm_logxor);
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Number<'id>(Scm<'id>);
 impl<'id> Number<'id> {
@@ -276,22 +276,21 @@ mod tests {
     #[test]
     fn int_ord() {
         with_guile(|api| {
-            let [ref one, ref two, ref three] =
-                (1..=3).map(|i| api.make_num(i)).collect::<Vec<_>>()[..]
+            let [ref one, _, ref three] = (1..=3).map(|i| api.make_num(i)).collect::<Vec<_>>()[..]
             else {
                 unreachable!()
             };
 
-            assert!(one < two);
-            assert!(one < three);
-            assert!(one <= one);
-            assert!(one <= two);
-            assert!(one <= three);
-            assert!(three > one);
-            assert!(three > two);
-            assert!(three >= one);
-            assert!(three >= two);
-            assert!(three >= three);
+            assert!(one < &2);
+            assert!(one < &3);
+            assert!(one <= &1);
+            assert!(one <= &2);
+            assert!(one <= &3);
+            assert!(three > &1);
+            assert!(three > &2);
+            assert!(three >= &1);
+            assert!(three >= &2);
+            assert!(three >= &3);
         })
         .unwrap();
     }

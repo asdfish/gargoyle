@@ -32,7 +32,7 @@ use {
     std::{borrow::Cow, ffi::CStr},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct CharSet<'id>(Scm<'id>);
 impl<'id> CharSet<'id> {
@@ -85,7 +85,7 @@ impl<'id> ScmTy<'id> for CharSet<'id> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct IntoIter<'id> {
     char_set: CharSet<'id>,
     cursor: Scm<'id>,

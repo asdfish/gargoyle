@@ -27,7 +27,7 @@ use {
     std::{borrow::Cow, ffi::CStr},
 };
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 pub struct Complex<'id>(Scm<'id>);
 impl<'id> Complex<'id> {
     /// Get the real part.

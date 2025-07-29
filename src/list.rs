@@ -70,17 +70,17 @@ where
     _marker: PhantomData<T>,
 }
 // `T` doesn't need to be clone since it gets constructed every time
-impl<'id, T> Clone for List<'id, T>
-where
-    T: ScmTy<'id>,
-{
-    fn clone(&self) -> Self {
-        Self {
-            pair: self.pair,
-            _marker: PhantomData,
-        }
-    }
-}
+// impl<'id, T> Clone for List<'id, T>
+// where
+//     T: ScmTy<'id>,
+// {
+//     fn clone(&self) -> Self {
+//         Self {
+//             pair: self.pair,
+//             _marker: PhantomData,
+//         }
+//     }
+// }
 impl<'id, T> List<'id, T>
 where
     T: ScmTy<'id>,
@@ -152,7 +152,8 @@ where
         unsafe { Scm::from_ptr(scm_list_p(scm.as_ptr())) }.is_true() && {
             // eagerly check all items for better error messages
             IntoIter::<'id, Scm>(List {
-                pair: unsafe { scm.cast_lifetime() },
+                // SAFETY: we don't do any writing
+                pair: unsafe { Scm::from_ptr(scm.as_ptr()).cast_lifetime() },
                 _marker: PhantomData,
             })
             .all(|i| i.is::<T>())
@@ -177,7 +178,7 @@ where
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct IntoIter<'id, T>(List<'id, T>)
 where
     T: ScmTy<'id>;

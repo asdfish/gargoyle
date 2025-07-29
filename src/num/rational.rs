@@ -63,7 +63,9 @@ impl<'id> ScmTy<'id> for c_double {
         unsafe { Scm::from_ptr(scm_from_double(self)) }
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {
-        scm.get::<Number<'_>>()
+        // SAFETY: we don't do any writing
+        unsafe { Scm::from_ptr(scm.as_ptr()) }
+            .get::<Number<'_>>()
             .map(|num| num.is_real())
             .unwrap_or_default()
     }
@@ -75,7 +77,7 @@ impl NumTy<'_> for c_double {}
 impl RealTy<'_> for c_double {}
 
 /// A rational number
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Rational<'id>(Scm<'id>);
 impl<'id> Rational<'id> {

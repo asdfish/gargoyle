@@ -500,7 +500,7 @@ impl DeadScm {
 unsafe impl Send for DeadScm {}
 
 /// A newtype for [SCM][sys::SCM] pointers.
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Scm<'id> {
     scm: crate::sys::SCM,
@@ -888,7 +888,10 @@ mod tests {
             let scm = self.make(val);
             assert!(T::predicate(self, &scm));
             assert!(scm.eq(&scm));
-            assert_eq!(unsafe { T::get_unchecked(self, scm) }, output);
+            assert_eq!(
+                unsafe { T::get_unchecked(self, Scm::from_ptr(scm.as_ptr())) },
+                output
+            );
 
             scm
         }
