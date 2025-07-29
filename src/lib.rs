@@ -32,7 +32,6 @@ use {
     allocator_api2::{alloc::AllocError, vec::Vec as AllocVec},
     parking_lot::Mutex,
     std::{
-        cmp::Ordering,
         ffi::{CStr, c_char, c_int, c_void},
         fmt::{self, Display, Formatter},
         marker::PhantomData,
@@ -621,24 +620,6 @@ impl Display for Scm<'_> {
         .and_then(|display| display.fmt(f))
     }
 }
-impl PartialOrd for Scm<'_> {
-    fn partial_cmp(&self, r: &Self) -> Option<Ordering> {
-        [
-            (
-                sys::scm_less_p as unsafe extern "C" fn(_: sys::SCM, _: sys::SCM) -> sys::SCM,
-                Ordering::Less,
-            ),
-            (sys::scm_num_eq_p, Ordering::Equal),
-            (sys::scm_gr_p, Ordering::Greater),
-        ]
-        .into_iter()
-        .find_map(|(predicate, output)| {
-            unsafe { Self::from_ptr((predicate)(self.as_ptr(), r.as_ptr())) }
-                .is_true()
-                .then_some(output)
-        })
-    }
-}
 impl PartialEq for Scm<'_> {
     /// See [Self::is_equal].
     fn eq(&self, r: &Self) -> bool {
@@ -954,30 +935,6 @@ mod tests {
                 "",
                 Ok(unsafe { string::String::from_utf8_unchecked(empty) }),
             );
-        })
-        .unwrap();
-    }
-
-    #[cfg_attr(miri, ignore)]
-    #[test]
-    fn int_ord() {
-        with_guile(|api| {
-            let [ref one, ref two, ref three] =
-                (1..=3).map(|i| api.make(i)).collect::<Vec<_>>()[..]
-            else {
-                unreachable!()
-            };
-
-            assert!(one < two);
-            assert!(one < three);
-            assert!(one <= one);
-            assert!(one <= two);
-            assert!(one <= three);
-            assert!(three > one);
-            assert!(three > two);
-            assert!(three >= one);
-            assert!(three >= two);
-            assert!(three >= three);
         })
         .unwrap();
     }

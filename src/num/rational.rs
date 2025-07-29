@@ -21,7 +21,7 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        num::{Number, Real},
+        num::{Num, Number, Real},
         sys::{
             scm_denominator, scm_from_double, scm_inf, scm_is_rational, scm_nan, scm_numerator,
             scm_rationalize, scm_to_double,
@@ -68,6 +68,7 @@ impl ScmTy for c_double {
         unsafe { scm_to_double(scm.as_ptr()) }
     }
 }
+impl Num for c_double {}
 impl Real for c_double {}
 
 /// A rational number
@@ -97,6 +98,7 @@ impl<'id> Rational<'id> {
         unsafe { Scm::from_ptr(scm_numerator(self.0.as_ptr())) }
     }
 }
+impl Num for Rational<'_> {}
 impl Real for Rational<'_> {}
 
 #[cfg(test)]
