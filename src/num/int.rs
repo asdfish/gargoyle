@@ -28,14 +28,14 @@ use {
 };
 
 macro_rules! impl_scm_ty_for_int {
-    ([ $(($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr $(,)?)),+ $(,)? ]) => {
-        $(impl_scm_ty_for_int!($ty, $ptr, $predicate, $to_scm, $to_int);)+
+    ([ $(($ty:ty, $ty_name:literal, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr $(,)?)),+ $(,)? ]) => {
+        $(impl_scm_ty_for_int!($ty, $ty_name, $ptr, $predicate, $to_scm, $to_int);)+
     };
-    ($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr) => {
+    ($ty:ty, $ty_name:literal, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr) => {
         impl<'id> ScmTy<'id> for $ty {
             // SAFETY: this is in a const context and there is a null byte concatted at the end.
             fn type_name() -> Cow<'static, CStr> {
-                const { Cow::Borrowed(unsafe { CStr::from_bytes_with_nul_unchecked(concat!(stringify!($ty), "\0").as_bytes()) }) }
+                const { Cow::Borrowed($ty_name) }
             }
 
             fn construct(self) -> Scm<'id> {
@@ -62,6 +62,7 @@ macro_rules! impl_scm_ty_for_int {
 impl_scm_ty_for_int!([
     (
         i8,
+        c"s8",
         isize,
         sys::scm_is_signed_integer,
         sys::scm_from_int8,
@@ -69,6 +70,7 @@ impl_scm_ty_for_int!([
     ),
     (
         i16,
+        c"s16",
         isize,
         sys::scm_is_signed_integer,
         sys::scm_from_int16,
@@ -76,20 +78,15 @@ impl_scm_ty_for_int!([
     ),
     (
         i32,
+        c"s32",
         isize,
         sys::scm_is_signed_integer,
         sys::scm_from_int32,
         sys::scm_to_int32
     ),
     (
-        isize,
-        isize,
-        sys::scm_is_signed_integer,
-        sys::scm_from_intptr_t,
-        sys::scm_to_intptr_t
-    ),
-    (
         u8,
+        c"u8",
         usize,
         sys::scm_is_unsigned_integer,
         sys::scm_from_uint8,
@@ -97,6 +94,7 @@ impl_scm_ty_for_int!([
     ),
     (
         u16,
+        c"u16",
         usize,
         sys::scm_is_unsigned_integer,
         sys::scm_from_uint16,
@@ -104,13 +102,26 @@ impl_scm_ty_for_int!([
     ),
     (
         u32,
+        c"u32",
         usize,
         sys::scm_is_unsigned_integer,
         sys::scm_from_uint32,
         sys::scm_to_uint32
     ),
+]);
+#[cfg(target_pointer_width = "32")]
+impl_scm_ty_for_int!([
+    (
+        isize,
+        c"s32",
+        isize,
+        sys::scm_is_signed_integer,
+        sys::scm_from_intptr_t,
+        sys::scm_to_intptr_t
+    ),
     (
         usize,
+        c"u32",
         usize,
         sys::scm_is_unsigned_integer,
         sys::scm_from_uintptr_t,
@@ -120,18 +131,36 @@ impl_scm_ty_for_int!([
 #[cfg(target_pointer_width = "64")]
 impl_scm_ty_for_int!([
     (
+        i64,
+        c"s64",
+        isize,
+        sys::scm_is_signed_integer,
+        sys::scm_from_int64,
+        sys::scm_to_int64,
+    ),
+    (
         u64,
+        c"u64",
         usize,
         sys::scm_is_unsigned_integer,
         sys::scm_from_uint64,
         sys::scm_to_uint64,
     ),
     (
-        i64,
+        isize,
+        c"s64",
         isize,
         sys::scm_is_signed_integer,
-        sys::scm_from_int64,
-        sys::scm_to_int64,
+        sys::scm_from_intptr_t,
+        sys::scm_to_intptr_t
+    ),
+    (
+        usize,
+        c"u64",
+        usize,
+        sys::scm_is_unsigned_integer,
+        sys::scm_from_uintptr_t,
+        sys::scm_to_uintptr_t
     ),
 ]);
 
