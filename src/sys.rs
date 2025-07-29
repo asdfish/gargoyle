@@ -65,9 +65,6 @@ unsafe extern "C" {
 
     pub fn scm_char_set_p(_obj: SCM) -> SCM;
     pub fn scm_char_set_contains_p(_cs: SCM, _ch: SCM) -> SCM;
-    pub fn scm_char_set_eq(_: SCM, _: SCM) -> SCM;
-    pub fn scm_char_set_leq(_: SCM, _: SCM) -> SCM;
-    pub fn scm_char_set_hash(_: SCM, _: SCM) -> SCM;
 
     pub fn scm_from_double(_: c_double) -> SCM;
     pub fn scm_from_int8(_: i8) -> SCM;

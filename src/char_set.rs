@@ -24,16 +24,11 @@ use {
         list::List,
         string::String,
         sys::{
-            SCM_UNDEFINED, scm_char_set_contains_p, scm_char_set_eq, scm_char_set_hash,
-            scm_char_set_leq, scm_char_set_p, scm_list_to_char_set, scm_string_to_char_set,
+            SCM_UNDEFINED, scm_char_set_contains_p, scm_char_set_p, scm_list_to_char_set,
+            scm_string_to_char_set,
         },
     },
-    std::{
-        borrow::Cow,
-        cmp::Ordering,
-        ffi::CStr,
-        hash::{Hash, Hasher},
-    },
+    std::{borrow::Cow, ffi::CStr},
 };
 
 #[derive(Clone, Debug)]
@@ -50,22 +45,6 @@ impl<'id> CharSet<'id> {
         .is_true()
     }
 }
-impl Hash for CharSet<'_> {
-    fn hash<H>(&self, h: &mut H)
-    where
-        H: Hasher,
-    {
-        let hash = unsafe {
-            Scm::from_ptr(scm_char_set_hash(
-                self.0.as_ptr(),
-                usize::MAX.construct().as_ptr(),
-            ))
-        }
-        .get::<usize>()
-        .expect("failed to create hash");
-        h.write_usize(hash);
-    }
-}
 impl<'id> From<List<'id, char>> for CharSet<'id> {
     fn from(list: List<'id, char>) -> Self {
         Self(unsafe { Scm::from_ptr(scm_list_to_char_set(list.pair.as_ptr(), SCM_UNDEFINED)) })
@@ -74,28 +53,6 @@ impl<'id> From<List<'id, char>> for CharSet<'id> {
 impl<'id> From<String<'id>> for CharSet<'id> {
     fn from(string: String<'id>) -> Self {
         Self(unsafe { Scm::from_ptr(scm_string_to_char_set(string.0.as_ptr(), SCM_UNDEFINED)) })
-    }
-}
-impl PartialEq for CharSet<'_> {
-    fn eq(&self, r: &Self) -> bool {
-        unsafe { Scm::from_ptr(scm_char_set_eq(self.0.as_ptr(), r.0.as_ptr())) }.is_true()
-    }
-}
-impl PartialOrd for CharSet<'_> {
-    fn partial_cmp(&self, r: &Self) -> Option<Ordering> {
-        if self == r {
-            Some(Ordering::Equal)
-        } else if unsafe { Scm::from_ptr(scm_char_set_leq(self.0.as_ptr(), r.0.as_ptr())) }
-            .is_true()
-        {
-            Some(Ordering::Less)
-        } else if unsafe { Scm::from_ptr(scm_char_set_leq(r.0.as_ptr(), self.0.as_ptr())) }
-            .is_true()
-        {
-            Some(Ordering::Greater)
-        } else {
-            None
-        }
     }
 }
 impl<'id> ScmTy<'id> for CharSet<'id> {
@@ -123,15 +80,19 @@ impl<'id> ScmTy<'id> for CharSet<'id> {
 // #[derive(Clone, Debug)]
 // pub struct CharSetIterator<'id>(CharSet<'id>, Scm<'id>);
 
-// #[cfg(test)]
-// mod tests {
-//     use {super::*, crate::with_guile};
+#[cfg(test)]
+mod tests {
+    use {super::*, crate::with_guile};
 
-//     #[cfg_attr(miri, ignore)]
-//     #[test]
-//     fn char_set_contains() {
-//         with_guile(|api| {
-//             CharSet::from(api.make("hi"));
-//         });
-//     }
-// }
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn char_set_contains() {
+        with_guile(|api| {
+            let chars = CharSet::from(api.make_string("hi"));
+            assert!(chars.contains('h'));
+            assert!(chars.contains('i'));
+            assert!(!chars.contains('o'));
+        })
+        .unwrap();
+    }
+}
