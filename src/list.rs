@@ -70,17 +70,17 @@ where
     _marker: PhantomData<T>,
 }
 // `T` doesn't need to be clone since it gets constructed every time
-impl<'id, T> Clone for List<'id, T>
-where
-    T: ScmTy<'id>,
-{
-    fn clone(&self) -> Self {
-        Self {
-            pair: self.pair,
-            _marker: PhantomData,
-        }
-    }
-}
+// impl<'id, T> Clone for List<'id, T>
+// where
+//     T: ScmTy<'id>,
+// {
+//     fn clone(&self) -> Self {
+//         Self {
+//             pair: self.pair,
+//             _marker: PhantomData,
+//         }
+//     }
+// }
 impl<'id, T> List<'id, T>
 where
     T: ScmTy<'id>,
@@ -105,7 +105,12 @@ where
     }
 
     pub fn front(&self) -> Option<T::Output> {
-        self.clone().into_iter().next()
+        if self.is_empty() {
+            None
+        } else {
+            let api = unsafe { Api::new_unchecked() };
+            Some(unsafe { T::get_unchecked(&api, Scm::from_ptr(scm_car(self.pair.as_ptr()))) })
+        }
     }
 
     pub fn clear(&mut self) {
@@ -181,7 +186,7 @@ where
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct IntoIter<'id, T>(List<'id, T>)
 where
     T: ScmTy<'id>;
