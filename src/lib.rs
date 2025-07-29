@@ -776,6 +776,21 @@ impl ScmTy for &str {
         }
     }
 }
+impl ScmTy for Scm<'_> {
+    type Output = Self;
+
+    const TYPE_NAME: &'static CStr = c"scm";
+
+    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+        unsafe { Scm::from_ptr(self.as_ptr()) }
+    }
+    fn predicate(_: &Api, _: &Scm) -> bool {
+        true
+    }
+    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
+        unsafe { Scm::from_ptr(scm.as_ptr()) }
+    }
+}
 
 /// Marker trait for types that can be used with the `#[optional]` attribute in [guile_fn]
 pub trait OptionalScm
