@@ -67,21 +67,37 @@ where
         }
     }
 }
-impl<'id, T> Iterator for List<'id, T>
+impl<'id, T> IntoIterator for List<'id, T>
+where
+    T: ScmTy<'id>,
+{
+    type Item = Result<T::Output, Scm<'id>>;
+    type IntoIter = IntoIter<'id, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter(self)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct IntoIter<'id, T>(List<'id, T>)
+where
+    T: ScmTy<'id>;
+impl<'id, T> Iterator for IntoIter<'id, T>
 where
     T: ScmTy<'id>,
 {
     type Item = Result<T::Output, Scm<'id>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if unsafe { Scm::from_ptr(scm_null_p(self.pair.as_ptr())) }.is_true() {
+        if unsafe { Scm::from_ptr(scm_null_p(self.0.pair.as_ptr())) }.is_true() {
             None
         } else {
             let [car, cdr] = [scm_car, scm_cdr]
-                .map(|accessor| unsafe { Scm::from_ptr(accessor(self.pair.as_ptr())) });
-            self.pair = cdr;
+                .map(|morphism| unsafe { Scm::from_ptr(morphism(self.0.pair.as_ptr())) });
+            self.0.pair = cdr;
 
-            Some(car.get::<T>().ok_or(car))
+            car.get::<T>().map(Some).ok_or(car).transpose()
         }
     }
 }
@@ -103,6 +119,7 @@ mod tests {
                 api.eval_c(c"'(1 2 3)")
                     .get::<List<u32>>()
                     .unwrap()
+                    .into_iter()
                     .collect::<Result<Vec<_>, _>>()
                     .unwrap(),
                 [1, 2, 3]
