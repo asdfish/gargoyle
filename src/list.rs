@@ -60,7 +60,7 @@ impl Api {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct List<'id, T>
 where
@@ -68,6 +68,18 @@ where
 {
     pair: Scm<'id>,
     _marker: PhantomData<T>,
+}
+// `T` doesn't need to be clone since it gets constructed every time
+impl<'id, T> Clone for List<'id, T>
+where
+    T: ScmTy<'id>,
+{
+    fn clone(&self) -> Self {
+        Self {
+            pair: self.pair,
+            _marker: PhantomData,
+        }
+    }
 }
 impl<'id, T> List<'id, T>
 where
@@ -90,6 +102,10 @@ where
     }
     pub fn is_empty(&self) -> bool {
         unsafe { Scm::from_ptr(scm_null_p(self.pair.as_ptr())) }.is_true()
+    }
+
+    pub fn first(&self) -> Option<T::Output> {
+        self.clone().into_iter().next()
     }
 }
 impl<'id, T> Extend<T> for List<'id, T>
@@ -158,6 +174,30 @@ where
 pub struct IntoIter<'id, T>(List<'id, T>)
 where
     T: ScmTy<'id>;
+impl<'id, T> IntoIter<'id, T>
+where
+    T: ScmTy<'id>,
+{
+    /// Get the list back out
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::with_guile;
+    /// # #[cfg(not(miri))]
+    /// with_guile(|api| {
+    ///     let mut iter = api.make_list::<_, i32>([1, 2, 3])
+    ///         .into_iter();
+    ///     assert_eq!(iter.next(), Some(3));
+    ///     assert_eq!(iter.next(), Some(2));
+    ///     let lst = iter.into_inner();
+    ///     assert_eq!(lst.first(), Some(1));
+    /// }).unwrap();
+    /// ```
+    pub fn into_inner(self) -> List<'id, T> {
+        self.0
+    }
+}
 impl<'id, T> ExactSizeIterator for IntoIter<'id, T> where T: ScmTy<'id> {}
 impl<'id, T> FusedIterator for IntoIter<'id, T> where T: ScmTy<'id> {}
 impl<'id, T> Iterator for IntoIter<'id, T>
