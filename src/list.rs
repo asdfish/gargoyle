@@ -66,21 +66,21 @@ pub struct List<'id, T>
 where
     T: ScmTy<'id>,
 {
-    pair: Scm<'id>,
+    pub(crate) pair: Scm<'id>,
     _marker: PhantomData<T>,
 }
 // `T` doesn't need to be clone since it gets constructed every time
-// impl<'id, T> Clone for List<'id, T>
-// where
-//     T: ScmTy<'id>,
-// {
-//     fn clone(&self) -> Self {
-//         Self {
-//             pair: self.pair,
-//             _marker: PhantomData,
-//         }
-//     }
-// }
+impl<'id, T> Clone for List<'id, T>
+where
+    T: ScmTy<'id>,
+{
+    fn clone(&self) -> Self {
+        Self {
+            pair: self.pair,
+            _marker: PhantomData,
+        }
+    }
+}
 impl<'id, T> List<'id, T>
 where
     T: ScmTy<'id>,
@@ -179,7 +179,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct IntoIter<'id, T>(List<'id, T>)
 where
     T: ScmTy<'id>;

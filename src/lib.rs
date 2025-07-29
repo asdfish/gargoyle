@@ -31,8 +31,7 @@ pub mod string;
 pub mod sys;
 
 use {
-    crate::{alloc::CAllocator, guard::Guard},
-    allocator_api2::{alloc::AllocError, vec::Vec as AllocVec},
+    crate::{guard::Guard, string::String as GString},
     parking_lot::Mutex,
     std::{
         borrow::Cow,
@@ -616,9 +615,8 @@ impl Display for Scm<'_> {
             sys::scm_close_port(port);
             Scm::from_ptr(text)
         }
-        .get::<&str>()
+        .get::<GString<'_>>()
         .ok_or(fmt::Error)
-        .and_then(|result| result.map_err(|_| fmt::Error))
         .and_then(|display| display.fmt(f))
     }
 }
@@ -718,46 +716,46 @@ impl<'id> ScmTy<'id> for char {
             .expect("Guile characters should return valid rust characters.")
     }
 }
-impl<'id> ScmTy<'id> for &str {
-    type Output = Result<::string::String<AllocVec<u8, CAllocator>>, AllocError>;
+// impl<'id> ScmTy<'id> for &str {
+//     type Output = Result<::string::String<AllocVec<u8, CAllocator>>, AllocError>;
 
-    fn type_name() -> Cow<'static, CStr> {
-        Cow::Borrowed(c"string")
-    }
+//     fn type_name() -> Cow<'static, CStr> {
+//         Cow::Borrowed(c"string")
+//     }
 
-    fn construct(self) -> Scm<'id> {
-        let scm = unsafe { crate::sys::scm_from_utf8_stringn(self.as_ptr().cast(), self.len()) };
-        unsafe { Scm::from_ptr(scm) }
-    }
+//     fn construct(self) -> Scm<'id> {
+//         let scm = unsafe { crate::sys::scm_from_utf8_stringn(self.as_ptr().cast(), self.len()) };
+//         unsafe { Scm::from_ptr(scm) }
+//     }
 
-    fn predicate(_: &Api, scm: &Scm) -> bool {
-        unsafe { sys::scm_is_string(scm.as_ptr()) }
-    }
+//     fn predicate(_: &Api, scm: &Scm) -> bool {
+//         unsafe { sys::scm_is_string(scm.as_ptr()) }
+//     }
 
-    unsafe fn get_unchecked(
-        _: &Api,
-        scm: Scm,
-    ) -> Result<::string::String<AllocVec<u8, CAllocator>>, AllocError> {
-        let mut len: usize = 0;
-        // SAFETY: since we have the lifetime, we can assume we're in guile mode
-        let ptr = unsafe { crate::sys::scm_to_utf8_stringn(scm.as_ptr(), &raw mut len) };
-        if ptr.is_null() {
-            Err(AllocError)
-        } else {
-            // SAFETY: we checked for null and since we don't know the capacity we must use length, and the pointer must be freed with [crate::sys::free]
-            let vec = unsafe { AllocVec::from_raw_parts_in(ptr.cast(), len, len, CAllocator) };
+//     unsafe fn get_unchecked(
+//         _: &Api,
+//         scm: Scm,
+//     ) -> Result<::string::String<AllocVec<u8, CAllocator>>, AllocError> {
+//         let mut len: usize = 0;
+//         // SAFETY: since we have the lifetime, we can assume we're in guile mode
+//         let ptr = unsafe { crate::sys::scm_to_utf8_stringn(scm.as_ptr(), &raw mut len) };
+//         if ptr.is_null() {
+//             Err(AllocError)
+//         } else {
+//             // SAFETY: we checked for null and since we don't know the capacity we must use length, and the pointer must be freed with [crate::sys::free]
+//             let vec = unsafe { AllocVec::from_raw_parts_in(ptr.cast(), len, len, CAllocator) };
 
-            // this violates the contract so we should abort.
-            assert!(
-                str::from_utf8(&vec).is_ok(),
-                "The returned string from `scm_to_utf8_stringn` was not utf8. This is a bug with guile."
-            );
+//             // this violates the contract so we should abort.
+//             assert!(
+//                 str::from_utf8(&vec).is_ok(),
+//                 "The returned string from `scm_to_utf8_stringn` was not utf8. This is a bug with guile."
+//             );
 
-            // SAFETY: we have an assertion above
-            Ok(unsafe { ::string::String::from_utf8_unchecked(vec) })
-        }
-    }
-}
+//             // SAFETY: we have an assertion above
+//             Ok(unsafe { ::string::String::from_utf8_unchecked(vec) })
+//         }
+//     }
+// }
 impl<'id> ScmTy<'id> for Scm<'id> {
     type Output = Self;
 
@@ -818,6 +816,8 @@ pub trait GuileFn {
 mod tests {
     use {
         super::*,
+        crate::alloc::CAllocator,
+        allocator_api2::vec::Vec,
         std::{
             fmt::Debug,
             io::{self, Write},
@@ -935,18 +935,17 @@ mod tests {
     #[test]
     fn string_conversion() {
         with_guile(|api| {
-            let mut hello_world = AllocVec::new_in(CAllocator);
+            let mut hello_world = Vec::new_in(CAllocator);
             hello_world.extend(b"hello world");
-            api.test_real(
-                "hello world",
-                Ok(unsafe { ::string::String::from_utf8_unchecked(hello_world) }),
+            assert_eq!(
+                api.make_string("hello world").to_string().unwrap(),
+                unsafe { ::string::String::from_utf8_unchecked(hello_world) },
             );
 
-            let empty = AllocVec::new_in(CAllocator);
-            api.test_real(
-                "",
-                Ok(unsafe { ::string::String::from_utf8_unchecked(empty) }),
-            );
+            let empty = Vec::<u8, CAllocator>::new_in(CAllocator);
+            assert_eq!(api.make_string("").to_string().unwrap(), unsafe {
+                ::string::String::from_utf8_unchecked(empty)
+            },);
         })
         .unwrap();
     }

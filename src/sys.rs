@@ -64,6 +64,7 @@ unsafe extern "C" {
     pub fn scm_char_p(_: SCM) -> SCM;
 
     pub fn scm_char_set_p(_obj: SCM) -> SCM;
+    pub fn scm_char_set_contains_p(_cs: SCM, _ch: SCM) -> SCM;
     pub fn scm_char_set_eq(_: SCM, _: SCM) -> SCM;
     pub fn scm_char_set_leq(_: SCM, _: SCM) -> SCM;
     pub fn scm_char_set_hash(_: SCM, _: SCM) -> SCM;
@@ -103,6 +104,8 @@ unsafe extern "C" {
 
     pub fn scm_list_p(_x: SCM) -> SCM;
     pub fn scm_null_p(_x: SCM) -> SCM;
+
+    pub fn scm_list_to_char_set(_list: SCM, _base_cs: SCM) -> SCM;
 
     pub fn scm_is_signed_integer(_: SCM, _: isize, _: isize) -> bool;
     pub fn scm_is_unsigned_integer(_: SCM, _: usize, _: usize) -> bool;
@@ -170,6 +173,8 @@ unsafe extern "C" {
     pub fn scm_c_primitive_load(_: *const c_char) -> SCM;
 
     pub fn scm_c_string_length(_: SCM) -> usize;
+
+    pub fn scm_string_to_char_set(_str: SCM, _base_cs: SCM) -> SCM;
 
     pub fn scm_call_n(_: SCM, _: *mut SCM, _: usize) -> SCM;
 

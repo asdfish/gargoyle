@@ -21,7 +21,12 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        sys::{scm_char_set_eq, scm_char_set_hash, scm_char_set_leq, scm_char_set_p},
+        list::List,
+        string::String,
+        sys::{
+            SCM_UNDEFINED, scm_char_set_contains_p, scm_char_set_eq, scm_char_set_hash,
+            scm_char_set_leq, scm_char_set_p, scm_list_to_char_set, scm_string_to_char_set,
+        },
     },
     std::{
         borrow::Cow,
@@ -31,9 +36,20 @@ use {
     },
 };
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 #[repr(transparent)]
 pub struct CharSet<'id>(Scm<'id>);
+impl<'id> CharSet<'id> {
+    pub fn contains(&self, ch: char) -> bool {
+        unsafe {
+            Scm::from_ptr(scm_char_set_contains_p(
+                self.0.as_ptr(),
+                char::construct(ch).as_ptr(),
+            ))
+        }
+        .is_true()
+    }
+}
 impl Hash for CharSet<'_> {
     fn hash<H>(&self, h: &mut H)
     where
@@ -48,6 +64,16 @@ impl Hash for CharSet<'_> {
         .get::<usize>()
         .expect("failed to create hash");
         h.write_usize(hash);
+    }
+}
+impl<'id> From<List<'id, char>> for CharSet<'id> {
+    fn from(list: List<'id, char>) -> Self {
+        Self(unsafe { Scm::from_ptr(scm_list_to_char_set(list.pair.as_ptr(), SCM_UNDEFINED)) })
+    }
+}
+impl<'id> From<String<'id>> for CharSet<'id> {
+    fn from(string: String<'id>) -> Self {
+        Self(unsafe { Scm::from_ptr(scm_string_to_char_set(string.0.as_ptr(), SCM_UNDEFINED)) })
     }
 }
 impl PartialEq for CharSet<'_> {
@@ -92,7 +118,22 @@ impl<'id> ScmTy<'id> for CharSet<'id> {
     }
 }
 
-#[derive(Clone, Debug)]
-#[expect(dead_code)]
-pub struct CharSetIterator<'id>(CharSet<'id>, Scm<'id>);
-// impl Iterator for CharSetIterator<>
+// #[derive(Clone, Debug)]
+// #[repr(transparent)]
+// pub struct Cursor<'id>(Scm<'id>);
+
+// #[derive(Clone, Debug)]
+// pub struct CharSetIterator<'id>(CharSet<'id>, Scm<'id>);
+
+// #[cfg(test)]
+// mod tests {
+//     use {super::*, crate::with_guile};
+
+//     #[cfg_attr(miri, ignore)]
+//     #[test]
+//     fn char_set_contains() {
+//         with_guile(|api| {
+//             CharSet::from(api.make("hi"));
+//         });
+//     }
+// }
