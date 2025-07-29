@@ -23,6 +23,7 @@
 mod alloc;
 mod catch;
 mod guard;
+mod num;
 mod protection;
 pub mod sys;
 
@@ -32,7 +33,7 @@ use {
     parking_lot::Mutex,
     std::{
         cmp::Ordering,
-        ffi::{CStr, c_char, c_double, c_int, c_void},
+        ffi::{CStr, c_char, c_int, c_void},
         fmt::{self, Display, Formatter},
         marker::PhantomData,
         ops::Not,
@@ -737,21 +738,6 @@ impl ScmTy for char {
             .expect("Guile characters should return valid rust characters.")
     }
 }
-impl ScmTy for c_double {
-    type Output = Self;
-
-    const TYPE_NAME: &CStr = c"double";
-
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
-        unsafe { Scm::from_ptr(sys::scm_from_double(self)) }
-    }
-    fn predicate(_: &Api, scm: &Scm) -> bool {
-        scm.is_real_number()
-    }
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self {
-        unsafe { crate::sys::scm_to_double(scm.as_ptr()) }
-    }
-}
 impl ScmTy for &str {
     type Output = Result<string::String<AllocVec<u8, CAllocator>>, AllocError>;
 
@@ -790,111 +776,6 @@ impl ScmTy for &str {
         }
     }
 }
-
-macro_rules! impl_scm_ty_for_int {
-    ([ $(($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr $(,)?)),+ $(,)? ]) => {
-        $(impl_scm_ty_for_int!($ty, $ptr, $predicate, $to_scm, $to_int);)+
-    };
-    ($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr) => {
-        impl ScmTy for $ty {
-            type Output = Self;
-
-            // SAFETY: this is in a const context and there is a null byte concatted at the end.
-            const TYPE_NAME: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(concat!(stringify!($ty), "\0").as_bytes()) };
-
-            fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
-                unsafe { Scm::from_ptr(($to_scm)(self)) }
-            }
-            fn predicate(_: &Api, scm: &Scm) -> bool {
-                unsafe {
-                    ($predicate)(
-                        scm.as_ptr(),
-                        <$ty>::MIN as $ptr,
-                        <$ty>::MAX as $ptr,
-                    )
-                }
-            }
-            unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
-                unsafe { ($to_int)(scm.as_ptr()) }
-            }
-        }
-    };
-}
-impl_scm_ty_for_int!([
-    (
-        i8,
-        isize,
-        sys::scm_is_signed_integer,
-        sys::scm_from_int8,
-        sys::scm_to_int8
-    ),
-    (
-        i16,
-        isize,
-        sys::scm_is_signed_integer,
-        sys::scm_from_int16,
-        sys::scm_to_int16
-    ),
-    (
-        i32,
-        isize,
-        sys::scm_is_signed_integer,
-        sys::scm_from_int32,
-        sys::scm_to_int32
-    ),
-    (
-        isize,
-        isize,
-        sys::scm_is_signed_integer,
-        sys::scm_from_intptr_t,
-        sys::scm_to_intptr_t
-    ),
-    (
-        u8,
-        usize,
-        sys::scm_is_unsigned_integer,
-        sys::scm_from_uint8,
-        sys::scm_to_uint8
-    ),
-    (
-        u16,
-        usize,
-        sys::scm_is_unsigned_integer,
-        sys::scm_from_uint16,
-        sys::scm_to_uint16
-    ),
-    (
-        u32,
-        usize,
-        sys::scm_is_unsigned_integer,
-        sys::scm_from_uint32,
-        sys::scm_to_uint32
-    ),
-    (
-        usize,
-        usize,
-        sys::scm_is_unsigned_integer,
-        sys::scm_from_uintptr_t,
-        sys::scm_to_uintptr_t
-    ),
-]);
-#[cfg(target_pointer_width = "64")]
-impl_scm_ty_for_int!([
-    (
-        u64,
-        usize,
-        sys::scm_is_unsigned_integer,
-        sys::scm_from_uint64,
-        sys::scm_to_uint64,
-    ),
-    (
-        i64,
-        isize,
-        sys::scm_is_signed_integer,
-        sys::scm_from_int64,
-        sys::scm_to_int64,
-    ),
-]);
 
 /// Marker trait for types that can be used with the `#[optional]` attribute in [guile_fn]
 pub trait OptionalScm
@@ -997,7 +878,7 @@ mod tests {
         });
     }
 
-    trait ApiExt {
+    pub trait ApiExt {
         fn test_ty<'id, T>(&'id self, _: T, _: T::Output) -> Scm<'id>
         where
             T: ScmTy,
@@ -1067,27 +948,6 @@ mod tests {
                 "",
                 Ok(unsafe { string::String::from_utf8_unchecked(empty) }),
             );
-        })
-        .unwrap();
-    }
-
-    #[cfg_attr(miri, ignore)]
-    #[test]
-    fn int_conversion() {
-        macro_rules! test_ty {
-            ($api:expr, [ $($ty:ty),+ $(,)? ]) => {
-                $(test_ty!($api, $ty);)+
-            };
-            ($api:expr, $ty:ty) => {
-                $api.test_ty_equal(<$ty>::MIN);
-                let scm = $api.test_ty_equal(<$ty>::MAX);
-                assert!(scm.is_number());
-            };
-        }
-        with_guile(|api| {
-            test_ty!(api, [c_double, i8, i16, i32, isize, u8, u16, u32, usize]);
-            #[cfg(target_pointer_width = "64")]
-            test_ty!(api, [i64, u64]);
         })
         .unwrap();
     }
