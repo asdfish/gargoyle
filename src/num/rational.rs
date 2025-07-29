@@ -21,11 +21,26 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        sys::{scm_from_double, scm_to_double},
+        num::Real,
+        sys::{
+            scm_denominator, scm_from_double, scm_is_rational, scm_numerator, scm_rationalize,
+            scm_to_double,
+        },
     },
     std::ffi::{CStr, c_double},
 };
-impl Api {}
+
+impl Api {
+    pub fn rationalize<'id, T, U>(&'id self, real: T, eps: U) -> Rational<'id>
+    where
+        T: Real,
+        U: Real,
+    {
+        let real = real.construct(self);
+        let eps = eps.construct(self);
+        unsafe { Rational(Scm::from_ptr(scm_rationalize(real.as_ptr(), eps.as_ptr()))) }
+    }
+}
 
 impl ScmTy for c_double {
     type Output = Self;
@@ -42,18 +57,59 @@ impl ScmTy for c_double {
         unsafe { scm_to_double(scm.as_ptr()) }
     }
 }
+impl Real for c_double {}
+
+/// A rational number
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct Rational<'id>(Scm<'id>);
+impl ScmTy for Rational<'_> {
+    type Output = Self;
+
+    const TYPE_NAME: &'static CStr = c"rational";
+
+    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+        unsafe { self.0.cast_lifetime() }
+    }
+    fn predicate(_: &Api, scm: &Scm) -> bool {
+        unsafe { scm_is_rational(scm.as_ptr()) }
+    }
+    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
+        Self(unsafe { (*scm).cast_lifetime() })
+    }
+}
+impl<'id> Rational<'id> {
+    pub fn denominator(&self) -> Scm<'id> {
+        unsafe { Scm::from_ptr(scm_denominator(self.0.as_ptr())) }
+    }
+    pub fn numerator(&self) -> Scm<'id> {
+        unsafe { Scm::from_ptr(scm_numerator(self.0.as_ptr())) }
+    }
+}
+impl Real for Rational<'_> {}
 
 #[cfg(test)]
 mod tests {
     use {
         super::*,
-        crate::{test_ty, with_guile},
+        crate::{test_real, with_guile},
     };
 
     #[test]
     fn double() {
         with_guile(|api| {
-            test_ty!(api, c_double);
-        });
+            test_real!(api, c_double);
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn rationalize() {
+        with_guile(|api| {
+            let rational = api.rationalize(0.5, 0);
+            assert_eq!(rational.denominator().get::<c_double>(), Some(2.0));
+            assert_eq!(rational.numerator().get::<c_double>(), Some(1.0));
+        })
+        .unwrap()
     }
 }

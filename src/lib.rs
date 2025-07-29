@@ -23,7 +23,7 @@
 mod alloc;
 mod catch;
 mod guard;
-mod num;
+pub mod num;
 mod protection;
 pub mod sys;
 
@@ -500,7 +500,7 @@ impl DeadScm {
 unsafe impl Send for DeadScm {}
 
 /// A newtype for [SCM][sys::SCM] pointers.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Scm<'id> {
     scm: crate::sys::SCM,
@@ -894,22 +894,22 @@ mod tests {
     }
 
     pub trait ApiExt {
-        fn test_ty<'id, T>(&'id self, _: T, _: T::Output) -> Scm<'id>
+        fn test_real<'id, T>(&'id self, _: T, _: T::Output) -> Scm<'id>
         where
             T: ScmTy,
             T::Output: Debug + PartialEq;
 
-        fn test_ty_equal<'id, T>(&'id self, val: T) -> Scm<'id>
+        fn test_real_equal<'id, T>(&'id self, val: T) -> Scm<'id>
         where
             T: Clone + Debug + PartialEq + ScmTy<Output = T>,
         {
-            let scm = self.test_ty(val.clone(), val);
+            let scm = self.test_real(val.clone(), val);
             assert!(scm.is_eqv(&scm));
             scm
         }
     }
     impl ApiExt for Api {
-        fn test_ty<'id, T>(&'id self, val: T, output: T::Output) -> Scm<'id>
+        fn test_real<'id, T>(&'id self, val: T, output: T::Output) -> Scm<'id>
         where
             T: ScmTy,
             T::Output: Debug + PartialEq,
@@ -927,8 +927,8 @@ mod tests {
     #[test]
     fn bool_conversion() {
         with_guile(|api| {
-            api.test_ty_equal(true);
-            api.test_ty_equal(false);
+            api.test_real_equal(true);
+            api.test_real_equal(false);
         })
         .unwrap();
     }
@@ -937,11 +937,11 @@ mod tests {
     #[test]
     fn char_conversion() {
         with_guile(|api| {
-            api.test_ty_equal(char::MIN);
-            api.test_ty_equal(char::MAX);
+            api.test_real_equal(char::MIN);
+            api.test_real_equal(char::MAX);
             ('a'..='z')
                 .into_iter()
-                .map(|ch| api.test_ty_equal(ch))
+                .map(|ch| api.test_real_equal(ch))
                 .for_each(drop);
         })
         .unwrap();
@@ -953,13 +953,13 @@ mod tests {
         with_guile(|api| {
             let mut hello_world = AllocVec::new_in(CAllocator);
             hello_world.extend(b"hello world");
-            api.test_ty(
+            api.test_real(
                 "hello world",
                 Ok(unsafe { string::String::from_utf8_unchecked(hello_world) }),
             );
 
             let empty = AllocVec::new_in(CAllocator);
-            api.test_ty(
+            api.test_real(
                 "",
                 Ok(unsafe { string::String::from_utf8_unchecked(empty) }),
             );

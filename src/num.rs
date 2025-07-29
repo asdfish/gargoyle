@@ -18,20 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+use crate::ScmTy;
+
 mod int;
-mod rational;
+pub mod rational;
+
+pub trait Real: ScmTy {}
 
 #[cfg(test)]
 mod tests {
+    use crate::Scm;
+
+    pub fn assert_numberness(scm: Scm) {
+        assert!(scm.is_number());
+        assert!(scm.is_real_number());
+    }
+
     #[macro_export]
-    macro_rules! test_ty {
+    macro_rules! test_real {
         ($api:expr, [ $($ty:ty),+ $(,)? ]) => {
-            $(test_ty!($api, $ty);)+
+            $(test_real!($api, $ty);)+
         };
         ($api:expr, $ty:ty) => {
-            <$crate::Api as $crate::tests::ApiExt>::test_ty_equal($api, <$ty>::MIN);
-            let scm = <$crate::Api as $crate::tests::ApiExt>::test_ty_equal($api, <$ty>::MAX);
-            assert!(scm.is_number());
+            let scm = <$crate::Api as $crate::tests::ApiExt>::test_real_equal($api, <$ty>::MIN);
+            $crate::num::tests::assert_numberness(scm);
+            let scm = <$crate::Api as $crate::tests::ApiExt>::test_real_equal($api, <$ty>::MAX);
+            $crate::num::tests::assert_numberness(scm);
         };
     }
 }

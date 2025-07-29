@@ -19,7 +19,7 @@
 // THE SOFTWARE.
 
 use {
-    crate::{Api, Scm, ScmTy, sys},
+    crate::{Api, Scm, ScmTy, num::Real, sys},
     std::ffi::CStr,
 };
 
@@ -50,6 +50,7 @@ macro_rules! impl_scm_ty_for_int {
                 unsafe { ($to_int)(scm.as_ptr()) }
             }
         }
+        impl Real for $ty {}
     };
 }
 impl_scm_ty_for_int!([
@@ -130,15 +131,15 @@ impl_scm_ty_for_int!([
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_ty, with_guile};
+    use crate::{test_real, with_guile};
 
     #[cfg_attr(miri, ignore)]
     #[test]
     fn int_conversion() {
         with_guile(|api| {
-            test_ty!(api, [i8, i16, i32, isize, u8, u16, u32, usize]);
+            test_real!(api, [i8, i16, i32, isize, u8, u16, u32, usize]);
             #[cfg(target_pointer_width = "64")]
-            test_ty!(api, [i64, u64]);
+            test_real!(api, [i64, u64]);
         })
         .unwrap();
     }
