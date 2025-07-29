@@ -39,6 +39,7 @@ pub type scm_t_catch_handler = Option<unsafe extern "C" fn(*mut c_void, SCM, SCM
 unsafe extern "C" {
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_T: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_F: SCM;
+    pub static GARGOYLE_REEXPORTS_SCM_EOL: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_UNDEFINED: SCM;
 
     pub static GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE: c_int;
@@ -97,6 +98,8 @@ unsafe extern "C" {
 
     pub fn scm_car(_pair: SCM) -> SCM;
     pub fn scm_cdr(_pair: SCM) -> SCM;
+    pub fn scm_cons(_x: SCM, _y: SCM) -> SCM;
+
     pub fn scm_list_p(_x: SCM) -> SCM;
     pub fn scm_null_p(_x: SCM) -> SCM;
 
@@ -194,6 +197,7 @@ unsafe extern "C" {
 
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_T as SCM_BOOL_T;
+pub use GARGOYLE_REEXPORTS_SCM_EOL as SCM_EOL;
 pub use GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE as SCM_F_DYNWIND_REWINDABLE;
 pub use GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY as SCM_F_WIND_EXPLICITLY;
 pub use GARGOYLE_REEXPORTS_SCM_UNBNDP as SCM_UNBNDP;

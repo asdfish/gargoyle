@@ -21,7 +21,7 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        sys::{scm_car, scm_cdr, scm_list_p, scm_null_p},
+        sys::{SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p, scm_null_p},
     },
     bstr::BStr,
     std::{
@@ -30,6 +30,40 @@ use {
         marker::PhantomData,
     },
 };
+
+impl Api {
+    /// Create a list.
+    ///
+    /// The contents of the list will be in reverse order of the iterator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::with_guile;
+    /// with_guile(|api| {
+    ///      let list = api.make_list([1, 2, 3])
+    ///           .into_iter()
+    ///           .collect::<Vec<_>>();
+    ///      assert_eq!(list, [3, 2, 1]);
+    /// }).unwrap();
+    /// ```
+    pub fn make_list<'id, I, T>(&'id self, iter: I) -> List<'id, T>
+    where
+        I: IntoIterator<Item = T>,
+        T: ScmTy<'id>,
+    {
+        let list = iter
+            .into_iter()
+            .map(T::construct)
+            .map(|scm| unsafe { scm.as_ptr() })
+            .fold(unsafe { SCM_EOL }, |cdr, car| unsafe { scm_cons(car, cdr) });
+        let list = unsafe { Scm::from_ptr(list) };
+        List {
+            pair: list,
+            _marker: PhantomData,
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 #[repr(transparent)]
@@ -40,6 +74,7 @@ where
     pair: Scm<'id>,
     _marker: PhantomData<T>,
 }
+
 impl<'id, T> ScmTy<'id> for List<'id, T>
 where
     T: ScmTy<'id>,
@@ -58,7 +93,14 @@ where
         self.pair
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {
-        unsafe { Scm::from_ptr(scm_list_p(scm.as_ptr())) }.is_true()
+        unsafe { Scm::from_ptr(scm_list_p(scm.as_ptr())) }.is_true() && {
+            // eagerly check all items for better error messages
+            IntoIter::<'id, Scm>(List {
+                pair: unsafe { scm.cast_lifetime() },
+                _marker: PhantomData,
+            })
+            .all(|i| i.is::<T>())
+        }
     }
     unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
         Self {
@@ -71,7 +113,7 @@ impl<'id, T> IntoIterator for List<'id, T>
 where
     T: ScmTy<'id>,
 {
-    type Item = Result<T::Output, Scm<'id>>;
+    type Item = T::Output;
     type IntoIter = IntoIter<'id, T>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -87,7 +129,7 @@ impl<'id, T> Iterator for IntoIter<'id, T>
 where
     T: ScmTy<'id>,
 {
-    type Item = Result<T::Output, Scm<'id>>;
+    type Item = T::Output;
 
     fn next(&mut self) -> Option<Self::Item> {
         if unsafe { Scm::from_ptr(scm_null_p(self.0.pair.as_ptr())) }.is_true() {
@@ -97,7 +139,7 @@ where
                 .map(|morphism| unsafe { Scm::from_ptr(morphism(self.0.pair.as_ptr())) });
             self.0.pair = cdr;
 
-            car.get::<T>().map(Some).ok_or(car).transpose()
+            Some(unsafe { T::get_unchecked(&Api::new_unchecked(), &car) })
         }
     }
 }
@@ -120,8 +162,7 @@ mod tests {
                     .get::<List<u32>>()
                     .unwrap()
                     .into_iter()
-                    .collect::<Result<Vec<_>, _>>()
-                    .unwrap(),
+                    .collect::<Vec<_>>(),
                 [1, 2, 3]
             );
         })
