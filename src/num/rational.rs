@@ -95,6 +95,7 @@ mod tests {
         crate::{test_real, with_guile},
     };
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn double() {
         with_guile(|api| {
@@ -103,6 +104,7 @@ mod tests {
         .unwrap();
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn rationalize() {
         with_guile(|api| {
