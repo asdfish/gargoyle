@@ -646,7 +646,7 @@ pub trait ScmTy<'id>: Sized {
     fn construct(self) -> Scm<'id>;
     /// Check whether or not a [Scm] is of this type.
     fn predicate(_: &Api, _: &Scm) -> bool;
-    /// Exract [Self::Output] from a scm.
+    /// Exract [Self] from a scm.
     ///
     /// # Safety
     ///
