@@ -18,28 +18,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// use {
-//     crate::{Api, Scm, ScmTy},
-//     std::ffi::CStr,
-// };
+use {
+    crate::{Api, Scm, ScmTy, sys::scm_char_set_p},
+    std::ffi::CStr,
+};
 
-// #[derive(Clone, Copy, Debug)]
-// #[repr(transparent)]
-// pub struct CharSet<'id>(Scm<'id>);
-// impl ScmTy for CharSet<'_> {
-//     type Output = Self;
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct CharSet<'id>(Scm<'id>);
+impl<'id> ScmTy<'id> for CharSet<'id> {
+    type Output = Self;
 
-//     const TYPE_NAME: &'static CStr = c"char set";
+    const TYPE_NAME: &'static CStr = c"char set";
 
-//     fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
-//         todo!()
-//     }
+    fn construct(self) -> Scm<'id> {
+        self.0
+    }
 
-//     fn predicate(_: &Api, _: &Scm) -> bool {
-//         todo!()
-//     }
+    fn predicate(_: &Api, scm: &Scm) -> bool {
+        unsafe { Scm::from_ptr(scm_char_set_p(scm.as_ptr())).is_true() }
+    }
 
-//     unsafe fn get_unchecked(_: &Api, _: &Scm) -> Self::Output {
-//         todo!()
-//     }
-// }
+    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
+        Self(unsafe { (*scm).cast_lifetime() })
+    }
+}

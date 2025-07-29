@@ -62,6 +62,8 @@ unsafe extern "C" {
     pub fn scm_char_to_integer(_: SCM) -> SCM;
     pub fn scm_char_p(_: SCM) -> SCM;
 
+    pub fn scm_char_set_p(_: SCM) -> SCM;
+
     pub fn scm_from_double(_: c_double) -> SCM;
     pub fn scm_from_int8(_: i8) -> SCM;
     pub fn scm_from_uint8(_: u8) -> SCM;
