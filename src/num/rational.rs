@@ -21,10 +21,10 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        num::{NumTy, Number, RealTy},
+        num::{NumTy, Number, RealTy, ScmNum},
         sys::{
-            scm_denominator, scm_from_double, scm_inf, scm_is_rational, scm_nan, scm_numerator,
-            scm_rationalize, scm_to_double,
+            SCM, scm_denominator, scm_from_double, scm_inf, scm_is_rational, scm_nan,
+            scm_numerator, scm_rationalize, scm_to_double,
         },
     },
     std::ffi::{CStr, c_double},
@@ -75,6 +75,24 @@ impl RealTy for c_double {}
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Rational<'id>(Scm<'id>);
+impl<'id> Rational<'id> {
+    pub fn denominator(&self) -> Scm<'id> {
+        unsafe { Scm::from_ptr(scm_denominator(self.0.as_ptr())) }
+    }
+    pub fn numerator(&self) -> Scm<'id> {
+        unsafe { Scm::from_ptr(scm_numerator(self.0.as_ptr())) }
+    }
+}
+impl NumTy for Rational<'_> {}
+impl RealTy for Rational<'_> {}
+impl<'id> ScmNum<'id> for Rational<'id> {
+    unsafe fn as_ptr(&self) -> SCM {
+        unsafe { self.0.as_ptr() }
+    }
+    fn is_real(&self) -> bool {
+        true
+    }
+}
 impl ScmTy for Rational<'_> {
     type Output = Self;
 
@@ -90,16 +108,6 @@ impl ScmTy for Rational<'_> {
         Self(unsafe { (*scm).cast_lifetime() })
     }
 }
-impl<'id> Rational<'id> {
-    pub fn denominator(&self) -> Scm<'id> {
-        unsafe { Scm::from_ptr(scm_denominator(self.0.as_ptr())) }
-    }
-    pub fn numerator(&self) -> Scm<'id> {
-        unsafe { Scm::from_ptr(scm_numerator(self.0.as_ptr())) }
-    }
-}
-impl NumTy for Rational<'_> {}
-impl RealTy for Rational<'_> {}
 
 #[cfg(test)]
 mod tests {

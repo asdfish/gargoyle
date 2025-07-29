@@ -21,14 +21,33 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        sys::{scm_imag_part, scm_is_complex, scm_real_part},
+        num::{NumTy, ScmNum},
+        sys::{SCM, scm_imag_part, scm_is_complex, scm_real_part},
     },
     std::ffi::CStr,
 };
 
 #[derive(Clone, Copy, Debug)]
 pub struct Complex<'id>(Scm<'id>);
-
+impl<'id> Complex<'id> {
+    /// Get the real part.
+    pub fn real(&self) -> Scm<'id> {
+        unsafe { Scm::from_ptr(scm_real_part(self.0.as_ptr())) }
+    }
+    /// Get the real part.
+    pub fn imag(&self) -> Scm<'id> {
+        unsafe { Scm::from_ptr(scm_imag_part(self.0.as_ptr())) }
+    }
+}
+impl NumTy for Complex<'_> {}
+impl<'id> ScmNum<'id> for Complex<'id> {
+    unsafe fn as_ptr(&self) -> SCM {
+        unsafe { self.0.as_ptr() }
+    }
+    fn is_real(&self) -> bool {
+        false
+    }
+}
 impl ScmTy for Complex<'_> {
     type Output = Self;
 
@@ -42,15 +61,5 @@ impl ScmTy for Complex<'_> {
     }
     unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
         Self(unsafe { (*scm).cast_lifetime() })
-    }
-}
-impl<'id> Complex<'id> {
-    /// Get the real part.
-    pub fn real(&self) -> Scm<'id> {
-        unsafe { Scm::from_ptr(scm_real_part(self.0.as_ptr())) }
-    }
-    /// Get the real part.
-    pub fn imag(&self) -> Scm<'id> {
-        unsafe { Scm::from_ptr(scm_imag_part(self.0.as_ptr())) }
     }
 }

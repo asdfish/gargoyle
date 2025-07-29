@@ -53,13 +53,13 @@ impl Api {
     }
 }
 
-trait ScmNum: NumTy {
+trait ScmNum<'id>: NumTy {
     unsafe fn as_ptr(&self) -> sys::SCM;
     fn is_real(&self) -> bool;
 }
 macro_rules! impl_scm_num {
     ($num:ty) => {
-        impl<R> PartialEq<R> for $num
+        impl<'id, R> PartialEq<R> for $num
         where
             R: Clone + Copy + NumTy,
         {
@@ -70,7 +70,7 @@ macro_rules! impl_scm_num {
             }
         }
 
-        impl<R> PartialOrd<R> for $num
+        impl<'id, R> PartialOrd<R> for $num
         where
             R: Clone + Copy + NumTy,
         {
@@ -90,7 +90,7 @@ macro_rules! impl_scm_num {
                         ]
                         .into_iter()
                         .find_map(|(predicate, output)| {
-                            unsafe { Scm::from_ptr((predicate)(self.0.as_ptr(), r.0.as_ptr())) }
+                            unsafe { Scm::from_ptr((predicate)(self.as_ptr(), r.0.as_ptr())) }
                                 .is_true()
                                 .then_some(output)
                         })
@@ -107,24 +107,38 @@ macro_rules! impl_scm_num {
 }
 macro_rules! impl_op_for_scm_num {
     ($ty:ty, $op:ident, $fn:ident, $scm_fn:expr) => {
-        impl<R> $op<R> for $ty
+        impl<'id, R> $op<R> for $ty
         where
             R: NumTy,
         {
-            type Output = Self;
+            type Output = Number<'id>;
 
-            fn $fn(self, r: R) -> Self {
+            fn $fn(self, r: R) -> Self::Output {
                 let api = unsafe { Api::new_unchecked() };
                 let r = api.make(r);
-                Self(unsafe { Scm::from_ptr(($scm_fn)(self.as_ptr(), r.as_ptr())) })
+                Number(unsafe { Scm::from_ptr(($scm_fn)(self.as_ptr(), r.as_ptr())) })
             }
         }
     };
 }
+impl_scm_num!(complex::Complex<'id>);
+impl_scm_num!(rational::Rational<'id>);
 
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct ExactInteger<'id>(Scm<'id>);
+impl ExactIntegerTy for ExactInteger<'_> {}
+impl NumTy for ExactInteger<'_> {}
+impl RealTy for ExactInteger<'_> {}
+impl<'id> ScmNum<'id> for ExactInteger<'id> {
+    unsafe fn as_ptr(&self) -> sys::SCM {
+        unsafe { self.0.as_ptr() }
+    }
+
+    fn is_real(&self) -> bool {
+        true
+    }
+}
 impl ScmTy for ExactInteger<'_> {
     type Output = Self;
 
@@ -141,21 +155,10 @@ impl ScmTy for ExactInteger<'_> {
         unsafe { Self(scm.cast_lifetime()) }
     }
 }
-impl ScmNum for ExactInteger<'_> {
-    unsafe fn as_ptr(&self) -> sys::SCM {
-        unsafe { self.0.as_ptr() }
-    }
-
-    fn is_real(&self) -> bool {
-        true
-    }
-}
-impl NumTy for ExactInteger<'_> {}
-impl RealTy for ExactInteger<'_> {}
-impl_scm_num!(ExactInteger<'_>);
-impl_op_for_scm_num!(ExactInteger<'_>, BitAnd, bitand, sys::scm_logand);
-impl_op_for_scm_num!(ExactInteger<'_>, BitOr, bitor, sys::scm_logior);
-impl_op_for_scm_num!(ExactInteger<'_>, BitXor, bitxor, sys::scm_logxor);
+impl_scm_num!(ExactInteger<'id>);
+impl_op_for_scm_num!(ExactInteger<'id>, BitAnd, bitand, sys::scm_logand);
+impl_op_for_scm_num!(ExactInteger<'id>, BitOr, bitor, sys::scm_logior);
+impl_op_for_scm_num!(ExactInteger<'id>, BitXor, bitxor, sys::scm_logxor);
 
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
@@ -181,7 +184,7 @@ impl<'id> Number<'id> {
         unsafe { Self(Scm::from_ptr(sys::scm_exact_to_inexact(self.0.as_ptr()))) }
     }
 }
-impl ScmNum for Number<'_> {
+impl<'id> ScmNum<'id> for Number<'id> {
     unsafe fn as_ptr(&self) -> sys::SCM {
         unsafe { self.0.as_ptr() }
     }
@@ -207,7 +210,7 @@ impl ScmTy for Number<'_> {
     }
 }
 impl NumTy for Number<'_> {}
-impl_scm_num!(Number<'_>);
+impl_scm_num!(Number<'id>);
 
 #[cfg(test)]
 mod tests {
