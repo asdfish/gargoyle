@@ -40,6 +40,7 @@ impl Api {
     ///
     /// ```
     /// # use gargoyle::with_guile;
+    /// # #[cfg(not(miri))]
     /// with_guile(|api| {
     ///      let list = api.make_list([1, 2, 3])
     ///           .into_iter()
