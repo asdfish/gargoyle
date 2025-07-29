@@ -20,7 +20,11 @@
 
 use {
     crate::{Api, Scm, ScmTy, sys},
-    std::{cmp::Ordering, ffi::CStr, ops::Add},
+    std::{
+        cmp::Ordering,
+        ffi::CStr,
+        ops::{Add, Div, Mul, Sub},
+    },
 };
 
 pub mod complex;
@@ -85,18 +89,27 @@ impl ScmTy for Number<'_> {
 }
 impl Num for Number<'_> {}
 
-impl<R> Add<R> for Number<'_>
-where
-    R: Num,
-{
-    type Output = Self;
+macro_rules! impl_op_for_number {
+    ($op:ident, $fn:ident, $scm_fn:expr) => {
+        impl<R> $op<R> for Number<'_>
+        where
+            R: Num,
+        {
+            type Output = Self;
 
-    fn add(self, r: R) -> Self {
-        let api = unsafe { Api::new_unchecked() };
-        let r = api.make(r);
-        Self(unsafe { Scm::from_ptr(sys::scm_sum(self.0.as_ptr(), r.as_ptr())) })
-    }
+            fn $fn(self, r: R) -> Self {
+                let api = unsafe { Api::new_unchecked() };
+                let r = api.make(r);
+                Self(unsafe { Scm::from_ptr(($scm_fn)(self.0.as_ptr(), r.as_ptr())) })
+            }
+        }
+    };
 }
+impl_op_for_number!(Add, add, sys::scm_sum);
+impl_op_for_number!(Sub, sub, sys::scm_difference);
+// This will throw with divide by zero, but rust already does that.
+impl_op_for_number!(Div, div, sys::scm_divide);
+impl_op_for_number!(Mul, mul, sys::scm_product);
 impl<R> PartialEq<R> for Number<'_>
 where
     R: Clone + Copy + Num,
@@ -177,7 +190,10 @@ mod tests {
     #[test]
     fn math() {
         with_guile(|api| {
-            assert_eq!(api.make_num(1) + api.make_num(2), 3);
+            assert_eq!(api.make_num(1) + 2, 3);
+            assert_eq!(api.make_num(1) - 2, -1);
+            assert_eq!(api.make_num(5) * 2, 10);
+            assert_eq!(api.make_num(8) / 2, 4);
         })
         .unwrap()
     }
