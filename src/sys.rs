@@ -65,6 +65,11 @@ unsafe extern "C" {
 
     pub fn scm_char_set_p(_obj: SCM) -> SCM;
     pub fn scm_char_set_contains_p(_cs: SCM, _ch: SCM) -> SCM;
+    pub fn scm_char_set_ref(_cs: SCM, _cursor: SCM) -> SCM;
+    pub fn scm_char_set_cursor(_cs: SCM) -> SCM;
+    pub fn scm_char_set_cursor_next(_cs: SCM, _cursor: SCM) -> SCM;
+
+    pub fn scm_end_of_char_set_p(_cursor: SCM) -> SCM;
 
     pub fn scm_from_double(_: c_double) -> SCM;
     pub fn scm_from_int8(_: i8) -> SCM;

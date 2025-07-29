@@ -24,7 +24,8 @@ use {
         list::List,
         string::String,
         sys::{
-            SCM_UNDEFINED, scm_char_set_contains_p, scm_char_set_p, scm_list_to_char_set,
+            SCM_UNDEFINED, scm_char_set_contains_p, scm_char_set_cursor, scm_char_set_cursor_next,
+            scm_char_set_p, scm_char_set_ref, scm_end_of_char_set_p, scm_list_to_char_set,
             scm_string_to_char_set,
         },
     },
@@ -55,6 +56,17 @@ impl<'id> From<String<'id>> for CharSet<'id> {
         Self(unsafe { Scm::from_ptr(scm_string_to_char_set(string.0.as_ptr(), SCM_UNDEFINED)) })
     }
 }
+impl<'id> IntoIterator for CharSet<'id> {
+    type Item = char;
+    type IntoIter = IntoIter<'id>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            cursor: unsafe { Scm::from_ptr(scm_char_set_cursor(self.0.as_ptr())) },
+            char_set: self,
+        }
+    }
+}
 impl<'id> ScmTy<'id> for CharSet<'id> {
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"char-set")
@@ -73,16 +85,41 @@ impl<'id> ScmTy<'id> for CharSet<'id> {
     }
 }
 
-// #[derive(Clone, Debug)]
-// #[repr(transparent)]
-// pub struct Cursor<'id>(Scm<'id>);
+#[derive(Clone, Debug)]
+pub struct IntoIter<'id> {
+    char_set: CharSet<'id>,
+    cursor: Scm<'id>,
+}
+impl<'id> Iterator for IntoIter<'id> {
+    type Item = char;
 
-// #[derive(Clone, Debug)]
-// pub struct CharSetIterator<'id>(CharSet<'id>, Scm<'id>);
+    fn next(&mut self) -> Option<Self::Item> {
+        if unsafe { Scm::from_ptr(scm_end_of_char_set_p(self.cursor.as_ptr())) }.is_true() {
+            None
+        } else {
+            let ch = unsafe {
+                Scm::from_ptr(scm_char_set_ref(
+                    self.char_set.0.as_ptr(),
+                    self.cursor.as_ptr(),
+                ))
+            }
+            .get::<char>()
+            .expect("`scm-char-set-ref` should return a `char`");
+            self.cursor = unsafe {
+                Scm::from_ptr(scm_char_set_cursor_next(
+                    self.char_set.0.as_ptr(),
+                    self.cursor.as_ptr(),
+                ))
+            };
+
+            Some(ch)
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::with_guile};
+    use {super::*, crate::with_guile, std::collections::HashSet};
 
     #[cfg_attr(miri, ignore)]
     #[test]
@@ -92,6 +129,20 @@ mod tests {
             assert!(chars.contains('h'));
             assert!(chars.contains('i'));
             assert!(!chars.contains('o'));
+        })
+        .unwrap();
+    }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn char_set_into_iterator() {
+        with_guile(|api| {
+            assert_eq!(
+                CharSet::from(api.make_string("asdf"))
+                    .into_iter()
+                    .collect::<HashSet<_>>(),
+                HashSet::from_iter("asdf".chars())
+            );
         })
         .unwrap();
     }
