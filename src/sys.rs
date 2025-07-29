@@ -96,11 +96,13 @@ unsafe extern "C" {
     pub fn scm_is_bool(_val: SCM) -> bool;
     pub fn scm_is_complex(_val: SCM) -> bool;
     pub fn scm_is_exact(_val: SCM) -> bool;
+
     pub fn scm_is_inexact(_val: SCM) -> bool;
     pub fn scm_is_rational(_val: SCM) -> bool;
     pub fn scm_is_string(_val: SCM) -> bool;
     pub fn gargoyle_reexports_scm_is_true(_val: SCM) -> bool;
 
+    pub fn scm_is_exact_integer(_val: SCM) -> bool;
     pub fn scm_exact_to_inexact(_z: SCM) -> SCM;
     pub fn scm_inexact_to_exact(_z: SCM) -> SCM;
 
@@ -109,6 +111,10 @@ unsafe extern "C" {
     pub fn scm_divide(_z1: SCM, _z2: SCM) -> SCM;
     pub fn scm_remainder(_n: SCM, _d: SCM) -> SCM;
     pub fn scm_product(_z1: SCM, _z2: SCM) -> SCM;
+
+    pub fn scm_logand(_n1: SCM, _n2: SCM) -> SCM;
+    pub fn scm_logior(_n1: SCM, _n2: SCM) -> SCM;
+    pub fn scm_logxor(_n1: SCM, _n2: SCM) -> SCM;
 
     pub fn scm_nan() -> SCM;
     pub fn scm_inf() -> SCM;

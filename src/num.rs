@@ -23,7 +23,7 @@ use {
     std::{
         cmp::Ordering,
         ffi::CStr,
-        ops::{Add, Div, Mul, Rem, Sub},
+        ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Rem, Sub},
     },
 };
 
@@ -32,18 +32,130 @@ mod int;
 pub mod rational;
 
 /// Marker trait for types that always pass `num?`
-pub trait Num: ScmTy {}
+pub trait NumTy: ScmTy {}
 /// Marker trait for types that pass `real?`
-pub trait Real: Num {}
+pub trait RealTy: NumTy {}
+/// Marker trait for types that pass `exact-integer?`
+pub trait ExactIntegerTy: NumTy {}
 
 impl Api {
     pub fn make_num<'id, T>(&'id self, num: T) -> Number<'id>
     where
-        T: Num,
+        T: NumTy,
     {
         Number(self.make(num))
     }
+    pub fn make_exact<'id, T>(&'id self, num: T) -> ExactInteger<'id>
+    where
+        T: ExactIntegerTy,
+    {
+        ExactInteger(self.make(num))
+    }
 }
+
+trait ScmNum: NumTy {
+    unsafe fn as_ptr(&self) -> sys::SCM;
+    fn is_real(&self) -> bool;
+}
+macro_rules! impl_scm_num {
+    ($num:ty) => {
+        impl<R> PartialEq<R> for $num
+        where
+            R: Clone + Copy + NumTy,
+        {
+            fn eq(&self, r: &R) -> bool {
+                let api = unsafe { Api::new_unchecked() };
+                let r = api.make(*r);
+                unsafe { Scm::from_ptr(sys::scm_num_eq_p(self.as_ptr(), r.as_ptr())).is_true() }
+            }
+        }
+
+        impl<R> PartialOrd<R> for $num
+        where
+            R: Clone + Copy + NumTy,
+        {
+            fn partial_cmp(&self, r: &R) -> Option<Ordering> {
+                let api = unsafe { Api::new_unchecked() };
+                let r = api.make_num(*r);
+                (self.is_real() && r.is_real())
+                    .then(|| {
+                        [
+                            (
+                                sys::scm_less_p
+                                    as unsafe extern "C" fn(_: sys::SCM, _: sys::SCM) -> sys::SCM,
+                                Ordering::Less,
+                            ),
+                            (sys::scm_num_eq_p, Ordering::Equal),
+                            (sys::scm_gr_p, Ordering::Greater),
+                        ]
+                        .into_iter()
+                        .find_map(|(predicate, output)| {
+                            unsafe { Scm::from_ptr((predicate)(self.0.as_ptr(), r.0.as_ptr())) }
+                                .is_true()
+                                .then_some(output)
+                        })
+                    })
+                    .flatten()
+            }
+        }
+        impl_op_for_scm_num!($num, Add, add, sys::scm_sum);
+        impl_op_for_scm_num!($num, Sub, sub, sys::scm_difference);
+        impl_op_for_scm_num!($num, Div, div, sys::scm_divide);
+        impl_op_for_scm_num!($num, Rem, rem, sys::scm_remainder);
+        impl_op_for_scm_num!($num, Mul, mul, sys::scm_product);
+    };
+}
+macro_rules! impl_op_for_scm_num {
+    ($ty:ty, $op:ident, $fn:ident, $scm_fn:expr) => {
+        impl<R> $op<R> for $ty
+        where
+            R: NumTy,
+        {
+            type Output = Self;
+
+            fn $fn(self, r: R) -> Self {
+                let api = unsafe { Api::new_unchecked() };
+                let r = api.make(r);
+                Self(unsafe { Scm::from_ptr(($scm_fn)(self.as_ptr(), r.as_ptr())) })
+            }
+        }
+    };
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
+pub struct ExactInteger<'id>(Scm<'id>);
+impl ScmTy for ExactInteger<'_> {
+    type Output = Self;
+
+    const TYPE_NAME: &'static CStr = c"exact integer";
+    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+        unsafe { self.0.cast_lifetime() }
+    }
+
+    fn predicate(_: &Api, scm: &Scm) -> bool {
+        unsafe { sys::scm_is_exact_integer(scm.as_ptr()) }
+    }
+
+    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
+        unsafe { Self(scm.cast_lifetime()) }
+    }
+}
+impl ScmNum for ExactInteger<'_> {
+    unsafe fn as_ptr(&self) -> sys::SCM {
+        unsafe { self.0.as_ptr() }
+    }
+
+    fn is_real(&self) -> bool {
+        true
+    }
+}
+impl NumTy for ExactInteger<'_> {}
+impl RealTy for ExactInteger<'_> {}
+impl_scm_num!(ExactInteger<'_>);
+impl_op_for_scm_num!(ExactInteger<'_>, BitAnd, bitand, sys::scm_logand);
+impl_op_for_scm_num!(ExactInteger<'_>, BitOr, bitor, sys::scm_logior);
+impl_op_for_scm_num!(ExactInteger<'_>, BitXor, bitxor, sys::scm_logxor);
 
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
@@ -69,6 +181,14 @@ impl<'id> Number<'id> {
         unsafe { Self(Scm::from_ptr(sys::scm_exact_to_inexact(self.0.as_ptr()))) }
     }
 }
+impl ScmNum for Number<'_> {
+    unsafe fn as_ptr(&self) -> sys::SCM {
+        unsafe { self.0.as_ptr() }
+    }
+    fn is_real(&self) -> bool {
+        unsafe { sys::scm_is_real(self.0.as_ptr()) }
+    }
+}
 impl ScmTy for Number<'_> {
     type Output = Self;
 
@@ -86,68 +206,8 @@ impl ScmTy for Number<'_> {
         Self(unsafe { scm.cast_lifetime() })
     }
 }
-impl Num for Number<'_> {}
-
-macro_rules! impl_op_for_number {
-    ($op:ident, $fn:ident, $scm_fn:expr) => {
-        impl<R> $op<R> for Number<'_>
-        where
-            R: Num,
-        {
-            type Output = Self;
-
-            fn $fn(self, r: R) -> Self {
-                let api = unsafe { Api::new_unchecked() };
-                let r = api.make(r);
-                Self(unsafe { Scm::from_ptr(($scm_fn)(self.0.as_ptr(), r.as_ptr())) })
-            }
-        }
-    };
-}
-impl_op_for_number!(Add, add, sys::scm_sum);
-impl_op_for_number!(Sub, sub, sys::scm_difference);
-// This will throw with divide by zero, but rust already does that.
-impl_op_for_number!(Div, div, sys::scm_divide);
-impl_op_for_number!(Rem, rem, sys::scm_remainder);
-impl_op_for_number!(Mul, mul, sys::scm_product);
-impl<R> PartialEq<R> for Number<'_>
-where
-    R: Clone + Copy + Num,
-{
-    fn eq(&self, r: &R) -> bool {
-        let api = unsafe { Api::new_unchecked() };
-        let r = api.make(*r);
-        unsafe { Scm::from_ptr(sys::scm_num_eq_p(self.0.as_ptr(), r.as_ptr())).is_true() }
-    }
-}
-impl<R> PartialOrd<R> for Number<'_>
-where
-    R: Clone + Copy + Num,
-{
-    fn partial_cmp(&self, r: &R) -> Option<Ordering> {
-        let api = unsafe { Api::new_unchecked() };
-        let r = api.make_num(*r);
-        (self.is_real() && r.is_real())
-            .then(|| {
-                [
-                    (
-                        sys::scm_less_p
-                            as unsafe extern "C" fn(_: sys::SCM, _: sys::SCM) -> sys::SCM,
-                        Ordering::Less,
-                    ),
-                    (sys::scm_num_eq_p, Ordering::Equal),
-                    (sys::scm_gr_p, Ordering::Greater),
-                ]
-                .into_iter()
-                .find_map(|(predicate, output)| {
-                    unsafe { Scm::from_ptr((predicate)(self.0.as_ptr(), r.0.as_ptr())) }
-                        .is_true()
-                        .then_some(output)
-                })
-            })
-            .flatten()
-    }
-}
+impl NumTy for Number<'_> {}
+impl_scm_num!(Number<'_>);
 
 #[cfg(test)]
 mod tests {
@@ -195,6 +255,16 @@ mod tests {
             assert_eq!(api.make_num(5) * 2, 10);
             assert_eq!(api.make_num(8) / 2, 4);
             assert_eq!(api.make_num(10) % 3, 1);
+
+            assert_eq!(api.make_exact(1) + 2, 3);
+            assert_eq!(api.make_exact(1) - 2, -1);
+            assert_eq!(api.make_exact(5) * 2, 10);
+            assert_eq!(api.make_exact(8) / 2, 4);
+            assert_eq!(api.make_exact(10) % 3, 1);
+
+            assert_eq!(api.make_exact(0b11) & 0b01, 0b01);
+            assert_eq!(api.make_exact(0b11) | 0b10, 0b11);
+            assert_eq!(api.make_exact(0b11) ^ 0b10, 0b01);
         })
         .unwrap()
     }

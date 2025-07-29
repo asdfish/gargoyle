@@ -21,7 +21,7 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        num::{Num, Number, Real},
+        num::{NumTy, Number, RealTy},
         sys::{
             scm_denominator, scm_from_double, scm_inf, scm_is_rational, scm_nan, scm_numerator,
             scm_rationalize, scm_to_double,
@@ -42,8 +42,8 @@ impl Api {
 
     pub fn rationalize<'id, T, U>(&'id self, real: T, eps: U) -> Rational<'id>
     where
-        T: Real,
-        U: Real,
+        T: RealTy,
+        U: RealTy,
     {
         let real = real.construct(self);
         let eps = eps.construct(self);
@@ -68,8 +68,8 @@ impl ScmTy for c_double {
         unsafe { scm_to_double(scm.as_ptr()) }
     }
 }
-impl Num for c_double {}
-impl Real for c_double {}
+impl NumTy for c_double {}
+impl RealTy for c_double {}
 
 /// A rational number
 #[derive(Clone, Copy, Debug)]
@@ -98,8 +98,8 @@ impl<'id> Rational<'id> {
         unsafe { Scm::from_ptr(scm_numerator(self.0.as_ptr())) }
     }
 }
-impl Num for Rational<'_> {}
-impl Real for Rational<'_> {}
+impl NumTy for Rational<'_> {}
+impl RealTy for Rational<'_> {}
 
 #[cfg(test)]
 mod tests {

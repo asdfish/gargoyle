@@ -21,7 +21,7 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        num::{Num, Real},
+        num::{ExactIntegerTy, NumTy, RealTy},
         sys,
     },
     std::ffi::CStr,
@@ -54,8 +54,9 @@ macro_rules! impl_scm_ty_for_int {
                 unsafe { ($to_int)(scm.as_ptr()) }
             }
         }
-        impl Num for $ty {}
-        impl Real for $ty {}
+        impl ExactIntegerTy for $ty {}
+        impl NumTy for $ty {}
+        impl RealTy for $ty {}
     };
 }
 impl_scm_ty_for_int!([
