@@ -99,6 +99,7 @@ unsafe extern "C" {
     pub fn scm_car(_pair: SCM) -> SCM;
     pub fn scm_cdr(_pair: SCM) -> SCM;
     pub fn scm_cons(_x: SCM, _y: SCM) -> SCM;
+    pub fn scm_length(_lst: SCM) -> SCM;
 
     pub fn scm_list_p(_x: SCM) -> SCM;
     pub fn scm_null_p(_x: SCM) -> SCM;

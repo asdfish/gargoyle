@@ -21,12 +21,13 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        sys::{SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p, scm_null_p},
+        sys::{SCM_EOL, scm_car, scm_cdr, scm_cons, scm_length, scm_list_p, scm_null_p},
     },
     bstr::BStr,
     std::{
         borrow::Cow,
         ffi::{CStr, CString},
+        iter::{ExactSizeIterator, FusedIterator},
         marker::PhantomData,
     },
 };
@@ -53,16 +54,9 @@ impl Api {
         I: IntoIterator<Item = T>,
         T: ScmTy<'id>,
     {
-        let list = iter
-            .into_iter()
-            .map(T::construct)
-            .map(|scm| unsafe { scm.as_ptr() })
-            .fold(unsafe { SCM_EOL }, |cdr, car| unsafe { scm_cons(car, cdr) });
-        let list = unsafe { Scm::from_ptr(list) };
-        List {
-            pair: list,
-            _marker: PhantomData,
-        }
+        let mut lst = unsafe { List::new() };
+        lst.extend(iter);
+        lst
     }
 }
 
@@ -75,7 +69,45 @@ where
     pair: Scm<'id>,
     _marker: PhantomData<T>,
 }
+impl<'id, T> List<'id, T>
+where
+    T: ScmTy<'id>,
+{
+    /// # Safety
+    ///
+    /// The lifetime should be associated with the guile mode status.
+    pub unsafe fn new() -> Self {
+        Self {
+            pair: unsafe { Scm::from_ptr(SCM_EOL) },
+            _marker: PhantomData,
+        }
+    }
 
+    pub fn len(&self) -> usize {
+        unsafe { Scm::from_ptr(scm_length(self.pair.as_ptr())) }
+            .get::<usize>()
+            .expect("list is too large")
+    }
+    pub fn is_empty(&self) -> bool {
+        unsafe { Scm::from_ptr(scm_null_p(self.pair.as_ptr())) }.is_true()
+    }
+}
+impl<'id, T> Extend<T> for List<'id, T>
+where
+    T: ScmTy<'id>,
+{
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let lst = iter
+            .into_iter()
+            .fold(unsafe { self.pair.as_ptr() }, |cdr, car| unsafe {
+                scm_cons(T::construct(car).as_ptr(), cdr)
+            });
+        self.pair = unsafe { Scm::from_ptr(lst) };
+    }
+}
 impl<'id, T> ScmTy<'id> for List<'id, T>
 where
     T: ScmTy<'id>,
@@ -126,6 +158,8 @@ where
 pub struct IntoIter<'id, T>(List<'id, T>)
 where
     T: ScmTy<'id>;
+impl<'id, T> ExactSizeIterator for IntoIter<'id, T> where T: ScmTy<'id> {}
+impl<'id, T> FusedIterator for IntoIter<'id, T> where T: ScmTy<'id> {}
 impl<'id, T> Iterator for IntoIter<'id, T>
 where
     T: ScmTy<'id>,
@@ -133,7 +167,7 @@ where
     type Item = T::Output;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if unsafe { Scm::from_ptr(scm_null_p(self.0.pair.as_ptr())) }.is_true() {
+        if self.0.is_empty() {
             None
         } else {
             let [car, cdr] = [scm_car, scm_cdr]
@@ -143,11 +177,24 @@ where
             Some(unsafe { T::get_unchecked(&Api::new_unchecked(), &car) })
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.0.len();
+        (len, Some(len))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use {super::*, crate::with_guile};
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn list_len() {
+        with_guile(|api| {
+            assert_eq!(api.make_list([1, 2, 3]).len(), 3);
+        })
+        .unwrap();
+    }
 
     #[test]
     fn list_type() {
