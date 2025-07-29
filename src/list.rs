@@ -116,13 +116,6 @@ where
     pub fn clear(&mut self) {
         self.pair = unsafe { Scm::from_ptr(SCM_EOL) };
     }
-
-    // pub fn extract_if<F>(&mut self, predicate: F) -> ExtractIf<'id, F, T>
-    // where
-    //     F: FnMut(T) -> bool,
-    // {
-    //     todo!()
-    // }
 }
 impl<'id, T> Extend<T> for List<'id, T>
 where
@@ -238,13 +231,6 @@ where
         (len, Some(len))
     }
 }
-
-// pub struct ExtractIf<'id, T, F>
-// where
-//     T: ScmTy<'id>,
-// {
-//     list: List<'id, T>,
-// }
 
 #[cfg(test)]
 mod tests {
