@@ -90,6 +90,11 @@ where
 mod tests {
     use {super::*, crate::with_guile};
 
+    #[test]
+    fn list_type() {
+        assert_eq!(List::<'_, i32>::type_name().as_ref(), c"(list i32)");
+    }
+
     #[cfg_attr(miri, ignore)]
     #[test]
     fn list_iter() {
