@@ -139,7 +139,7 @@ where
 {
     fn type_name() -> Cow<'static, CStr> {
         CString::new(format!(
-            "(list {})",
+            "'{}()",
             BStr::new(T::type_name().as_ref().to_bytes())
         ))
         .map(Cow::Owned)
@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn list_type() {
-        assert_eq!(List::<'_, i32>::type_name().as_ref(), c"(list i32)");
+        assert_eq!(List::<'_, i32>::type_name().as_ref(), c"'s32()");
     }
 
     #[cfg_attr(miri, ignore)]
