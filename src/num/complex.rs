@@ -61,7 +61,7 @@ impl<'id> ScmTy<'id> for Complex<'id> {
     fn predicate(_: &Api, scm: &Scm) -> bool {
         unsafe { scm_is_complex(scm.as_ptr()) }
     }
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
-        Self(unsafe { (*scm).cast_lifetime() })
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
+        Self(scm)
     }
 }

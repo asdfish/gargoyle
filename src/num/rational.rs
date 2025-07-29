@@ -69,7 +69,7 @@ impl<'id> ScmTy<'id> for c_double {
             .map(|num| num.is_real())
             .unwrap_or_default()
     }
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self {
+    unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self {
         unsafe { scm_to_double(scm.as_ptr()) }
     }
 }
@@ -111,8 +111,8 @@ impl<'id> ScmTy<'id> for Rational<'id> {
     fn predicate(_: &Api, scm: &Scm) -> bool {
         unsafe { scm_is_rational(scm.as_ptr()) }
     }
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
-        Self(unsafe { (*scm).cast_lifetime() })
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
+        Self(scm)
     }
 }
 

@@ -153,7 +153,7 @@ impl<'id> ScmTy<'id> for ExactInteger<'id> {
         unsafe { sys::scm_is_exact_integer(scm.as_ptr()) }
     }
 
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self::Output {
         unsafe { Self(scm.cast_lifetime()) }
     }
 }
@@ -209,8 +209,8 @@ impl<'id> ScmTy<'id> for Number<'id> {
         unsafe { sys::scm_is_number(scm.as_ptr()) }
     }
 
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
-        Self(unsafe { scm.cast_lifetime() })
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
+        Self(scm)
     }
 }
 impl<'id> NumTy<'id> for Number<'id> {}

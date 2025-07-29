@@ -87,8 +87,8 @@ impl<'id> ScmTy<'id> for CharSet<'id> {
         unsafe { Scm::from_ptr(scm_char_set_p(scm.as_ptr())).is_true() }
     }
 
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
-        Self(unsafe { (*scm).cast_lifetime() })
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
+        Self(scm)
     }
 }
 

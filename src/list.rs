@@ -104,9 +104,20 @@ where
         unsafe { Scm::from_ptr(scm_null_p(self.pair.as_ptr())) }.is_true()
     }
 
-    pub fn first(&self) -> Option<T::Output> {
+    pub fn front(&self) -> Option<T::Output> {
         self.clone().into_iter().next()
     }
+
+    pub fn clear(&mut self) {
+        self.pair = unsafe { Scm::from_ptr(SCM_EOL) };
+    }
+
+    // pub fn extract_if<F>(&mut self, predicate: F) -> ExtractIf<'id, F, T>
+    // where
+    //     F: FnMut(T) -> bool,
+    // {
+    //     todo!()
+    // }
 }
 impl<'id, T> Extend<T> for List<'id, T>
 where
@@ -151,9 +162,9 @@ where
             .all(|i| i.is::<T>())
         }
     }
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
         Self {
-            pair: unsafe { scm.cast_lifetime() },
+            pair: scm,
             _marker: PhantomData,
         }
     }
@@ -191,7 +202,7 @@ where
     ///     assert_eq!(iter.next(), Some(3));
     ///     assert_eq!(iter.next(), Some(2));
     ///     let lst = iter.into_inner();
-    ///     assert_eq!(lst.first(), Some(1));
+    ///     assert_eq!(lst.front(), Some(1));
     /// }).unwrap();
     /// ```
     pub fn into_inner(self) -> List<'id, T> {
@@ -214,7 +225,7 @@ where
                 .map(|morphism| unsafe { Scm::from_ptr(morphism(self.0.pair.as_ptr())) });
             self.0.pair = cdr;
 
-            Some(unsafe { T::get_unchecked(&Api::new_unchecked(), &car) })
+            Some(unsafe { T::get_unchecked(&Api::new_unchecked(), car) })
         }
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -222,6 +233,13 @@ where
         (len, Some(len))
     }
 }
+
+// pub struct ExtractIf<'id, T, F>
+// where
+//     T: ScmTy<'id>,
+// {
+//     list: List<'id, T>,
+// }
 
 #[cfg(test)]
 mod tests {

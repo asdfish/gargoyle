@@ -52,7 +52,7 @@ macro_rules! impl_scm_ty_for_int {
                     )
                 }
             }
-            unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
+            unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self::Output {
                 unsafe { ($to_int)(scm.as_ptr()) }
             }
         }

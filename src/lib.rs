@@ -539,7 +539,7 @@ impl<'id> Scm<'id> {
         T::predicate(&api, self)
     }
     /// Attempt to get `T` from a scm
-    pub fn get<T>(&self) -> Option<T::Output>
+    pub fn get<T>(self) -> Option<T::Output>
     where
         T: ScmTy<'id>,
     {
@@ -656,7 +656,7 @@ pub trait ScmTy<'id>: Sized {
     /// # Safety
     ///
     /// This function must be safe if [Self::predicate] returns [true].
-    unsafe fn get_unchecked(_: &Api, _: &Scm) -> Self::Output;
+    unsafe fn get_unchecked(_: &Api, _: Scm<'id>) -> Self::Output;
 }
 impl<'id> ScmTy<'id> for () {
     type Output = ();
@@ -671,7 +671,7 @@ impl<'id> ScmTy<'id> for () {
     fn predicate(_: &Api, scm: &Scm) -> bool {
         unsafe { crate::sys::SCM_UNBNDP(scm.as_ptr()) }
     }
-    unsafe fn get_unchecked(_: &Api, _: &Scm) -> Self {}
+    unsafe fn get_unchecked(_: &Api, _: Scm) -> Self {}
 }
 impl<'id> ScmTy<'id> for bool {
     type Output = Self;
@@ -691,7 +691,7 @@ impl<'id> ScmTy<'id> for bool {
     fn predicate(_: &Api, scm: &Scm) -> bool {
         unsafe { crate::sys::scm_is_bool(scm.as_ptr()) }
     }
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self {
+    unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self {
         unsafe { crate::sys::scm_to_bool(scm.as_ptr()) }
     }
 }
@@ -713,7 +713,7 @@ impl<'id> ScmTy<'id> for char {
         unsafe { sys::gargoyle_reexports_scm_is_true(sys::scm_char_p(scm.as_ptr())) }
     }
 
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> char {
+    unsafe fn get_unchecked(_: &Api, scm: Scm) -> char {
         char::from_u32(unsafe { sys::scm_to_uint32(sys::scm_char_to_integer(scm.as_ptr())) })
             .expect("Guile characters should return valid rust characters.")
     }
@@ -736,7 +736,7 @@ impl<'id> ScmTy<'id> for &str {
 
     unsafe fn get_unchecked(
         _: &Api,
-        scm: &Scm,
+        scm: Scm,
     ) -> Result<::string::String<AllocVec<u8, CAllocator>>, AllocError> {
         let mut len: usize = 0;
         // SAFETY: since we have the lifetime, we can assume we're in guile mode
@@ -771,8 +771,8 @@ impl<'id> ScmTy<'id> for Scm<'id> {
     fn predicate(_: &Api, _: &Scm) -> bool {
         true
     }
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
-        unsafe { Scm::from_ptr(scm.as_ptr()) }
+    unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self::Output {
+        unsafe { scm.cast_lifetime() }
     }
 }
 
@@ -901,7 +901,7 @@ mod tests {
             let scm = self.make(val);
             assert!(T::predicate(self, &scm));
             assert!(scm.eq(&scm));
-            assert_eq!(unsafe { T::get_unchecked(self, &scm) }, output);
+            assert_eq!(unsafe { T::get_unchecked(self, scm) }, output);
 
             scm
         }
