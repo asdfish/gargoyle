@@ -374,12 +374,10 @@ impl Api {
         F: AsRef<CStr> + ?Sized,
         E: AsRef<CStr> + ?Sized,
     {
-        assert!(idx <= 10, "cannot have more than 10 arguments");
-
         unsafe {
             sys::scm_wrong_type_arg_msg(
                 name.as_ref().as_ptr(),
-                idx as c_int,
+                idx.try_into().unwrap(),
                 arg.as_ptr(),
                 expected.as_ref().as_ptr(),
             );
