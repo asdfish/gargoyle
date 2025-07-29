@@ -21,16 +21,25 @@
 use {
     crate::{
         Api, Scm, ScmTy,
-        num::Real,
+        num::{Number, Real},
         sys::{
-            scm_denominator, scm_from_double, scm_is_rational, scm_numerator, scm_rationalize,
-            scm_to_double,
+            scm_denominator, scm_from_double, scm_inf, scm_is_rational, scm_nan, scm_numerator,
+            scm_rationalize, scm_to_double,
         },
     },
     std::ffi::{CStr, c_double},
 };
 
 impl Api {
+    /// Create a `+nan`.
+    pub fn nan<'id>(&'id self) -> Scm<'id> {
+        unsafe { Scm::from_ptr(scm_nan()) }
+    }
+    /// Create a `+inf`.
+    pub fn inf<'id>(&'id self) -> Scm<'id> {
+        unsafe { Scm::from_ptr(scm_inf()) }
+    }
+
     pub fn rationalize<'id, T, U>(&'id self, real: T, eps: U) -> Rational<'id>
     where
         T: Real,
@@ -51,7 +60,9 @@ impl ScmTy for c_double {
         unsafe { Scm::from_ptr(scm_from_double(self)) }
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {
-        scm.is_real_number()
+        scm.get::<Number<'_>>()
+            .map(|num| num.is_real())
+            .unwrap_or_default()
     }
     unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self {
         unsafe { scm_to_double(scm.as_ptr()) }

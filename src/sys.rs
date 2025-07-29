@@ -94,13 +94,25 @@ unsafe extern "C" {
     pub fn scm_is_unsigned_integer(_: SCM, _: usize, _: usize) -> bool;
 
     pub fn scm_is_bool(_val: SCM) -> bool;
+    pub fn scm_is_complex(_val: SCM) -> bool;
+    pub fn scm_is_exact(_val: SCM) -> bool;
+    pub fn scm_is_inexact(_val: SCM) -> bool;
     pub fn scm_is_rational(_val: SCM) -> bool;
     pub fn scm_is_string(_val: SCM) -> bool;
     pub fn gargoyle_reexports_scm_is_true(_val: SCM) -> bool;
 
+    pub fn scm_exact_to_inexact(_z: SCM) -> SCM;
+    pub fn scm_inexact_to_exact(_z: SCM) -> SCM;
+
+    pub fn scm_nan() -> SCM;
+    pub fn scm_inf() -> SCM;
+
     pub fn scm_rationalize(_x: SCM, _eps: SCM) -> SCM;
     pub fn scm_numerator(_val: SCM) -> SCM;
     pub fn scm_denominator(_val: SCM) -> SCM;
+
+    pub fn scm_real_part(_z: SCM) -> SCM;
+    pub fn scm_imag_part(_z: SCM) -> SCM;
 
     pub fn scm_gc_protect_object(_: SCM) -> SCM;
     pub fn scm_gc_unprotect_object(_: SCM) -> SCM;
