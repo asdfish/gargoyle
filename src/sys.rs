@@ -47,9 +47,10 @@ unsafe extern "C" {
     pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> bool;
 
     pub fn scm_with_guile(
-        _: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
-        _: *mut c_void,
+        _func: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
+        _data: *mut c_void,
     ) -> *mut c_void;
+    pub fn scm_shell(_argc: c_int, _argv: *const *const c_char);
 
     pub fn scm_from_utf8_stringn(_: *const c_char, _: usize) -> SCM;
     pub fn scm_to_utf8_stringn(_: SCM, _: *mut usize) -> *mut c_char;

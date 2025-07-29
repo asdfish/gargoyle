@@ -32,8 +32,7 @@ use {
     parking_lot::Mutex,
     std::{
         cmp::Ordering,
-        convert::identity,
-        ffi::{CStr, c_double, c_int, c_void},
+        ffi::{CStr, c_char, c_double, c_int, c_void},
         fmt::{self, Display, Formatter},
         marker::PhantomData,
         ops::Not,
@@ -185,6 +184,55 @@ impl Api {
             crate::sys::scm_gc_unprotect_object(scm.0.as_ptr());
         }
         scm.0
+    }
+
+    /// Process command line arguments the same way as guile.
+    pub fn shell<C, S>(&self, argv: C) -> !
+    where
+        C: IntoIterator<Item = &'static S>,
+        S: AsRef<CStr> + ?Sized + 'static,
+    {
+        let argv = argv
+            .into_iter()
+            .map(|arg| arg.as_ref().as_ptr())
+            .collect::<Vec<_>>();
+
+        // SAFETY: everything is static
+        unsafe { self.shell_raw(argv.leak()) }
+    }
+
+    /// [Self::shell] but use raw c style arguments.
+    ///
+    /// # Safety
+    ///
+    /// The `*const c_char` pointers must be static and valid to read up to their null character.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// #![no_main]
+    /// # use gargoyle::with_guile;
+    /// # use std::{ffi::{c_char, c_int}, slice};
+    ///
+    /// #[unsafe(no_mangle)]
+    /// fn main(argc: c_int, argv: *const *const c_char) -> c_int {
+    ///     let argv = usize::try_from(argc)
+    ///         .ok()
+    ///         .filter(|_| !argv.is_null())    
+    ///         .map(|argc| unsafe { slice::from_raw_parts(argv, argc) })
+    ///         .unwrap_or_default();
+    ///     with_guile(|api| {
+    ///         unsafe { api.shell_raw(argv); }
+    ///     });
+    ///     0
+    /// }
+    /// ```
+    pub unsafe fn shell_raw(&self, argv: &'static [*const c_char]) -> ! {
+        unsafe {
+            sys::scm_shell(argv.len().try_into().unwrap(), argv.as_ptr());
+        }
+
+        unreachable!()
     }
 
     /// Execute a function without access to the guile api.
@@ -568,21 +616,17 @@ impl Scm<'_> {
 }
 impl Display for Scm<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
-        with_guile(|_api| {
-            unsafe {
-                let port = sys::scm_open_output_string();
-                sys::scm_write(self.as_ptr(), port);
-                let text = sys::scm_strport_to_string(port);
-                sys::scm_close_port(port);
-                Scm::from_ptr(text)
-            }
-            .get::<&str>()
-            .ok_or(fmt::Error)
-            .and_then(|result| result.map_err(|_| fmt::Error))
-            .and_then(|display| display.fmt(f))
-        })
+        unsafe {
+            let port = sys::scm_open_output_string();
+            sys::scm_write(self.as_ptr(), port);
+            let text = sys::scm_strport_to_string(port);
+            sys::scm_close_port(port);
+            Scm::from_ptr(text)
+        }
+        .get::<&str>()
         .ok_or(fmt::Error)
-        .and_then(identity)
+        .and_then(|result| result.map_err(|_| fmt::Error))
+        .and_then(|display| display.fmt(f))
     }
 }
 impl PartialOrd for Scm<'_> {
