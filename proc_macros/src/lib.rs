@@ -315,7 +315,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                                   #guile_ident.as_ptr(),
                                                   #required_index,
                                                   #required_idents,
-                                                  <#required as ::gargoyle::ScmTy::<'static>>::TYPE_NAME.as_ptr(),
+                                                  <#required as ::gargoyle::ScmTy::<'static>>::type_name().as_ptr(),
                                               );
                                           }
                                           ::core::panic!()
@@ -333,7 +333,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                                     #guile_ident.as_ptr(),
                                                     #optional_index,
                                                     #optional_idents,
-                                                    <Inner as ::gargoyle::ScmTy::<'static>>::TYPE_NAME.as_ptr(),
+                                                    <Inner as ::gargoyle::ScmTy::<'static>>::type_name().as_ptr(),
                                                 );
                                             }
                                             ::core::panic!()

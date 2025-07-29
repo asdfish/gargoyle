@@ -24,6 +24,7 @@ mod alloc;
 mod catch;
 pub mod char_set;
 mod guard;
+pub mod list;
 pub mod num;
 mod protection;
 pub mod string;
@@ -34,6 +35,7 @@ use {
     allocator_api2::{alloc::AllocError, vec::Vec as AllocVec},
     parking_lot::Mutex,
     std::{
+        borrow::Cow,
         ffi::{CStr, c_char, c_int, c_void},
         fmt::{self, Display, Formatter},
         marker::PhantomData,
@@ -643,7 +645,7 @@ pub trait ScmTy<'id>: Sized {
     /// The output of [Self::get_unchecked]. If unsure, you should default to `Self`.
     type Output;
 
-    const TYPE_NAME: &'static CStr;
+    fn type_name() -> Cow<'static, CStr>;
 
     /// Create a [Scm] from the current type.
     fn construct(self) -> Scm<'id>;
@@ -659,7 +661,9 @@ pub trait ScmTy<'id>: Sized {
 impl<'id> ScmTy<'id> for () {
     type Output = ();
 
-    const TYPE_NAME: &'static CStr = c"<#undefined>";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"<#undefined>")
+    }
 
     fn construct(self) -> Scm<'id> {
         unsafe { Scm::from_ptr(sys::SCM_UNDEFINED) }
@@ -672,7 +676,9 @@ impl<'id> ScmTy<'id> for () {
 impl<'id> ScmTy<'id> for bool {
     type Output = Self;
 
-    const TYPE_NAME: &'static CStr = c"bool";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"bool")
+    }
 
     fn construct(self) -> Scm<'id> {
         let scm = match self {
@@ -692,7 +698,9 @@ impl<'id> ScmTy<'id> for bool {
 impl<'id> ScmTy<'id> for char {
     type Output = Self;
 
-    const TYPE_NAME: &'static CStr = c"char";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"char")
+    }
 
     fn construct(self) -> Scm<'id> {
         unsafe {
@@ -713,7 +721,9 @@ impl<'id> ScmTy<'id> for char {
 impl<'id> ScmTy<'id> for &str {
     type Output = Result<::string::String<AllocVec<u8, CAllocator>>, AllocError>;
 
-    const TYPE_NAME: &'static CStr = c"string";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"string")
+    }
 
     fn construct(self) -> Scm<'id> {
         let scm = unsafe { crate::sys::scm_from_utf8_stringn(self.as_ptr().cast(), self.len()) };
@@ -751,7 +761,9 @@ impl<'id> ScmTy<'id> for &str {
 impl<'id> ScmTy<'id> for Scm<'id> {
     type Output = Self;
 
-    const TYPE_NAME: &'static CStr = c"scm";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"scm")
+    }
 
     fn construct(self) -> Scm<'id> {
         unsafe { Scm::from_ptr(self.as_ptr()) }

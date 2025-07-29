@@ -21,6 +21,7 @@
 use {
     crate::{Api, Scm, ScmTy, sys},
     std::{
+        borrow::Cow,
         cmp::Ordering,
         ffi::CStr,
         ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Rem, Sub},
@@ -141,7 +142,9 @@ impl<'id> ScmNum<'id> for ExactInteger<'id> {
 impl<'id> ScmTy<'id> for ExactInteger<'id> {
     type Output = Self;
 
-    const TYPE_NAME: &'static CStr = c"exact integer";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"exact integer")
+    }
     fn construct(self) -> Scm<'id> {
         unsafe { self.0.cast_lifetime() }
     }
@@ -194,7 +197,9 @@ impl<'id> ScmNum<'id> for Number<'id> {
 impl<'id> ScmTy<'id> for Number<'id> {
     type Output = Self;
 
-    const TYPE_NAME: &'static CStr = c"number";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"number")
+    }
 
     fn construct(self) -> Scm<'id> {
         unsafe { self.0.cast_lifetime() }

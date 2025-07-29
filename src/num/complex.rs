@@ -24,7 +24,7 @@ use {
         num::{NumTy, ScmNum},
         sys::{SCM, scm_imag_part, scm_is_complex, scm_real_part},
     },
-    std::ffi::CStr,
+    std::{borrow::Cow, ffi::CStr},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -51,7 +51,9 @@ impl<'id> ScmNum<'id> for Complex<'id> {
 impl<'id> ScmTy<'id> for Complex<'id> {
     type Output = Self;
 
-    const TYPE_NAME: &'static CStr = c"complex";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"complex")
+    }
 
     fn construct(self) -> Scm<'id> {
         unsafe { self.0.cast_lifetime() }

@@ -27,7 +27,10 @@ use {
             scm_numerator, scm_rationalize, scm_to_double,
         },
     },
-    std::ffi::{CStr, c_double},
+    std::{
+        borrow::Cow,
+        ffi::{CStr, c_double},
+    },
 };
 
 impl Api {
@@ -54,7 +57,9 @@ impl Api {
 impl<'id> ScmTy<'id> for c_double {
     type Output = Self;
 
-    const TYPE_NAME: &'static CStr = c"double";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"double")
+    }
 
     fn construct(self) -> Scm<'id> {
         unsafe { Scm::from_ptr(scm_from_double(self)) }
@@ -96,7 +101,9 @@ impl<'id> ScmNum<'id> for Rational<'id> {
 impl<'id> ScmTy<'id> for Rational<'id> {
     type Output = Self;
 
-    const TYPE_NAME: &'static CStr = c"rational";
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"rational")
+    }
 
     fn construct(self) -> Scm<'id> {
         unsafe { self.0.cast_lifetime() }

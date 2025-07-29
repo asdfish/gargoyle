@@ -62,7 +62,10 @@ unsafe extern "C" {
     pub fn scm_char_to_integer(_: SCM) -> SCM;
     pub fn scm_char_p(_: SCM) -> SCM;
 
-    pub fn scm_char_set_p(_: SCM) -> SCM;
+    pub fn scm_char_set_p(_obj: SCM) -> SCM;
+    pub fn scm_char_set_eq(_: SCM, _: SCM) -> SCM;
+    pub fn scm_char_set_leq(_: SCM, _: SCM) -> SCM;
+    pub fn scm_char_set_hash(_: SCM, _: SCM) -> SCM;
 
     pub fn scm_from_double(_: c_double) -> SCM;
     pub fn scm_from_int8(_: i8) -> SCM;
@@ -91,6 +94,11 @@ unsafe extern "C" {
     pub fn scm_to_uint64(_: SCM) -> u64;
     pub fn gargoyle_reexports_scm_to_intptr_t(_: SCM) -> isize;
     pub fn gargoyle_reexports_scm_to_uintptr_t(_: SCM) -> usize;
+
+    pub fn scm_car(_pair: SCM) -> SCM;
+    pub fn scm_cdr(_pair: SCM) -> SCM;
+    pub fn scm_list_p(_x: SCM) -> SCM;
+    pub fn scm_null_p(_x: SCM) -> SCM;
 
     pub fn scm_is_signed_integer(_: SCM, _: isize, _: isize) -> bool;
     pub fn scm_is_unsigned_integer(_: SCM, _: usize, _: usize) -> bool;

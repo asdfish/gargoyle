@@ -24,7 +24,7 @@ use {
         num::{ExactIntegerTy, NumTy, RealTy},
         sys,
     },
-    std::ffi::CStr,
+    std::{borrow::Cow, ffi::CStr},
 };
 
 macro_rules! impl_scm_ty_for_int {
@@ -36,7 +36,9 @@ macro_rules! impl_scm_ty_for_int {
             type Output = Self;
 
             // SAFETY: this is in a const context and there is a null byte concatted at the end.
-            const TYPE_NAME: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(concat!(stringify!($ty), "\0").as_bytes()) };
+            fn type_name() -> Cow<'static, CStr> {
+                const { Cow::Borrowed(unsafe { CStr::from_bytes_with_nul_unchecked(concat!(stringify!($ty), "\0").as_bytes()) }) }
+            }
 
             fn construct(self) -> Scm<'id> {
                 unsafe { Scm::from_ptr(($to_scm)(self)) }
