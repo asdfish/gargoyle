@@ -114,24 +114,25 @@ where
     fn partial_cmp(&self, r: &R) -> Option<Ordering> {
         let api = unsafe { Api::new_unchecked() };
         let r = api.make_num(*r);
-        if self.is_real() && r.is_real() {
-            [
-                (
-                    sys::scm_less_p as unsafe extern "C" fn(_: sys::SCM, _: sys::SCM) -> sys::SCM,
-                    Ordering::Less,
-                ),
-                (sys::scm_num_eq_p, Ordering::Equal),
-                (sys::scm_gr_p, Ordering::Greater),
-            ]
-            .into_iter()
-            .find_map(|(predicate, output)| {
-                unsafe { Scm::from_ptr((predicate)(self.0.as_ptr(), r.0.as_ptr())) }
-                    .is_true()
-                    .then_some(output)
+        (self.is_real() && r.is_real())
+            .then(|| {
+                [
+                    (
+                        sys::scm_less_p
+                            as unsafe extern "C" fn(_: sys::SCM, _: sys::SCM) -> sys::SCM,
+                        Ordering::Less,
+                    ),
+                    (sys::scm_num_eq_p, Ordering::Equal),
+                    (sys::scm_gr_p, Ordering::Greater),
+                ]
+                .into_iter()
+                .find_map(|(predicate, output)| {
+                    unsafe { Scm::from_ptr((predicate)(self.0.as_ptr(), r.0.as_ptr())) }
+                        .is_true()
+                        .then_some(output)
+                })
             })
-        } else {
-            None
-        }
+            .flatten()
     }
 }
 
