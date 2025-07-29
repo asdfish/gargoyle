@@ -104,7 +104,7 @@ where
         unsafe { Scm::from_ptr(scm_null_p(self.pair.as_ptr())) }.is_true()
     }
 
-    pub fn front(&self) -> Option<T::Output> {
+    pub fn front(&self) -> Option<T> {
         if self.is_empty() {
             None
         } else {
@@ -137,8 +137,6 @@ impl<'id, T> ScmTy<'id> for List<'id, T>
 where
     T: ScmTy<'id>,
 {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         CString::new(format!(
             "(list {})",
@@ -160,7 +158,7 @@ where
             .all(|i| i.is::<T>())
         }
     }
-    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self {
         Self {
             pair: scm,
             _marker: PhantomData,
@@ -171,7 +169,7 @@ impl<'id, T> IntoIterator for List<'id, T>
 where
     T: ScmTy<'id>,
 {
-    type Item = T::Output;
+    type Item = T;
     type IntoIter = IntoIter<'id, T>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -213,7 +211,7 @@ impl<'id, T> Iterator for IntoIter<'id, T>
 where
     T: ScmTy<'id>,
 {
-    type Item = T::Output;
+    type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.0.is_empty() {

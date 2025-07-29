@@ -99,8 +99,6 @@ impl PartialOrd for CharSet<'_> {
     }
 }
 impl<'id> ScmTy<'id> for CharSet<'id> {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"char-set")
     }
@@ -113,7 +111,7 @@ impl<'id> ScmTy<'id> for CharSet<'id> {
         unsafe { Scm::from_ptr(scm_char_set_p(scm.as_ptr())).is_true() }
     }
 
-    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self {
         Self(scm)
     }
 }

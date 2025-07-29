@@ -55,8 +55,6 @@ impl Api {
 }
 
 impl<'id> ScmTy<'id> for c_double {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"double")
     }
@@ -99,8 +97,6 @@ impl<'id> ScmNum<'id> for Rational<'id> {
     }
 }
 impl<'id> ScmTy<'id> for Rational<'id> {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"rational")
     }
@@ -111,7 +107,7 @@ impl<'id> ScmTy<'id> for Rational<'id> {
     fn predicate(_: &Api, scm: &Scm) -> bool {
         unsafe { scm_is_rational(scm.as_ptr()) }
     }
-    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self {
         Self(scm)
     }
 }

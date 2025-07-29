@@ -33,8 +33,6 @@ macro_rules! impl_scm_ty_for_int {
     };
     ($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr) => {
         impl<'id> ScmTy<'id> for $ty {
-            type Output = Self;
-
             // SAFETY: this is in a const context and there is a null byte concatted at the end.
             fn type_name() -> Cow<'static, CStr> {
                 const { Cow::Borrowed(unsafe { CStr::from_bytes_with_nul_unchecked(concat!(stringify!($ty), "\0").as_bytes()) }) }
@@ -52,7 +50,7 @@ macro_rules! impl_scm_ty_for_int {
                     )
                 }
             }
-            unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self::Output {
+            unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self {
                 unsafe { ($to_int)(scm.as_ptr()) }
             }
         }

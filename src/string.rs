@@ -88,7 +88,6 @@ impl Display for String<'_> {
     }
 }
 impl<'id> ScmTy<'id> for String<'id> {
-    type Output = Self;
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"string")
     }
@@ -99,7 +98,7 @@ impl<'id> ScmTy<'id> for String<'id> {
     fn predicate(_: &Api, scm: &Scm) -> bool {
         unsafe { scm_is_string(scm.as_ptr()) }
     }
-    unsafe fn get_unchecked(_: &Api, string: Scm<'id>) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, string: Scm<'id>) -> Self {
         Self(string)
     }
 }

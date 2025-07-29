@@ -49,8 +49,6 @@ impl<'id> ScmNum<'id> for Complex<'id> {
     }
 }
 impl<'id> ScmTy<'id> for Complex<'id> {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"complex")
     }
@@ -61,7 +59,7 @@ impl<'id> ScmTy<'id> for Complex<'id> {
     fn predicate(_: &Api, scm: &Scm) -> bool {
         unsafe { scm_is_complex(scm.as_ptr()) }
     }
-    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self {
         Self(scm)
     }
 }

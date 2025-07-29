@@ -538,7 +538,7 @@ impl<'id> Scm<'id> {
         T::predicate(&api, self)
     }
     /// Attempt to get `T` from a scm
-    pub fn get<T>(self) -> Option<T::Output>
+    pub fn get<T>(self) -> Option<T>
     where
         T: ScmTy<'id>,
     {
@@ -640,9 +640,6 @@ impl Not for Scm<'_> {
 
 /// Marker trait for types that can be converted to/from a [Scm].
 pub trait ScmTy<'id>: Sized {
-    /// The output of [Self::get_unchecked]. If unsure, you should default to `Self`.
-    type Output;
-
     fn type_name() -> Cow<'static, CStr>;
 
     /// Create a [Scm] from the current type.
@@ -654,11 +651,9 @@ pub trait ScmTy<'id>: Sized {
     /// # Safety
     ///
     /// This function must be safe if [Self::predicate] returns [true].
-    unsafe fn get_unchecked(_: &Api, _: Scm<'id>) -> Self::Output;
+    unsafe fn get_unchecked(_: &Api, _: Scm<'id>) -> Self;
 }
 impl<'id> ScmTy<'id> for () {
-    type Output = ();
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"<#undefined>")
     }
@@ -672,8 +667,6 @@ impl<'id> ScmTy<'id> for () {
     unsafe fn get_unchecked(_: &Api, _: Scm) -> Self {}
 }
 impl<'id> ScmTy<'id> for bool {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"bool")
     }
@@ -694,8 +687,6 @@ impl<'id> ScmTy<'id> for bool {
     }
 }
 impl<'id> ScmTy<'id> for char {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"char")
     }
@@ -757,8 +748,6 @@ impl<'id> ScmTy<'id> for char {
 //     }
 // }
 impl<'id> ScmTy<'id> for Scm<'id> {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"scm")
     }
@@ -769,7 +758,7 @@ impl<'id> ScmTy<'id> for Scm<'id> {
     fn predicate(_: &Api, _: &Scm) -> bool {
         true
     }
-    unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self {
         unsafe { scm.cast_lifetime() }
     }
 }
@@ -878,14 +867,13 @@ mod tests {
     }
 
     pub trait ApiExt {
-        fn test_real<'id, T>(&'id self, _: T, _: T::Output) -> Scm<'id>
+        fn test_real<'id, T>(&'id self, _: T, _: T) -> Scm<'id>
         where
-            T: ScmTy<'id>,
-            T::Output: Debug + PartialEq;
+            T: Debug + PartialEq + ScmTy<'id>;
 
         fn test_real_equal<'id, T>(&'id self, val: T) -> Scm<'id>
         where
-            T: Clone + Debug + PartialEq + ScmTy<'id, Output = T>,
+            T: Clone + Debug + PartialEq + ScmTy<'id>,
         {
             let scm = self.test_real(val.clone(), val);
             assert!(scm.is_eqv(&scm));
@@ -893,10 +881,9 @@ mod tests {
         }
     }
     impl ApiExt for Api {
-        fn test_real<'id, T>(&'id self, val: T, output: T::Output) -> Scm<'id>
+        fn test_real<'id, T>(&'id self, val: T, output: T) -> Scm<'id>
         where
-            T: ScmTy<'id>,
-            T::Output: Debug + PartialEq,
+            T: Debug + PartialEq + ScmTy<'id>,
         {
             let scm = self.make(val);
             assert!(T::predicate(self, &scm));

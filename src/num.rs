@@ -140,8 +140,6 @@ impl<'id> ScmNum<'id> for ExactInteger<'id> {
     }
 }
 impl<'id> ScmTy<'id> for ExactInteger<'id> {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"exact integer")
     }
@@ -153,7 +151,7 @@ impl<'id> ScmTy<'id> for ExactInteger<'id> {
         unsafe { sys::scm_is_exact_integer(scm.as_ptr()) }
     }
 
-    unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, scm: Scm) -> Self {
         unsafe { Self(scm.cast_lifetime()) }
     }
 }
@@ -195,8 +193,6 @@ impl<'id> ScmNum<'id> for Number<'id> {
     }
 }
 impl<'id> ScmTy<'id> for Number<'id> {
-    type Output = Self;
-
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"number")
     }
@@ -209,7 +205,7 @@ impl<'id> ScmTy<'id> for Number<'id> {
         unsafe { sys::scm_is_number(scm.as_ptr()) }
     }
 
-    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self::Output {
+    unsafe fn get_unchecked(_: &Api, scm: Scm<'id>) -> Self {
         Self(scm)
     }
 }
