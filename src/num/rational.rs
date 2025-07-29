@@ -42,21 +42,21 @@ impl Api {
 
     pub fn rationalize<'id, T, U>(&'id self, real: T, eps: U) -> Rational<'id>
     where
-        T: RealTy,
-        U: RealTy,
+        T: RealTy<'id>,
+        U: RealTy<'id>,
     {
-        let real = real.construct(self);
-        let eps = eps.construct(self);
+        let real = real.construct();
+        let eps = eps.construct();
         unsafe { Rational(Scm::from_ptr(scm_rationalize(real.as_ptr(), eps.as_ptr()))) }
     }
 }
 
-impl ScmTy for c_double {
+impl<'id> ScmTy<'id> for c_double {
     type Output = Self;
 
-    const TYPE_NAME: &CStr = c"double";
+    const TYPE_NAME: &'static CStr = c"double";
 
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+    fn construct(self) -> Scm<'id> {
         unsafe { Scm::from_ptr(scm_from_double(self)) }
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {
@@ -68,8 +68,8 @@ impl ScmTy for c_double {
         unsafe { scm_to_double(scm.as_ptr()) }
     }
 }
-impl NumTy for c_double {}
-impl RealTy for c_double {}
+impl NumTy<'_> for c_double {}
+impl RealTy<'_> for c_double {}
 
 /// A rational number
 #[derive(Clone, Copy, Debug)]
@@ -83,8 +83,8 @@ impl<'id> Rational<'id> {
         unsafe { Scm::from_ptr(scm_numerator(self.0.as_ptr())) }
     }
 }
-impl NumTy for Rational<'_> {}
-impl RealTy for Rational<'_> {}
+impl<'id> NumTy<'id> for Rational<'id> {}
+impl<'id> RealTy<'id> for Rational<'id> {}
 impl<'id> ScmNum<'id> for Rational<'id> {
     unsafe fn as_ptr(&self) -> SCM {
         unsafe { self.0.as_ptr() }
@@ -93,12 +93,12 @@ impl<'id> ScmNum<'id> for Rational<'id> {
         true
     }
 }
-impl ScmTy for Rational<'_> {
+impl<'id> ScmTy<'id> for Rational<'id> {
     type Output = Self;
 
     const TYPE_NAME: &'static CStr = c"rational";
 
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+    fn construct(self) -> Scm<'id> {
         unsafe { self.0.cast_lifetime() }
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {

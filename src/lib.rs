@@ -22,9 +22,11 @@
 
 mod alloc;
 mod catch;
+pub mod char_set;
 mod guard;
 pub mod num;
 mod protection;
+pub mod string;
 pub mod sys;
 
 use {
@@ -247,11 +249,11 @@ impl Api {
     }
 
     /// Create a [Scm].
-    pub fn make<'id, T>(&'id self, with: T) -> Scm<'id>
+    pub fn make<'id, 'b, T>(&'id self, with: T) -> Scm<'id>
     where
-        T: ScmTy,
+        T: ScmTy<'b>,
     {
-        T::construct(with, self)
+        unsafe { T::construct(with).cast_lifetime() }
     }
 
     /// Create a function but do not create a binding to it.
@@ -505,7 +507,7 @@ pub struct Scm<'id> {
     scm: crate::sys::SCM,
     _marker: PhantomData<&'id ()>,
 }
-impl Scm<'_> {
+impl<'id> Scm<'id> {
     /// # Safety
     ///
     /// This is safe if you don't use it to smuggle this object outside of guile mode.
@@ -531,7 +533,7 @@ impl Scm<'_> {
     /// Check whether or not this [Scm] is a `T`
     pub fn is<T>(&self) -> bool
     where
-        T: ScmTy,
+        T: ScmTy<'id>,
     {
         let api = unsafe { Api::new_unchecked() };
         T::predicate(&api, self)
@@ -539,7 +541,7 @@ impl Scm<'_> {
     /// Attempt to get `T` from a scm
     pub fn get<T>(&self) -> Option<T::Output>
     where
-        T: ScmTy,
+        T: ScmTy<'id>,
     {
         let api = unsafe { Api::new_unchecked() };
 
@@ -639,14 +641,14 @@ impl Not for Scm<'_> {
 }
 
 /// Marker trait for types that can be converted to/from a [Scm].
-pub trait ScmTy: Sized {
+pub trait ScmTy<'id>: Sized {
     /// The output of [Self::get_unchecked]. If unsure, you should default to `Self`.
     type Output;
 
-    const TYPE_NAME: &CStr;
+    const TYPE_NAME: &'static CStr;
 
     /// Create a [Scm] from the current type.
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id>;
+    fn construct(self) -> Scm<'id>;
     /// Check whether or not a [Scm] is of this type.
     fn predicate(_: &Api, _: &Scm) -> bool;
     /// Exract [Self::Output] from a scm.
@@ -656,12 +658,12 @@ pub trait ScmTy: Sized {
     /// This function must be safe if [Self::predicate] returns [true].
     unsafe fn get_unchecked(_: &Api, _: &Scm) -> Self::Output;
 }
-impl ScmTy for () {
+impl<'id> ScmTy<'id> for () {
     type Output = ();
 
-    const TYPE_NAME: &CStr = c"<#undefined>";
+    const TYPE_NAME: &'static CStr = c"<#undefined>";
 
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+    fn construct(self) -> Scm<'id> {
         unsafe { Scm::from_ptr(sys::SCM_UNDEFINED) }
     }
     fn predicate(_: &Api, scm: &Scm) -> bool {
@@ -669,12 +671,12 @@ impl ScmTy for () {
     }
     unsafe fn get_unchecked(_: &Api, _: &Scm) -> Self {}
 }
-impl ScmTy for bool {
+impl<'id> ScmTy<'id> for bool {
     type Output = Self;
 
-    const TYPE_NAME: &CStr = c"bool";
+    const TYPE_NAME: &'static CStr = c"bool";
 
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+    fn construct(self) -> Scm<'id> {
         let scm = match self {
             true => unsafe { crate::sys::SCM_BOOL_T },
             false => unsafe { crate::sys::SCM_BOOL_F },
@@ -689,12 +691,12 @@ impl ScmTy for bool {
         unsafe { crate::sys::scm_to_bool(scm.as_ptr()) }
     }
 }
-impl ScmTy for char {
+impl<'id> ScmTy<'id> for char {
     type Output = Self;
 
-    const TYPE_NAME: &CStr = c"char";
+    const TYPE_NAME: &'static CStr = c"char";
 
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+    fn construct(self) -> Scm<'id> {
         unsafe {
             Scm::from_ptr(sys::scm_integer_to_char(sys::scm_from_uint32(u32::from(
                 self,
@@ -710,12 +712,12 @@ impl ScmTy for char {
             .expect("Guile characters should return valid rust characters.")
     }
 }
-impl ScmTy for &str {
-    type Output = Result<string::String<AllocVec<u8, CAllocator>>, AllocError>;
+impl<'id> ScmTy<'id> for &str {
+    type Output = Result<::string::String<AllocVec<u8, CAllocator>>, AllocError>;
 
     const TYPE_NAME: &'static CStr = c"string";
 
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+    fn construct(self) -> Scm<'id> {
         let scm = unsafe { crate::sys::scm_from_utf8_stringn(self.as_ptr().cast(), self.len()) };
         unsafe { Scm::from_ptr(scm) }
     }
@@ -727,7 +729,7 @@ impl ScmTy for &str {
     unsafe fn get_unchecked(
         _: &Api,
         scm: &Scm,
-    ) -> Result<string::String<AllocVec<u8, CAllocator>>, AllocError> {
+    ) -> Result<::string::String<AllocVec<u8, CAllocator>>, AllocError> {
         let mut len: usize = 0;
         // SAFETY: since we have the lifetime, we can assume we're in guile mode
         let ptr = unsafe { crate::sys::scm_to_utf8_stringn(scm.as_ptr(), &raw mut len) };
@@ -744,16 +746,16 @@ impl ScmTy for &str {
             );
 
             // SAFETY: we have an assertion above
-            Ok(unsafe { string::String::from_utf8_unchecked(vec) })
+            Ok(unsafe { ::string::String::from_utf8_unchecked(vec) })
         }
     }
 }
-impl ScmTy for Scm<'_> {
+impl<'id> ScmTy<'id> for Scm<'id> {
     type Output = Self;
 
     const TYPE_NAME: &'static CStr = c"scm";
 
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+    fn construct(self) -> Scm<'id> {
         unsafe { Scm::from_ptr(self.as_ptr()) }
     }
     fn predicate(_: &Api, _: &Scm) -> bool {
@@ -765,15 +767,15 @@ impl ScmTy for Scm<'_> {
 }
 
 /// Marker trait for types that can be used with the `#[optional]` attribute in [guile_fn]
-pub trait OptionalScm
+pub trait OptionalScm<'id>
 where
     Self: From<Option<Self::Inner>> + Into<Option<Self::Inner>>,
 {
-    type Inner: ScmTy;
+    type Inner: ScmTy<'id>;
 }
-impl<T> OptionalScm for Option<T>
+impl<'id, T> OptionalScm<'id> for Option<T>
 where
-    T: ScmTy,
+    T: ScmTy<'id>,
 {
     type Inner = T;
 }
@@ -868,12 +870,12 @@ mod tests {
     pub trait ApiExt {
         fn test_real<'id, T>(&'id self, _: T, _: T::Output) -> Scm<'id>
         where
-            T: ScmTy,
+            T: ScmTy<'id>,
             T::Output: Debug + PartialEq;
 
         fn test_real_equal<'id, T>(&'id self, val: T) -> Scm<'id>
         where
-            T: Clone + Debug + PartialEq + ScmTy<Output = T>,
+            T: Clone + Debug + PartialEq + ScmTy<'id, Output = T>,
         {
             let scm = self.test_real(val.clone(), val);
             assert!(scm.is_eqv(&scm));
@@ -883,7 +885,7 @@ mod tests {
     impl ApiExt for Api {
         fn test_real<'id, T>(&'id self, val: T, output: T::Output) -> Scm<'id>
         where
-            T: ScmTy,
+            T: ScmTy<'id>,
             T::Output: Debug + PartialEq,
         {
             let scm = self.make(val);
@@ -927,13 +929,13 @@ mod tests {
             hello_world.extend(b"hello world");
             api.test_real(
                 "hello world",
-                Ok(unsafe { string::String::from_utf8_unchecked(hello_world) }),
+                Ok(unsafe { ::string::String::from_utf8_unchecked(hello_world) }),
             );
 
             let empty = AllocVec::new_in(CAllocator);
             api.test_real(
                 "",
-                Ok(unsafe { string::String::from_utf8_unchecked(empty) }),
+                Ok(unsafe { ::string::String::from_utf8_unchecked(empty) }),
             );
         })
         .unwrap();

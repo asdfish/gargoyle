@@ -32,28 +32,28 @@ mod int;
 pub mod rational;
 
 /// Marker trait for types that always pass `num?`
-pub trait NumTy: ScmTy {}
+pub trait NumTy<'id>: ScmTy<'id> {}
 /// Marker trait for types that pass `real?`
-pub trait RealTy: NumTy {}
+pub trait RealTy<'id>: NumTy<'id> {}
 /// Marker trait for types that pass `exact-integer?`
-pub trait ExactIntegerTy: NumTy {}
+pub trait ExactIntegerTy<'id>: NumTy<'id> {}
 
 impl Api {
-    pub fn make_num<'id, T>(&'id self, num: T) -> Number<'id>
+    pub fn make_num<'id, 'b, T>(&'id self, num: T) -> Number<'id>
     where
-        T: NumTy,
+        T: NumTy<'b>,
     {
         Number(self.make(num))
     }
-    pub fn make_exact<'id, T>(&'id self, num: T) -> ExactInteger<'id>
+    pub fn make_exact<'id, 'b, T>(&'id self, num: T) -> ExactInteger<'id>
     where
-        T: ExactIntegerTy,
+        T: ExactIntegerTy<'b>,
     {
         ExactInteger(self.make(num))
     }
 }
 
-trait ScmNum<'id>: NumTy {
+trait ScmNum<'id>: NumTy<'id> {
     unsafe fn as_ptr(&self) -> sys::SCM;
     fn is_real(&self) -> bool;
 }
@@ -61,18 +61,17 @@ macro_rules! impl_scm_num {
     ($num:ty) => {
         impl<'id, R> PartialEq<R> for $num
         where
-            R: Clone + Copy + NumTy,
+            R: Clone + Copy + NumTy<'id>,
         {
             fn eq(&self, r: &R) -> bool {
-                let api = unsafe { Api::new_unchecked() };
-                let r = api.make(*r);
+                let r = R::construct(*r);
                 unsafe { Scm::from_ptr(sys::scm_num_eq_p(self.as_ptr(), r.as_ptr())).is_true() }
             }
         }
 
         impl<'id, R> PartialOrd<R> for $num
         where
-            R: Clone + Copy + NumTy,
+            R: Clone + Copy + NumTy<'id>,
         {
             fn partial_cmp(&self, r: &R) -> Option<Ordering> {
                 let api = unsafe { Api::new_unchecked() };
@@ -109,7 +108,7 @@ macro_rules! impl_op_for_scm_num {
     ($ty:ty, $op:ident, $fn:ident, $scm_fn:expr) => {
         impl<'id, R> $op<R> for $ty
         where
-            R: NumTy,
+            R: NumTy<'id>,
         {
             type Output = Number<'id>;
 
@@ -127,9 +126,9 @@ impl_scm_num!(rational::Rational<'id>);
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct ExactInteger<'id>(Scm<'id>);
-impl ExactIntegerTy for ExactInteger<'_> {}
-impl NumTy for ExactInteger<'_> {}
-impl RealTy for ExactInteger<'_> {}
+impl<'id> ExactIntegerTy<'id> for ExactInteger<'id> {}
+impl<'id> NumTy<'id> for ExactInteger<'id> {}
+impl<'id> RealTy<'id> for ExactInteger<'id> {}
 impl<'id> ScmNum<'id> for ExactInteger<'id> {
     unsafe fn as_ptr(&self) -> sys::SCM {
         unsafe { self.0.as_ptr() }
@@ -139,11 +138,11 @@ impl<'id> ScmNum<'id> for ExactInteger<'id> {
         true
     }
 }
-impl ScmTy for ExactInteger<'_> {
+impl<'id> ScmTy<'id> for ExactInteger<'id> {
     type Output = Self;
 
     const TYPE_NAME: &'static CStr = c"exact integer";
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+    fn construct(self) -> Scm<'id> {
         unsafe { self.0.cast_lifetime() }
     }
 
@@ -192,12 +191,12 @@ impl<'id> ScmNum<'id> for Number<'id> {
         unsafe { sys::scm_is_real(self.0.as_ptr()) }
     }
 }
-impl ScmTy for Number<'_> {
+impl<'id> ScmTy<'id> for Number<'id> {
     type Output = Self;
 
     const TYPE_NAME: &'static CStr = c"number";
 
-    fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+    fn construct(self) -> Scm<'id> {
         unsafe { self.0.cast_lifetime() }
     }
 
@@ -209,7 +208,7 @@ impl ScmTy for Number<'_> {
         Self(unsafe { scm.cast_lifetime() })
     }
 }
-impl NumTy for Number<'_> {}
+impl<'id> NumTy<'id> for Number<'id> {}
 impl_scm_num!(Number<'id>);
 
 #[cfg(test)]

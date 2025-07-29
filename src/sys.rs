@@ -155,6 +155,8 @@ unsafe extern "C" {
     pub fn scm_c_eval_string(_: *const c_char) -> SCM;
     pub fn scm_c_primitive_load(_: *const c_char) -> SCM;
 
+    pub fn scm_c_string_length(_: SCM) -> usize;
+
     pub fn scm_call_n(_: SCM, _: *mut SCM, _: usize) -> SCM;
 
     pub fn scm_open_output_string() -> SCM;

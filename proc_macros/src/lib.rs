@@ -282,21 +282,21 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                 #(#rest_ident: ::gargoyle::sys::SCM)*
                             ) -> ::gargoyle::sys::SCM {
                                 #(const _: () = {
-                                    const fn assert_scm_ty<T>()
+                                    const fn assert_scm_ty<'id, T>()
                                     where
-                                        T: ::gargoyle::ScmTy {}
+                                        T: ::gargoyle::ScmTy<'id> {}
                                     assert_scm_ty::<#required>()
                                 };)*
                                 const _: () = {
-                                    const fn assert_scm_ty<T>()
+                                    const fn assert_scm_ty<'id, T>()
                                     where
-                                        T: ::gargoyle::ScmTy {}
+                                        T: ::gargoyle::ScmTy<'id> {}
                                     assert_scm_ty::<#output>()
                                 };
                                 #(const _: () = {
-                                    const fn assert_optional_scm<T>()
+                                    const fn assert_optional_scm<'id, T>()
                                     where
-                                        T: ::gargoyle::OptionalScm {}
+                                        T: ::gargoyle::OptionalScm<'id> {}
                                     assert_optional_scm::<#optional>()
                                 };)*
                                 #(const _: () = {
@@ -315,13 +315,13 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                                   #guile_ident.as_ptr(),
                                                   #required_index,
                                                   #required_idents,
-                                                  <#required as ::gargoyle::ScmTy>::TYPE_NAME.as_ptr(),
+                                                  <#required as ::gargoyle::ScmTy::<'static>>::TYPE_NAME.as_ptr(),
                                               );
                                           }
                                           ::core::panic!()
                                       }),)*
                                     #({
-                                        type Inner = <#optional as ::gargoyle::OptionalScm>::Inner;
+                                        type Inner = <#optional as ::gargoyle::OptionalScm::<'static>>::Inner;
                                         let scm = unsafe { ::gargoyle::Scm::from_ptr(#optional_idents) };
                                         if scm.is::<()>() {
                                             ::core::option::Option::None
@@ -333,7 +333,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                                     #guile_ident.as_ptr(),
                                                     #optional_index,
                                                     #optional_idents,
-                                                    <Inner as ::gargoyle::ScmTy>::TYPE_NAME.as_ptr(),
+                                                    <Inner as ::gargoyle::ScmTy::<'static>>::TYPE_NAME.as_ptr(),
                                                 );
                                             }
                                             ::core::panic!()
@@ -342,7 +342,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                     #(unsafe { ::gargoyle::Scm::from_ptr(#rest_ident) },)*
                                 );
 
-                                unsafe { <#output as ::gargoyle::ScmTy>::construct(output, &::gargoyle::Api::new_unchecked()).as_ptr() }
+                                unsafe { <#output as ::gargoyle::ScmTy::<'static>>::construct(output).as_ptr() }
                             }
 
                             driver as *mut ::core::ffi::c_void

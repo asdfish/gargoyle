@@ -32,13 +32,13 @@ macro_rules! impl_scm_ty_for_int {
         $(impl_scm_ty_for_int!($ty, $ptr, $predicate, $to_scm, $to_int);)+
     };
     ($ty:ty, $ptr:ty, $predicate:expr, $to_scm:expr, $to_int:expr) => {
-        impl ScmTy for $ty {
+        impl<'id> ScmTy<'id> for $ty {
             type Output = Self;
 
             // SAFETY: this is in a const context and there is a null byte concatted at the end.
             const TYPE_NAME: &'static CStr = unsafe { CStr::from_bytes_with_nul_unchecked(concat!(stringify!($ty), "\0").as_bytes()) };
 
-            fn construct<'id>(self, _: &'id Api) -> Scm<'id> {
+            fn construct(self) -> Scm<'id> {
                 unsafe { Scm::from_ptr(($to_scm)(self)) }
             }
             fn predicate(_: &Api, scm: &Scm) -> bool {
@@ -54,9 +54,9 @@ macro_rules! impl_scm_ty_for_int {
                 unsafe { ($to_int)(scm.as_ptr()) }
             }
         }
-        impl ExactIntegerTy for $ty {}
-        impl NumTy for $ty {}
-        impl RealTy for $ty {}
+        impl ExactIntegerTy<'_> for $ty {}
+        impl NumTy<'_> for $ty {}
+        impl RealTy<'_> for $ty {}
     };
 }
 impl_scm_ty_for_int!([

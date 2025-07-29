@@ -18,48 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use {
-    crate::{
-        Api, Scm, ScmTy,
-        num::{NumTy, ScmNum},
-        sys::{SCM, scm_imag_part, scm_is_complex, scm_real_part},
-    },
-    std::ffi::CStr,
-};
+use crate::{Scm, sys::scm_c_string_length};
 
 #[derive(Clone, Copy, Debug)]
-pub struct Complex<'id>(Scm<'id>);
-impl<'id> Complex<'id> {
-    /// Get the real part.
-    pub fn real(&self) -> Scm<'id> {
-        unsafe { Scm::from_ptr(scm_real_part(self.0.as_ptr())) }
+#[repr(transparent)]
+pub struct String<'id>(Scm<'id>);
+impl String<'_> {
+    pub fn len(&self) -> usize {
+        unsafe { scm_c_string_length(self.0.as_ptr()) }
     }
-    /// Get the real part.
-    pub fn imag(&self) -> Scm<'id> {
-        unsafe { Scm::from_ptr(scm_imag_part(self.0.as_ptr())) }
-    }
-}
-impl<'id> NumTy<'id> for Complex<'id> {}
-impl<'id> ScmNum<'id> for Complex<'id> {
-    unsafe fn as_ptr(&self) -> SCM {
-        unsafe { self.0.as_ptr() }
-    }
-    fn is_real(&self) -> bool {
-        false
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
-impl<'id> ScmTy<'id> for Complex<'id> {
-    type Output = Self;
 
-    const TYPE_NAME: &'static CStr = c"complex";
-
-    fn construct(self) -> Scm<'id> {
-        unsafe { self.0.cast_lifetime() }
-    }
-    fn predicate(_: &Api, scm: &Scm) -> bool {
-        unsafe { scm_is_complex(scm.as_ptr()) }
-    }
-    unsafe fn get_unchecked(_: &Api, scm: &Scm) -> Self::Output {
-        Self(unsafe { (*scm).cast_lifetime() })
-    }
-}
+// pub enum CharPredicate<P>
+// where
+//     P: FnMut(char) -> bool,
+// {
+//     Predicate(P),
+//     Eq(char),
+// }
