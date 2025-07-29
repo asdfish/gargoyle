@@ -107,6 +107,7 @@ unsafe extern "C" {
     pub fn scm_sum(_z1: SCM, _z2: SCM) -> SCM;
     pub fn scm_difference(_z1: SCM, _z2: SCM) -> SCM;
     pub fn scm_divide(_z1: SCM, _z2: SCM) -> SCM;
+    pub fn scm_remainder(_n: SCM, _d: SCM) -> SCM;
     pub fn scm_product(_z1: SCM, _z2: SCM) -> SCM;
 
     pub fn scm_nan() -> SCM;

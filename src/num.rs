@@ -23,7 +23,7 @@ use {
     std::{
         cmp::Ordering,
         ffi::CStr,
-        ops::{Add, Div, Mul, Sub},
+        ops::{Add, Div, Mul, Rem, Sub},
     },
 };
 
@@ -56,7 +56,6 @@ impl<'id> Number<'id> {
     pub fn is_real(&self) -> bool {
         unsafe { sys::scm_is_real(self.0.as_ptr()) }
     }
-
     pub fn is_exact(&self) -> bool {
         unsafe { sys::scm_is_exact(self.0.as_ptr()) }
     }
@@ -109,6 +108,7 @@ impl_op_for_number!(Add, add, sys::scm_sum);
 impl_op_for_number!(Sub, sub, sys::scm_difference);
 // This will throw with divide by zero, but rust already does that.
 impl_op_for_number!(Div, div, sys::scm_divide);
+impl_op_for_number!(Rem, rem, sys::scm_remainder);
 impl_op_for_number!(Mul, mul, sys::scm_product);
 impl<R> PartialEq<R> for Number<'_>
 where
@@ -194,6 +194,7 @@ mod tests {
             assert_eq!(api.make_num(1) - 2, -1);
             assert_eq!(api.make_num(5) * 2, 10);
             assert_eq!(api.make_num(8) / 2, 4);
+            assert_eq!(api.make_num(10) % 3, 1);
         })
         .unwrap()
     }
