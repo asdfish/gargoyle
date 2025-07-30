@@ -45,7 +45,7 @@ impl Api {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct String<'id>(pub(crate) Scm<'id>);
 impl String<'_> {

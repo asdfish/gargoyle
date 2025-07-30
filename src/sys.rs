@@ -147,6 +147,17 @@ unsafe extern "C" {
     pub fn gargoyle_reexports_scm_to_intptr_t(_: SCM) -> isize;
     pub fn gargoyle_reexports_scm_to_uintptr_t(_: SCM) -> usize;
 
+    pub fn scm_car(_pair: SCM) -> SCM;
+    pub fn scm_cdr(_pair: SCM) -> SCM;
+    pub fn scm_cons(_x: SCM, _y: SCM) -> SCM;
+    pub fn scm_length(_lst: SCM) -> SCM;
+
+    pub fn scm_list_p(_x: SCM) -> SCM;
+    pub fn scm_null_p(_x: SCM) -> SCM;
+
+    pub fn scm_list_to_char_set(_list: SCM, _base_cs: SCM) -> SCM;
+
+    pub fn scm_vector_p(_obj: SCM) -> SCM;
     pub fn scm_u8vector_p(_obj: SCM) -> SCM;
     pub fn scm_s8vector_p(_obj: SCM) -> SCM;
     pub fn scm_u16vector_p(_obj: SCM) -> SCM;
@@ -160,31 +171,191 @@ unsafe extern "C" {
     pub fn scm_c32vector_p(_obj: SCM) -> SCM;
     pub fn scm_c64vector_p(_obj: SCM) -> SCM;
 
-    pub fn scm_car(_pair: SCM) -> SCM;
-    pub fn scm_cdr(_pair: SCM) -> SCM;
-    pub fn scm_cons(_x: SCM, _y: SCM) -> SCM;
-    pub fn scm_length(_lst: SCM) -> SCM;
-
-    pub fn scm_list_p(_x: SCM) -> SCM;
-    pub fn scm_null_p(_x: SCM) -> SCM;
-
-    pub fn scm_list_to_char_set(_list: SCM, _base_cs: SCM) -> SCM;
-
     pub fn scm_vector(_l: SCM) -> SCM;
-    pub fn scm_is_vector(_obj: SCM) -> bool;
+    pub fn scm_list_to_u8vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_s8vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_u16vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_s16vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_u32vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_s32vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_u64vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_s64vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_f32vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_f64vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_c32vector(_lst: SCM) -> SCM;
+    pub fn scm_list_to_c64vector(_lst: SCM) -> SCM;
+
     pub fn scm_vector_to_list(_v: SCM) -> SCM;
+    pub fn scm_u8vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_s8vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_u16vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_s16vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_u32vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_s32vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_u64vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_s64vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_f32vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_f64vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_c32vector_to_list(_vec: SCM) -> SCM;
+    pub fn scm_c64vector_to_list(_vec: SCM) -> SCM;
+
     pub fn scm_vector_elements(
         _array: SCM,
         _handle: *mut scm_t_array_handle,
         _lenp: *mut usize,
         _incp: *mut isize,
     ) -> *const SCM;
+    pub fn scm_u8vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const u8;
+    pub fn scm_s8vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const i8;
+    pub fn scm_u16vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const u16;
+    pub fn scm_s16vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const i16;
+    pub fn scm_u32vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const u32;
+    pub fn scm_s32vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const i32;
+    pub fn scm_u64vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const u64;
+    pub fn scm_s64vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const i64;
+    pub fn scm_f32vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const f32;
+    pub fn scm_f64vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const f64;
+    pub fn scm_c32vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const f32;
+    pub fn scm_c64vector_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *const f64;
+
     pub fn scm_vector_writable_elements(
         _array: SCM,
         _handle: *mut scm_t_array_handle,
         _lenp: *mut usize,
         _incp: *mut isize,
     ) -> *mut SCM;
+    pub fn scm_u8vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut u8;
+    pub fn scm_s8vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut i8;
+    pub fn scm_u16vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut u16;
+    pub fn scm_s16vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut i16;
+    pub fn scm_u32vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut u32;
+    pub fn scm_s32vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut i32;
+    pub fn scm_u64vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut u64;
+    pub fn scm_s64vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut i64;
+    pub fn scm_f32vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut f32;
+    pub fn scm_f64vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut f64;
+    pub fn scm_c32vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut f32;
+    pub fn scm_c64vector_writable_elements(
+        _vec: SCM,
+        _handle: *mut scm_t_array_handle,
+        _lenp: *mut usize,
+        _incp: *mut isize,
+    ) -> *mut f64;
 
     pub fn scm_array_handle_release(_handle: *mut scm_t_array_handle);
 

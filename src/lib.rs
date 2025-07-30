@@ -501,7 +501,7 @@ impl DeadScm {
 unsafe impl Send for DeadScm {}
 
 /// A newtype for [SCM][sys::SCM] pointers.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Scm<'id> {
     scm: crate::sys::SCM,
@@ -640,13 +640,13 @@ impl Not for Scm<'_> {
 }
 
 /// Marker trait for types that can be converted to/from a [Scm].
-pub trait ScmTy<'id>: Sized {
+pub trait ScmTy<'id>: Copy {
     fn type_name() -> Cow<'static, CStr>;
 
     /// Create a [Scm] from the current type.
     fn construct(self) -> Scm<'id>;
     /// Check whether or not a [Scm] is of this type.
-    fn predicate(_: &Api, _: &Scm) -> bool;
+    fn predicate(_: &Api, _: &Scm<'id>) -> bool;
     /// Exract [Self] from a scm.
     ///
     /// # Safety
