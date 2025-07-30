@@ -78,7 +78,9 @@ unsafe extern "C" {
     pub fn scm_from_uint16(_: u16) -> SCM;
     pub fn scm_from_int32(_: i32) -> SCM;
     pub fn scm_from_uint32(_: u32) -> SCM;
+    #[cfg(target_pointer_width = "64")]
     pub fn scm_from_int64(_: i64) -> SCM;
+    #[cfg(target_pointer_width = "64")]
     pub fn scm_from_uint64(_: u64) -> SCM;
     pub fn gargoyle_reexports_scm_from_intptr_t(_: isize) -> SCM;
     pub fn gargoyle_reexports_scm_from_uintptr_t(_: usize) -> SCM;
@@ -90,24 +92,12 @@ unsafe extern "C" {
     pub fn scm_to_uint16(_: SCM) -> u16;
     pub fn scm_to_int32(_: SCM) -> i32;
     pub fn scm_to_uint32(_: SCM) -> u32;
+    #[cfg(target_pointer_width = "64")]
     pub fn scm_to_int64(_: SCM) -> i64;
+    #[cfg(target_pointer_width = "64")]
     pub fn scm_to_uint64(_: SCM) -> u64;
     pub fn gargoyle_reexports_scm_to_intptr_t(_: SCM) -> isize;
     pub fn gargoyle_reexports_scm_to_uintptr_t(_: SCM) -> usize;
-
-    pub fn scm_u8vector_p(_obj: SCM) -> SCM;
-    pub fn scm_s8vector_p(_obj: SCM) -> SCM;
-    pub fn scm_u16vector_p(_obj: SCM) -> SCM;
-    pub fn scm_s16vector_p(_obj: SCM) -> SCM;
-    pub fn scm_u32vector_p(_obj: SCM) -> SCM;
-    pub fn scm_s32vector_p(_obj: SCM) -> SCM;
-    pub fn scm_u64vector_p(_obj: SCM) -> SCM;
-    pub fn scm_s64vector_p(_obj: SCM) -> SCM;
-    pub fn scm_f32vector_p(_obj: SCM) -> SCM;
-    pub fn scm_f64vector_p(_obj: SCM) -> SCM;
-    pub fn scm_c32vector_p(_obj: SCM) -> SCM;
-    pub fn scm_c64vector_p(_obj: SCM) -> SCM;
-    pub fn scm_vector(_l: SCM) -> SCM;
 
     pub fn scm_car(_pair: SCM) -> SCM;
     pub fn scm_cdr(_pair: SCM) -> SCM;
