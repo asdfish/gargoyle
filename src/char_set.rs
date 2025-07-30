@@ -32,7 +32,7 @@ use {
     std::{borrow::Cow, ffi::CStr},
 };
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct CharSet<'id>(Scm<'id>);
 impl<'id> CharSet<'id> {

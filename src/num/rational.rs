@@ -77,7 +77,7 @@ impl NumTy<'_> for c_double {}
 impl RealTy<'_> for c_double {}
 
 /// A rational number
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Rational<'id>(Scm<'id>);
 impl<'id> Rational<'id> {

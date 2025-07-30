@@ -124,7 +124,7 @@ macro_rules! impl_op_for_scm_num {
 impl_scm_num!(complex::Complex<'id>);
 impl_scm_num!(rational::Rational<'id>);
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct ExactInteger<'id>(Scm<'id>);
 impl<'id> ExactIntegerTy<'id> for ExactInteger<'id> {}
@@ -160,7 +160,7 @@ impl_op_for_scm_num!(ExactInteger<'id>, BitAnd, bitand, sys::scm_logand);
 impl_op_for_scm_num!(ExactInteger<'id>, BitOr, bitor, sys::scm_logior);
 impl_op_for_scm_num!(ExactInteger<'id>, BitXor, bitxor, sys::scm_logxor);
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Number<'id>(Scm<'id>);
 impl<'id> Number<'id> {

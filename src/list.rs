@@ -62,14 +62,14 @@ impl Api {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct List<'id, T>
 where
     T: ScmTy<'id>,
 {
     pub(crate) pair: Scm<'id>,
-    pub(crate) _marker: PhantomData<T>,
+    _marker: PhantomData<T>,
 }
 impl<'id, T> List<'id, T>
 where
