@@ -19,7 +19,7 @@
 // THE SOFTWARE.
 
 use {
-    crate::{Api, ReprScm, Scm, ScmTy, sys},
+    crate::{Api, Scm, ScmTy, sys},
     std::{
         borrow::Cow,
         cmp::Ordering,
@@ -130,8 +130,6 @@ pub struct ExactInteger<'id>(Scm<'id>);
 impl<'id> ExactIntegerTy<'id> for ExactInteger<'id> {}
 impl<'id> NumTy<'id> for ExactInteger<'id> {}
 impl<'id> RealTy<'id> for ExactInteger<'id> {}
-// SAFETY: This is `#[repr(transparent)]` and its only field is a [Scm].
-unsafe impl<'id> ReprScm<'id> for ExactInteger<'id> {}
 impl<'id> ScmNum<'id> for ExactInteger<'id> {
     unsafe fn as_ptr(&self) -> sys::SCM {
         unsafe { self.0.as_ptr() }
@@ -186,8 +184,6 @@ impl<'id> Number<'id> {
         unsafe { Self(Scm::from_ptr(sys::scm_exact_to_inexact(self.0.as_ptr()))) }
     }
 }
-// SAFETY: This is `#[repr(transparent)]` and its only field is a [Scm].
-unsafe impl<'id> ReprScm<'id> for Number<'id> {}
 impl<'id> ScmNum<'id> for Number<'id> {
     unsafe fn as_ptr(&self) -> sys::SCM {
         unsafe { self.0.as_ptr() }

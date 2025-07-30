@@ -20,10 +20,8 @@
 
 use {
     crate::{
-        Api, ReprScm, Scm, ScmTy,
-        sys::{
-            SCM_EOL, scm_car, scm_cdr, scm_cons, scm_equal_p, scm_length, scm_list_p, scm_null_p,
-        },
+        Api, Scm, ScmTy,
+        sys::{SCM_EOL, scm_car, scm_cdr, scm_cons, scm_length, scm_list_p, scm_null_p},
     },
     bstr::BStr,
     std::{
@@ -71,6 +69,18 @@ where
     pub(crate) pair: Scm<'id>,
     _marker: PhantomData<T>,
 }
+// `T` doesn't need to be clone since it gets constructed every time
+// impl<'id, T> Clone for List<'id, T>
+// where
+//     T: ScmTy<'id>,
+// {
+//     fn clone(&self) -> Self {
+//         Self {
+//             pair: self.pair,
+//             _marker: PhantomData,
+//         }
+//     }
+// }
 impl<'id, T> List<'id, T>
 where
     T: ScmTy<'id>,
@@ -123,8 +133,6 @@ where
         self.pair = unsafe { Scm::from_ptr(lst) };
     }
 }
-// SAFETY: This is `#[repr(transparent)]` and its only field is a [Scm].
-unsafe impl<'id, T> ReprScm<'id> for List<'id, T> where T: ScmTy<'id> {}
 impl<'id, T> ScmTy<'id> for List<'id, T>
 where
     T: ScmTy<'id>,
@@ -222,14 +230,6 @@ where
         (len, Some(len))
     }
 }
-impl<'id, T> PartialEq for List<'id, T>
-where
-    T: ScmTy<'id>,
-{
-    fn eq(&self, r: &Self) -> bool {
-        unsafe { Scm::from_ptr(scm_equal_p(self.pair.as_ptr(), r.pair.as_ptr())) }.is_true()
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -261,15 +261,6 @@ mod tests {
                     .collect::<Vec<_>>(),
                 [1, 2, 3]
             );
-        })
-        .unwrap();
-    }
-
-    #[cfg_attr(miri, ignore)]
-    #[test]
-    fn list_eq() {
-        with_guile(|api| {
-            assert_eq!(api.make_list([1, 2, 3]), api.make_list([1, 2, 3]),);
         })
         .unwrap();
     }

@@ -36,58 +36,6 @@ pub type scm_t_thunk = Option<unsafe extern "C" fn(*mut c_void) -> SCM>;
 pub type scm_t_catch_body = scm_t_thunk;
 pub type scm_t_catch_handler = Option<unsafe extern "C" fn(*mut c_void, SCM, SCM) -> SCM>;
 
-#[derive(Default)]
-#[repr(C)]
-pub struct scm_t_array_dim {
-    lbnd: isize,
-    ubnd: isize,
-    inc: isize,
-}
-#[derive(Default)]
-#[repr(C)]
-pub enum scm_t_array_element_type {
-    #[default]
-    SCM_ARRAY_ELEMENT_TYPE_SCM = 0,
-    SCM_ARRAY_ELEMENT_TYPE_CHAR = 1,
-    SCM_ARRAY_ELEMENT_TYPE_BIT = 2,
-    SCM_ARRAY_ELEMENT_TYPE_VU8 = 3,
-    SCM_ARRAY_ELEMENT_TYPE_U8 = 4,
-    SCM_ARRAY_ELEMENT_TYPE_S8 = 5,
-    SCM_ARRAY_ELEMENT_TYPE_U16 = 6,
-    SCM_ARRAY_ELEMENT_TYPE_S16 = 7,
-    SCM_ARRAY_ELEMENT_TYPE_U32 = 8,
-    SCM_ARRAY_ELEMENT_TYPE_S32 = 9,
-    SCM_ARRAY_ELEMENT_TYPE_U64 = 10,
-    SCM_ARRAY_ELEMENT_TYPE_S64 = 11,
-    SCM_ARRAY_ELEMENT_TYPE_F32 = 12,
-    SCM_ARRAY_ELEMENT_TYPE_F64 = 13,
-    SCM_ARRAY_ELEMENT_TYPE_C32 = 14,
-    SCM_ARRAY_ELEMENT_TYPE_C64 = 15,
-}
-
-// pub const SCM_ARRAY_ELEMENT_TYPE_LAST: scm_t_array_element_type =
-//     scm_t_array_element_type::SCM_ARRAY_ELEMENT_TYPE_C64;
-
-pub type scm_t_vector_ref = Option<extern "C" fn(_: SCM, _: usize) -> SCM>;
-pub type scm_t_vector_set = Option<extern "C" fn(_: SCM, _: usize, SCM)>;
-#[derive(Default)]
-#[repr(C)]
-pub struct scm_t_array_handle {
-    array: SCM,
-
-    base: usize,
-    ndims: usize,
-    dims: *mut scm_t_array_dim,
-    dim0: scm_t_array_dim,
-    element_type: scm_t_array_element_type,
-    elements: *const c_void,
-    writable_elements: *mut c_void,
-
-    vector: SCM,
-    vref: scm_t_vector_ref,
-    vset: scm_t_vector_set,
-}
-
 unsafe extern "C" {
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_T: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_F: SCM;
@@ -160,24 +108,6 @@ unsafe extern "C" {
     pub fn scm_null_p(_x: SCM) -> SCM;
 
     pub fn scm_list_to_char_set(_list: SCM, _base_cs: SCM) -> SCM;
-
-    pub fn scm_vector(_l: SCM) -> SCM;
-    pub fn scm_is_vector(_obj: SCM) -> bool;
-    pub fn scm_vector_to_list(_v: SCM) -> SCM;
-    pub fn scm_vector_elements(
-        _array: SCM,
-        _handle: *mut scm_t_array_handle,
-        _lenp: *mut usize,
-        _incp: *mut isize,
-    ) -> *const SCM;
-    pub fn scm_vector_writable_elements(
-        _array: SCM,
-        _handle: *mut scm_t_array_handle,
-        _lenp: *mut usize,
-        _incp: *mut isize,
-    ) -> *mut SCM;
-
-    pub fn scm_array_handle_release(_handle: *mut scm_t_array_handle);
 
     pub fn scm_is_signed_integer(_: SCM, _: isize, _: isize) -> bool;
     pub fn scm_is_unsigned_integer(_: SCM, _: usize, _: usize) -> bool;

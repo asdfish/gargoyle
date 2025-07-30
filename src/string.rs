@@ -20,7 +20,7 @@
 
 use {
     crate::{
-        Api, ReprScm, Scm, ScmTy,
+        Api, Scm, ScmTy,
         alloc::CAllocator,
         sys::{scm_c_string_length, scm_is_string, scm_to_utf8_stringn},
     },
@@ -87,8 +87,6 @@ impl Display for String<'_> {
             .and_then(|string| string.fmt(f).map_err(to_fmt_error))
     }
 }
-// SAFETY: This is `#[repr(transparent)]` and its only field is a [Scm].
-unsafe impl<'id> ReprScm<'id> for String<'id> {}
 impl<'id> ScmTy<'id> for String<'id> {
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"string")
