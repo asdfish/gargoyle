@@ -99,6 +99,9 @@ unsafe extern "C" {
     pub fn gargoyle_reexports_scm_to_intptr_t(_: SCM) -> isize;
     pub fn gargoyle_reexports_scm_to_uintptr_t(_: SCM) -> usize;
 
+    pub fn scm_vector_p(_obj: SCM) -> SCM;
+    pub fn scm_vector(_l: SCM) -> SCM;
+
     pub fn scm_car(_pair: SCM) -> SCM;
     pub fn scm_cdr(_pair: SCM) -> SCM;
     pub fn scm_cons(_x: SCM, _y: SCM) -> SCM;
