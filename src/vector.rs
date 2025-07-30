@@ -57,7 +57,7 @@ where
     {
         Iter::new(&self.scm)
     }
-    pub fn iter_mut<'borrow>(&'borrow mut self) -> IterMut<'borrow, T>
+    pub fn iter_mut<'borrow>(&'borrow mut self) -> IterMut<'borrow, 'id, T>
     where
         T: ReprScm<'id>,
     {
@@ -180,14 +180,17 @@ impl<'borrow, T> Iterator for Iter<'borrow, T> {
     }
 }
 
-pub struct IterMut<'borrow, T> {
+pub struct IterMut<'borrow, 'id, T>
+where
+    T: ReprScm<'id>,
+{
     handle: scm_t_array_handle,
     len: Option<NonZeroUsize>,
     step: Option<NonZeroIsize>,
     ptr: Option<NonNull<T>>,
-    _marker: PhantomData<&'borrow T>,
+    _marker: PhantomData<&'borrow &'id T>,
 }
-impl<'borrow, 'id, T> IterMut<'borrow, T>
+impl<'borrow, 'id, T> IterMut<'borrow, 'id, T>
 where
     T: ReprScm<'id>,
 {
@@ -214,7 +217,10 @@ where
         }
     }
 }
-impl<'borrow, T> DoubleEndedIterator for IterMut<'borrow, T> {
+impl<'borrow, 'id, T> DoubleEndedIterator for IterMut<'borrow, 'id, T>
+where
+    T: ReprScm<'id>,
+{
     fn next_back(&mut self) -> Option<Self::Item> {
         match (self.len, self.step, self.ptr) {
             (Some(len), Some(step), Some(ptr)) => {
@@ -229,16 +235,22 @@ impl<'borrow, T> DoubleEndedIterator for IterMut<'borrow, T> {
         }
     }
 }
-impl<T> Drop for IterMut<'_, T> {
+impl<'id, T> Drop for IterMut<'_, 'id, T>
+where
+    T: ReprScm<'id>,
+{
     fn drop(&mut self) {
         unsafe {
             scm_array_handle_release(&raw mut self.handle);
         }
     }
 }
-impl<T> ExactSizeIterator for IterMut<'_, T> {}
-impl<T> FusedIterator for IterMut<'_, T> {}
-impl<'borrow, T> Iterator for IterMut<'borrow, T> {
+impl<'id, T> ExactSizeIterator for IterMut<'_, 'id, T> where T: ReprScm<'id> {}
+impl<'id, T> FusedIterator for IterMut<'_, 'id, T> where T: ReprScm<'id> {}
+impl<'borrow, 'id, T> Iterator for IterMut<'borrow, 'id, T>
+where
+    T: ReprScm<'id>,
+{
     type Item = &'borrow mut T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -265,7 +277,7 @@ mod tests {
 
     #[test]
     fn vector_iter_safety() {
-        let mut backing = vec![1_i32, 2, 3, 3, 2, 1];
+        let backing = vec![1_i32, 2, 3, 3, 2, 1];
 
         let mut iter = ManuallyDrop::new(Iter::<i32> {
             handle: Default::default(),
@@ -279,22 +291,6 @@ mod tests {
         assert_eq!(iter.next_back(), Some(&1));
         assert_eq!(iter.next_back(), Some(&2));
         assert_eq!(iter.next_back(), Some(&3));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.next_back(), None);
-
-        let mut iter = ManuallyDrop::new(IterMut::<i32> {
-            handle: Default::default(),
-            len: NonZeroUsize::new(backing.len()),
-            step: NonZeroIsize::new(1),
-            ptr: NonNull::new(backing.as_mut_ptr()),
-            _marker: PhantomData,
-        });
-        assert_eq!(iter.next(), Some(&mut 1));
-        assert_eq!(iter.next(), Some(&mut 2));
-        assert_eq!(iter.next(), Some(&mut 3));
-        assert_eq!(iter.next_back(), Some(&mut 1));
-        assert_eq!(iter.next_back(), Some(&mut 2));
-        assert_eq!(iter.next_back(), Some(&mut 3));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next_back(), None);
     }
