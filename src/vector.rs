@@ -23,7 +23,7 @@ use {
         Api, ReprScm, Scm, ScmTy,
         list::List,
         sys::{
-            SCM, scm_array_handle_release, scm_is_vector, scm_t_array_handle, scm_vector,
+            scm_array_handle_release, scm_is_vector, scm_t_array_handle, scm_vector,
             scm_vector_writable_elements,
         },
     },
@@ -63,13 +63,6 @@ where
     {
         IterMut::new(&mut self.scm)
     }
-
-    pub fn val_iter<'borrow>(&'borrow self) -> ValIter<'borrow, 'id, T> {
-        ValIter {
-            iter: Iter::new(&self.scm),
-            _marker: PhantomData,
-        }
-    }
 }
 impl<'id, T> From<List<'id, T>> for Vector<'id, T>
 where
@@ -107,142 +100,6 @@ where
             scm,
             _marker: PhantomData,
         }
-    }
-}
-impl<'id, T> IntoIterator for Vector<'id, T>
-where
-    T: ScmTy<'id>,
-{
-    type Item = T;
-    type IntoIter = IntoIter<'id, T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        unsafe { IntoIter::new_unchecked(self) }
-    }
-}
-impl<'borrow, 'id, T> IntoIterator for &'borrow Vector<'id, T>
-where
-    T: ReprScm<'id>,
-{
-    type Item = &'borrow T;
-    type IntoIter = Iter<'borrow, T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
-    }
-}
-impl<'borrow, 'id, T> IntoIterator for &'borrow mut Vector<'id, T>
-where
-    T: ReprScm<'id>,
-{
-    type Item = &'borrow mut T;
-    type IntoIter = IterMut<'borrow, T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter_mut()
-    }
-}
-
-pub struct IntoIter<'id, T>
-where
-    T: ScmTy<'id>,
-{
-    /// Only here to prevent garbage collection
-    _vector: Scm<'id>,
-    handle: scm_t_array_handle,
-    len: Option<NonZeroUsize>,
-    step: Option<NonZeroIsize>,
-    ptr: *const SCM,
-    _marker: PhantomData<T>,
-}
-impl<'id, T> IntoIter<'id, T>
-where
-    T: ScmTy<'id>,
-{
-    unsafe fn new_unchecked(Vector { scm: vector, .. }: Vector<'id, T>) -> Self {
-        let mut handle = Default::default();
-        let mut len = 0;
-        let mut step = 0;
-        let ptr = unsafe {
-            scm_vector_writable_elements(
-                vector.as_ptr(),
-                &raw mut handle,
-                &raw mut len,
-                &raw mut step,
-            )
-        };
-
-        IntoIter {
-            _vector: vector,
-            handle,
-            len: NonZeroUsize::new(len),
-            step: NonZeroIsize::new(step),
-            ptr,
-            _marker: PhantomData,
-        }
-    }
-}
-impl<'id, T> DoubleEndedIterator for IntoIter<'id, T>
-where
-    T: ScmTy<'id>,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        match (self.len, self.step, self.ptr) {
-            (Some(len), Some(step), ptr) if !ptr.is_null() => {
-                let ptr =
-                    unsafe { ptr.offset(isize::try_from(len.get() - 1).unwrap() * step.get()) };
-                self.len = NonZeroUsize::new(len.get() - 1);
-
-                let api = unsafe { Api::new_unchecked() };
-                if ptr.is_null() {
-                    None
-                } else {
-                    Some(unsafe { T::get_unchecked(&api, Scm::from_ptr(ptr.read())) })
-                }
-            }
-            _ => None,
-        }
-    }
-}
-
-impl<'id, T> Drop for IntoIter<'id, T>
-where
-    T: ScmTy<'id>,
-{
-    fn drop(&mut self) {
-        unsafe {
-            scm_array_handle_release(&raw mut self.handle);
-        }
-    }
-}
-impl<'id, T> ExactSizeIterator for IntoIter<'id, T> where T: ScmTy<'id> {}
-impl<'id, T> FusedIterator for IntoIter<'id, T> where T: ScmTy<'id> {}
-impl<'id, T> Iterator for IntoIter<'id, T>
-where
-    T: ScmTy<'id>,
-{
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match (self.len, self.step, self.ptr) {
-            (Some(len), Some(step), ptr) if !ptr.is_null() => {
-                self.ptr = unsafe { ptr.offset(step.get()) };
-                self.len = NonZeroUsize::new(len.get() - 1);
-
-                let api = unsafe { Api::new_unchecked() };
-                if ptr.is_null() {
-                    None
-                } else {
-                    Some(unsafe { T::get_unchecked(&api, Scm::from_ptr(ptr.read())) })
-                }
-            }
-            _ => None,
-        }
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.len.map(NonZeroUsize::get).unwrap_or_default();
-        (len, Some(len))
     }
 }
 
@@ -287,7 +144,6 @@ impl<'borrow, T> DoubleEndedIterator for Iter<'borrow, T> {
                 let ptr =
                     unsafe { ptr.offset(isize::try_from(len.get() - 1).unwrap() * step.get()) };
                 self.len = NonZeroUsize::new(len.get() - 1);
-
                 unsafe { ptr.as_ref() }
             }
             _ => None,
@@ -400,45 +256,6 @@ impl<'borrow, T> Iterator for IterMut<'borrow, T> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = self.len.map(NonZeroUsize::get).unwrap_or_default();
         (len, Some(len))
-    }
-}
-
-pub struct ValIter<'borrow, 'id, T>
-where
-    T: ScmTy<'id>,
-{
-    iter: Iter<'borrow, Scm<'id>>,
-    _marker: PhantomData<T>,
-}
-impl<'id, T> DoubleEndedIterator for ValIter<'_, 'id, T>
-where
-    T: ScmTy<'id>,
-{
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.next_back().map(|i| {
-            let api = unsafe { Api::new_unchecked() };
-            unsafe { T::get_unchecked(&api, Scm::from_ptr(i.as_ptr())) }
-        })
-    }
-}
-
-impl<'id, T> ExactSizeIterator for ValIter<'_, 'id, T> where T: ScmTy<'id> {}
-impl<'id, T> FusedIterator for ValIter<'_, 'id, T> where T: ScmTy<'id> {}
-impl<'id, T> Iterator for ValIter<'_, 'id, T>
-where
-    T: ScmTy<'id>,
-{
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|i| {
-            let api = unsafe { Api::new_unchecked() };
-            unsafe { T::get_unchecked(&api, Scm::from_ptr(i.as_ptr())) }
-        })
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
     }
 }
 
@@ -556,16 +373,6 @@ mod tests {
             assert_eq!(iter.next_back(), Some(&api.make_list([1])));
             assert_eq!(iter.next(), Some(&api.make_list([2])));
             assert_eq!(iter.next_back(), None);
-
-            let vec = Vector::from(api.make_list([1, 2, 3]));
-            assert_eq!(vec.val_iter().collect::<Vec<i32>>(), [3, 2, 1]);
-
-            assert_eq!(
-                Vector::from(api.make_list([1, 2, 3]))
-                    .into_iter()
-                    .collect::<Vec<i32>>(),
-                [3, 2, 1]
-            );
         })
         .unwrap();
     }
