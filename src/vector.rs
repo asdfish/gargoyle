@@ -51,7 +51,7 @@ impl<'id, T> Vector<'id, T>
 where
     T: ScmTy<'id>,
 {
-    pub fn iter<'borrow>(&'borrow self) -> Iter<'borrow, 'id, T>
+    pub fn iter<'borrow>(&'borrow self) -> Iter<'borrow, T>
     where
         T: ReprScm<'id>,
     {
@@ -103,17 +103,14 @@ where
     }
 }
 
-pub struct Iter<'borrow, 'id, T>
-where
-    T: ReprScm<'id>,
-{
+pub struct Iter<'borrow, T> {
     handle: scm_t_array_handle,
     len: Option<NonZeroUsize>,
     step: Option<NonZeroIsize>,
     ptr: Option<&'borrow T>,
-    _marker: PhantomData<&'id T>,
+    // _marker: PhantomData<&'id T>,
 }
-impl<'borrow, 'id, T> Iter<'borrow, 'id, T>
+impl<'borrow, 'id, T> Iter<'borrow, T>
 where
     T: ReprScm<'id>,
 {
@@ -136,14 +133,10 @@ where
             len: NonZeroUsize::new(len),
             step: NonZeroIsize::new(step),
             ptr: unsafe { ptr.as_ref() },
-            _marker: PhantomData,
         }
     }
 }
-impl<'borrow, 'id, T> DoubleEndedIterator for Iter<'borrow, 'id, T>
-where
-    T: ReprScm<'id>,
-{
+impl<'borrow, 'id, T> DoubleEndedIterator for Iter<'borrow, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match (self.len, self.step, self.ptr) {
             (Some(len), Some(step), Some(ptr)) => {
@@ -157,22 +150,16 @@ where
         }
     }
 }
-impl<'id, T> Drop for Iter<'_, 'id, T>
-where
-    T: ReprScm<'id>,
-{
+impl<T> Drop for Iter<'_, T> {
     fn drop(&mut self) {
         unsafe {
             scm_array_handle_release(&raw mut self.handle);
         }
     }
 }
-impl<'id, T> ExactSizeIterator for Iter<'_, 'id, T> where T: ReprScm<'id> {}
-impl<'id, T> FusedIterator for Iter<'_, 'id, T> where T: ReprScm<'id> {}
-impl<'borrow, 'id, T> Iterator for Iter<'borrow, 'id, T>
-where
-    T: ReprScm<'id>,
-{
+impl<T> ExactSizeIterator for Iter<'_, T> {}
+impl<T> FusedIterator for Iter<'_, T> {}
+impl<'borrow, T> Iterator for Iter<'borrow, T> {
     type Item = &'borrow T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -286,11 +273,30 @@ where
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::with_guile};
+    use {super::*, crate::with_guile, std::mem::ManuallyDrop};
+
+    #[test]
+    fn vector_iter_safety() {
+        let backing = vec![1_i32, 2, 3, 3, 2, 1];
+
+        let mut iter = ManuallyDrop::new(Iter::<i32> {
+            handle: Default::default(),
+            len: NonZeroUsize::new(backing.len()),
+            step: NonZeroIsize::new(1),
+            ptr: unsafe { backing.as_ptr().as_ref() },
+        });
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next_back(), Some(&1));
+        assert_eq!(iter.next_back(), Some(&2));
+        assert_eq!(iter.next_back(), Some(&3));
+        assert_eq!(iter.next(), None);
+    }
 
     #[cfg_attr(miri, ignore)]
     #[test]
-    fn vector_iter_mut() {
+    fn vector_iter() {
         with_guile(|api| {
             let mut vec = Vector::from(api.make_list([
                 api.make_list([1]),
