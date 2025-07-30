@@ -29,6 +29,7 @@ pub mod num;
 mod protection;
 pub mod string;
 pub mod sys;
+pub mod vector;
 
 use {
     crate::{guard::Guard, string::String as GString},
