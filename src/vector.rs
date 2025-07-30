@@ -136,7 +136,7 @@ where
         }
     }
 }
-impl<'borrow, 'id, T> DoubleEndedIterator for Iter<'borrow, T> {
+impl<'borrow, T> DoubleEndedIterator for Iter<'borrow, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match (self.len, self.step, self.ptr) {
             (Some(len), Some(step), Some(ptr)) => {
