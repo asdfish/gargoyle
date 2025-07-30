@@ -56,10 +56,7 @@ impl<'id> Guardian<'id> {
     /// # Safety
     ///
     /// `ptr` must be of type `T`.
-    unsafe extern "C" fn protect_driver<T>(ptr: *mut c_void)
-    where
-        T: Drop,
-    {
+    unsafe extern "C" fn protect_driver<T>(ptr: *mut c_void) {
         let ptr = ptr.cast::<T>();
 
         if !ptr.is_null() {
@@ -119,10 +116,7 @@ impl<'id> Guardian<'id> {
     /// assert_eq!(2, COUNTER.load(atomic::Ordering::Acquire));
     /// # }
     /// ```
-    pub fn protect<'pin, T>(&'pin self, mut ptr: Pin<&'pin mut T>) -> Pin<&'pin mut T>
-    where
-        T: Drop,
-    {
+    pub fn protect<'pin, T>(&'pin self, mut ptr: Pin<&'pin mut T>) -> Pin<&'pin mut T> {
         let drop_ptr = ptr::from_mut(unsafe { ptr.as_mut().get_unchecked_mut() }).cast::<c_void>();
         // Guile should not know move the pointer and [protect_driver] does not move it.
         unsafe {
