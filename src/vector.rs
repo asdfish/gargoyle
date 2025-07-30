@@ -34,7 +34,7 @@ use {
         iter::{DoubleEndedIterator, ExactSizeIterator, FusedIterator},
         marker::PhantomData,
         num::{NonZeroIsize, NonZeroUsize},
-        ptr::NonNull,
+        ptr::{self, NonNull},
     },
 };
 
@@ -107,8 +107,8 @@ pub struct Iter<'borrow, T> {
     handle: scm_t_array_handle,
     len: Option<NonZeroUsize>,
     step: Option<NonZeroIsize>,
-    ptr: *const T,
-    _marker: PhantomData<&'borrow T>,
+    ptr: Option<&'borrow T>,
+    // _marker: PhantomData<&'id T>,
 }
 impl<'borrow, 'id, T> Iter<'borrow, T>
 where
@@ -132,17 +132,17 @@ where
             handle,
             len: NonZeroUsize::new(len),
             step: NonZeroIsize::new(step),
-            ptr,
-            _marker: PhantomData,
+            ptr: unsafe { ptr.as_ref() },
         }
     }
 }
 impl<'borrow, T> DoubleEndedIterator for Iter<'borrow, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match (self.len, self.step, self.ptr) {
-            (Some(len), Some(step), ptr) if !ptr.is_null() => {
-                let ptr =
-                    unsafe { ptr.offset(isize::try_from(len.get() - 1).unwrap() * step.get()) };
+            (Some(len), Some(step), Some(ptr)) => {
+                let ptr = unsafe {
+                    ptr::from_ref(ptr).offset(isize::try_from(len.get() - 1).unwrap() * step.get())
+                };
                 self.len = NonZeroUsize::new(len.get() - 1);
                 unsafe { ptr.as_ref() }
             }
@@ -164,11 +164,11 @@ impl<'borrow, T> Iterator for Iter<'borrow, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match (self.len, self.step, self.ptr) {
-            (Some(len), Some(step), ptr) if !ptr.is_null() => {
-                self.ptr = unsafe { ptr.offset(step.get()) };
+            (Some(len), Some(step), Some(ptr)) => {
+                self.ptr = unsafe { ptr::from_ref(ptr).offset(step.get()).as_ref() };
                 self.len = NonZeroUsize::new(len.get() - 1);
 
-                unsafe { ptr.as_ref() }
+                Some(ptr)
             }
             _ => None,
         }
@@ -271,8 +271,7 @@ mod tests {
             handle: Default::default(),
             len: NonZeroUsize::new(backing.len()),
             step: NonZeroIsize::new(1),
-            ptr: backing.as_ptr(),
-            _marker: PhantomData,
+            ptr: unsafe { backing.as_ptr().as_ref() },
         });
         assert_eq!(iter.next(), Some(&1));
         assert_eq!(iter.next(), Some(&2));
