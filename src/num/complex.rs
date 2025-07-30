@@ -28,7 +28,7 @@ use {
 };
 
 #[derive(Debug)]
-#[repr(C)]
+#[repr(transparent)]
 pub struct Complex<'id>(Scm<'id>);
 impl<'id> Complex<'id> {
     /// Get the real part.
