@@ -20,7 +20,7 @@
 
 use {
     crate::{
-        Api, Scm, ScmTy,
+        Api, ReprScm, Scm, ScmTy,
         num::{NumTy, ScmNum},
         sys::{SCM, scm_imag_part, scm_is_complex, scm_real_part},
     },
@@ -28,6 +28,7 @@ use {
 };
 
 #[derive(Debug)]
+#[repr(transparent)]
 pub struct Complex<'id>(Scm<'id>);
 impl<'id> Complex<'id> {
     /// Get the real part.
@@ -40,6 +41,8 @@ impl<'id> Complex<'id> {
     }
 }
 impl<'id> NumTy<'id> for Complex<'id> {}
+// SAFETY: This is `#[repr(transparent)]` and its only field is a [Scm].
+unsafe impl<'id> ReprScm<'id> for Complex<'id> {}
 impl<'id> ScmNum<'id> for Complex<'id> {
     unsafe fn as_ptr(&self) -> SCM {
         unsafe { self.0.as_ptr() }

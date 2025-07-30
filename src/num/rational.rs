@@ -20,7 +20,7 @@
 
 use {
     crate::{
-        Api, Scm, ScmTy,
+        Api, ReprScm, Scm, ScmTy,
         num::{NumTy, Number, RealTy, ScmNum},
         sys::{
             SCM, scm_denominator, scm_from_double, scm_inf, scm_is_rational, scm_nan,
@@ -90,6 +90,8 @@ impl<'id> Rational<'id> {
 }
 impl<'id> NumTy<'id> for Rational<'id> {}
 impl<'id> RealTy<'id> for Rational<'id> {}
+// SAFETY: This is `#[repr(transparent)]` and its only field is a [Scm].
+unsafe impl<'id> ReprScm<'id> for Rational<'id> {}
 impl<'id> ScmNum<'id> for Rational<'id> {
     unsafe fn as_ptr(&self) -> SCM {
         unsafe { self.0.as_ptr() }

@@ -29,6 +29,7 @@ pub mod num;
 mod protection;
 pub mod string;
 pub mod sys;
+pub mod vector;
 
 use {
     crate::{guard::Guard, string::String as GString},
@@ -637,6 +638,8 @@ impl Not for Scm<'_> {
         }
     }
 }
+// SAFETY: [Scm] can always be transmuted into it self since it is the target.
+unsafe impl<'id> ReprScm<'id> for Scm<'id> {}
 
 /// Marker trait for types that can be converted to/from a [Scm].
 pub trait ScmTy<'id>: Sized {
@@ -707,46 +710,6 @@ impl<'id> ScmTy<'id> for char {
             .expect("Guile characters should return valid rust characters.")
     }
 }
-// impl<'id> ScmTy<'id> for &str {
-//     type Output = Result<::string::String<AllocVec<u8, CAllocator>>, AllocError>;
-
-//     fn type_name() -> Cow<'static, CStr> {
-//         Cow::Borrowed(c"string")
-//     }
-
-//     fn construct(self) -> Scm<'id> {
-//         let scm = unsafe { crate::sys::scm_from_utf8_stringn(self.as_ptr().cast(), self.len()) };
-//         unsafe { Scm::from_ptr(scm) }
-//     }
-
-//     fn predicate(_: &Api, scm: &Scm) -> bool {
-//         unsafe { sys::scm_is_string(scm.as_ptr()) }
-//     }
-
-//     unsafe fn get_unchecked(
-//         _: &Api,
-//         scm: Scm,
-//     ) -> Result<::string::String<AllocVec<u8, CAllocator>>, AllocError> {
-//         let mut len: usize = 0;
-//         // SAFETY: since we have the lifetime, we can assume we're in guile mode
-//         let ptr = unsafe { crate::sys::scm_to_utf8_stringn(scm.as_ptr(), &raw mut len) };
-//         if ptr.is_null() {
-//             Err(AllocError)
-//         } else {
-//             // SAFETY: we checked for null and since we don't know the capacity we must use length, and the pointer must be freed with [crate::sys::free]
-//             let vec = unsafe { AllocVec::from_raw_parts_in(ptr.cast(), len, len, CAllocator) };
-
-//             // this violates the contract so we should abort.
-//             assert!(
-//                 str::from_utf8(&vec).is_ok(),
-//                 "The returned string from `scm_to_utf8_stringn` was not utf8. This is a bug with guile."
-//             );
-
-//             // SAFETY: we have an assertion above
-//             Ok(unsafe { ::string::String::from_utf8_unchecked(vec) })
-//         }
-//     }
-// }
 impl<'id> ScmTy<'id> for Scm<'id> {
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"scm")
@@ -762,6 +725,13 @@ impl<'id> ScmTy<'id> for Scm<'id> {
         unsafe { scm.cast_lifetime() }
     }
 }
+
+/// Marker trait for types that can be transmuted into a [Scm].
+///
+/// # Safety
+///
+/// All implementors of this trait must be `#[repr(transparent)]` to [Scm]
+pub unsafe trait ReprScm<'id>: ScmTy<'id> {}
 
 /// Marker trait for types that can be used with the `#[optional]` attribute in [guile_fn]
 pub trait OptionalScm<'id>

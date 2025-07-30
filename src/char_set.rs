@@ -20,7 +20,7 @@
 
 use {
     crate::{
-        Api, Scm, ScmTy,
+        Api, ReprScm, Scm, ScmTy,
         list::List,
         string::String,
         sys::{
@@ -67,6 +67,8 @@ impl<'id> IntoIterator for CharSet<'id> {
         }
     }
 }
+// SAFETY: This is `#[repr(transparent)]` and its only field is a [Scm].
+unsafe impl<'id> ReprScm<'id> for CharSet<'id> {}
 impl<'id> ScmTy<'id> for CharSet<'id> {
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"char-set")
