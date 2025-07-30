@@ -21,8 +21,10 @@
 use {
     crate::{
         Api, Scm, ScmTy,
+        list::List,
         sys::{
-            SCM, scm_array_handle_release, scm_t_array_handle, scm_vector_elements, scm_vector_p,
+            SCM, scm_array_handle_release, scm_c_make_vector, scm_t_array_handle, scm_vector,
+            scm_vector_elements, scm_vector_p, scm_vector_to_list,
         },
         with_guile_protected,
     },
@@ -35,6 +37,18 @@ use {
         pin::Pin,
     },
 };
+
+impl Api {
+    pub fn make_vector<'id, T>(&'id self, n: usize, of: T) -> Vector<'id, T>
+    where
+        T: ScmTy<'id>,
+    {
+        Vector {
+            scm: unsafe { Scm::from_ptr(scm_c_make_vector(n, T::construct(of).as_ptr())) },
+            _marker: PhantomData,
+        }
+    }
+}
 
 pub struct Vector<'id, T>
 where
@@ -49,6 +63,28 @@ where
 {
     pub fn iter<'borrow>(&'borrow self) -> Iter<'borrow, 'id, T> {
         unsafe { Iter::new_unchecked(&self.scm) }
+    }
+}
+impl<'id, T> From<List<'id, T>> for Vector<'id, T>
+where
+    T: ScmTy<'id>,
+{
+    fn from(list: List<'id, T>) -> Self {
+        Self {
+            scm: unsafe { Scm::from_ptr(scm_vector(list.pair.as_ptr())) },
+            _marker: PhantomData,
+        }
+    }
+}
+impl<'id, T> From<Vector<'id, T>> for List<'id, T>
+where
+    T: ScmTy<'id>,
+{
+    fn from(vec: Vector<'id, T>) -> Self {
+        Self {
+            pair: unsafe { Scm::from_ptr(scm_vector_to_list(vec.scm.as_ptr())) },
+            _marker: PhantomData,
+        }
     }
 }
 impl<'id, T> ScmTy<'id> for Vector<'id, T>
@@ -174,5 +210,27 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = self.len.map(NonZeroUsize::get).unwrap_or_default();
         (len, Some(len))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use {super::*, crate::with_guile};
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn vec_conversion() {
+        with_guile(|api| {
+            assert_eq!(
+                api.make_vector(2, true).iter().collect::<Vec<_>>(),
+                [(); 2].map(|_| true),
+            );
+            assert_eq!(
+                Vector::from(api.make_list([true; 2]))
+                    .iter()
+                    .collect::<Vec<_>>(),
+                [(); 2].map(|_| true),
+            );
+        });
     }
 }

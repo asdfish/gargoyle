@@ -67,7 +67,7 @@ where
     T: ScmTy<'id>,
 {
     pub(crate) pair: Scm<'id>,
-    _marker: PhantomData<T>,
+    pub(crate) _marker: PhantomData<T>,
 }
 // `T` doesn't need to be clone since it gets constructed every time
 // impl<'id, T> Clone for List<'id, T>

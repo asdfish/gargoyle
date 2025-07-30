@@ -152,7 +152,9 @@ unsafe extern "C" {
     pub fn gargoyle_reexports_scm_to_uintptr_t(_: SCM) -> usize;
 
     pub fn scm_vector_p(_obj: SCM) -> SCM;
+    pub fn scm_c_make_vector(_k: usize, _fill: SCM) -> SCM;
     pub fn scm_vector(_l: SCM) -> SCM;
+    pub fn scm_vector_to_list(_v: SCM) -> SCM;
 
     pub fn scm_vector_elements(
         _array: SCM,
