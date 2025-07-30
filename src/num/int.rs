@@ -108,6 +108,22 @@ impl_scm_ty_for_int!([
         sys::scm_from_uint32,
         sys::scm_to_uint32
     ),
+    (
+        i64,
+        c"s64",
+        isize,
+        sys::scm_is_signed_integer,
+        sys::scm_from_int64,
+        sys::scm_to_int64,
+    ),
+    (
+        u64,
+        c"u64",
+        usize,
+        sys::scm_is_unsigned_integer,
+        sys::scm_from_uint64,
+        sys::scm_to_uint64,
+    ),
 ]);
 #[cfg(target_pointer_width = "32")]
 impl_scm_ty_for_int!([
@@ -130,22 +146,6 @@ impl_scm_ty_for_int!([
 ]);
 #[cfg(target_pointer_width = "64")]
 impl_scm_ty_for_int!([
-    (
-        i64,
-        c"s64",
-        isize,
-        sys::scm_is_signed_integer,
-        sys::scm_from_int64,
-        sys::scm_to_int64,
-    ),
-    (
-        u64,
-        c"u64",
-        usize,
-        sys::scm_is_unsigned_integer,
-        sys::scm_from_uint64,
-        sys::scm_to_uint64,
-    ),
     (
         isize,
         c"s64",
@@ -172,9 +172,7 @@ mod tests {
     #[test]
     fn int_conversion() {
         with_guile(|api| {
-            test_real!(api, [i8, i16, i32, isize, u8, u16, u32, usize]);
-            #[cfg(target_pointer_width = "64")]
-            test_real!(api, [i64, u64]);
+            test_real!(api, [i8, i16, i32, i64, isize, u8, u16, u32, u64, usize]);
         })
         .unwrap();
     }
