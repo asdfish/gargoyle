@@ -292,6 +292,7 @@ mod tests {
         assert_eq!(iter.next_back(), Some(&2));
         assert_eq!(iter.next_back(), Some(&3));
         assert_eq!(iter.next(), None);
+        assert_eq!(iter.next_back(), None);
     }
 
     #[cfg_attr(miri, ignore)]
