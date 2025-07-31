@@ -18,23 +18,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//! Rust bindings to guile.
+use {crate::sys::SCM, std::marker::PhantomData};
 
-mod guile_mode;
-pub mod scm;
-pub mod sys;
-
-pub use guile_mode::*;
-
-#[repr(transparent)]
-pub struct Guile {
-    _marker: (),
+pub struct Scm<'guile_mode> {
+    ptr: SCM,
+    _marker: PhantomData<&'guile_mode ()>,
 }
-impl Guile {
+impl Scm<'_> {
+    pub fn as_ptr(&self) -> SCM {
+        self.ptr
+    }
     /// # Safety
     ///
-    /// This can be run safely if you run it in guile mode and drop it before guile mode ends.
-    pub unsafe fn new_unchecked() -> Self {
-        Self { _marker: () }
+    /// You must ensure that the lifetime is attached to a [Guile][crate::Guile] object to ensure that it is in guile mode.
+    pub unsafe fn from_ptr(ptr: SCM) -> Self {
+        Self {
+            ptr,
+            _marker: PhantomData,
+        }
     }
 }
