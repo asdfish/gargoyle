@@ -20,7 +20,6 @@
 
 //! Rust bindings to guile.
 
-pub mod exception;
 mod guile_mode;
 pub mod num;
 pub mod scm;

@@ -18,54 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use {
-    crate::{Guile, sys::SCM},
-    std::{borrow::Cow, ffi::CStr, marker::PhantomData},
-};
+use crate::sys::SCM;
 
-pub struct Scm<'guile_mode> {
-    ptr: SCM,
-    _marker: PhantomData<&'guile_mode ()>,
-}
-impl Scm<'_> {
-    pub fn as_ptr(&self) -> SCM {
-        self.ptr
-    }
-    /// # Safety
-    ///
-    /// You must ensure that the lifetime is attached to a [Guile][crate::Guile] object to ensure that it is in guile mode.
-    pub unsafe fn from_ptr(ptr: SCM) -> Self {
-        Self {
-            ptr,
-            _marker: PhantomData,
-        }
-    }
-}
+// trait ScmNum {
+//     const PREDICATE: unsafe extern "C" fn(_: SCM) -> SCM;
+// }
 
-pub trait TryFromScm<'guile_mode> {
-    fn type_name() -> Cow<'static, CStr>;
+// macro_rules! impl_from_scm_for_primitive {
+//     ($ty:ty) => {
+//         impl<'gm> $crate::scm::ScmTy<'gm> for $ty {
 
-    fn try_from_scm(_: Scm<'guile_mode>) -> Option<Self>
-    where
-        Self: Sized;
-}
-pub trait ToScm<'guile_mode> {
-    fn to_scm(self, _: &'guile_mode Guile) -> Scm<'guile_mode>
-    where
-        Self: Sized;
-}
-
-impl<'gm> TryFromScm<'gm> for Scm<'gm> {
-    fn type_name() -> Cow<'static, CStr> {
-        Cow::Borrowed(c"any")
-    }
-
-    fn try_from_scm(scm: Scm<'gm>) -> Option<Self> {
-        Some(scm)
-    }
-}
-impl<'gm> ToScm<'gm> for Scm<'gm> {
-    fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
-        self
-    }
-}
+//         }
+//     }
+// }
