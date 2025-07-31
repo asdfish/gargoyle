@@ -22,7 +22,7 @@ use {
     crate::{
         Api, Scm, ScmTy,
         alloc::CAllocator,
-        sys::{scm_c_string_length, scm_is_string, scm_to_utf8_stringn},
+        sys::{scm_c_string_length, scm_is_string, scm_string_equal_p, scm_to_utf8_stringn},
     },
     allocator_api2::{alloc::AllocError, vec::Vec},
     std::{
@@ -100,5 +100,10 @@ impl<'id> ScmTy<'id> for String<'id> {
     }
     unsafe fn get_unchecked(_: &Api, string: Scm<'id>) -> Self {
         Self(string)
+    }
+}
+impl PartialEq for String<'_> {
+    fn eq(&self, r: &Self) -> bool {
+        unsafe { Scm::from_ptr(scm_string_equal_p(self.0.as_ptr(), r.0.as_ptr())) }.is_true()
     }
 }

@@ -107,6 +107,7 @@ unsafe extern "C" {
 
     pub fn scm_from_utf8_stringn(_: *const c_char, _: usize) -> SCM;
     pub fn scm_to_utf8_stringn(_: SCM, _: *mut usize) -> *mut c_char;
+    pub fn scm_string_equal_p(_s1: SCM, _s2: SCM) -> SCM;
 
     pub fn scm_to_bool(_: SCM) -> bool;
     pub fn scm_not(_: SCM) -> SCM;
@@ -122,6 +123,16 @@ unsafe extern "C" {
     pub fn scm_char_set_cursor_next(_cs: SCM, _cursor: SCM) -> SCM;
 
     pub fn scm_end_of_char_set_p(_cursor: SCM) -> SCM;
+
+    pub fn scm_list_to_char_set(_list: SCM, _base_cs: SCM) -> SCM;
+
+    pub fn scm_symbol_p(_obj: SCM) -> SCM;
+    pub fn scm_from_utf8_symboln(_str: *const c_char, _len: usize) -> SCM;
+    pub fn scm_symbol_to_string(_s: SCM) -> SCM;
+    pub fn scm_string_to_symbol(_string: SCM) -> SCM;
+    pub fn scm_c_symbol_length(_sym: SCM) -> usize;
+    pub fn scm_make_symbol(_name: SCM) -> SCM;
+    pub fn scm_symbol_interned_p(_symbol: SCM) -> SCM;
 
     pub fn scm_from_double(_: c_double) -> SCM;
     pub fn scm_from_int8(_: i8) -> SCM;
@@ -177,8 +188,6 @@ unsafe extern "C" {
 
     pub fn scm_list_p(_x: SCM) -> SCM;
     pub fn scm_null_p(_x: SCM) -> SCM;
-
-    pub fn scm_list_to_char_set(_list: SCM, _base_cs: SCM) -> SCM;
 
     pub fn scm_is_signed_integer(_: SCM, _: isize, _: isize) -> bool;
     pub fn scm_is_unsigned_integer(_: SCM, _: usize, _: usize) -> bool;
