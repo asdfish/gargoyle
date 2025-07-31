@@ -68,8 +68,8 @@ pub enum scm_t_array_element_type {
 // pub const SCM_ARRAY_ELEMENT_TYPE_LAST: scm_t_array_element_type =
 //     scm_t_array_element_type::SCM_ARRAY_ELEMENT_TYPE_C64;
 
-pub type scm_t_vector_ref = Option<extern "C" fn(_: SCM, _: usize) -> SCM>;
-pub type scm_t_vector_set = Option<extern "C" fn(_: SCM, _: usize, SCM)>;
+pub type scm_t_vector_ref = Option<extern "C-unwind" fn(_: SCM, _: usize) -> SCM>;
+pub type scm_t_vector_set = Option<extern "C-unwind" fn(_: SCM, _: usize, SCM)>;
 #[derive(Default)]
 #[repr(C)]
 pub struct scm_t_array_handle {
@@ -88,7 +88,7 @@ pub struct scm_t_array_handle {
     vset: scm_t_vector_set,
 }
 
-unsafe extern "C" {
+unsafe extern "C-unwind" {
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_T: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_F: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_EOL: SCM;
@@ -100,11 +100,11 @@ unsafe extern "C" {
     pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> c_int;
 
     pub fn scm_with_guile(
-        _func: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
+        _func: Option<unsafe extern "C-unwind" fn(*mut c_void) -> *mut c_void>,
         _data: *mut c_void,
     ) -> *mut c_void;
     pub fn scm_without_guile(
-        _func: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
+        _func: Option<unsafe extern "C-unwind" fn(*mut c_void) -> *mut c_void>,
         _data: *mut c_void,
     ) -> *mut c_void;
     pub fn scm_shell(_argc: c_int, _argv: *const *const c_char);
