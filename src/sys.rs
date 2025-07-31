@@ -103,6 +103,10 @@ unsafe extern "C" {
         _func: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
         _data: *mut c_void,
     ) -> *mut c_void;
+    pub fn scm_without_guile(
+        _func: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
+        _data: *mut c_void,
+    ) -> *mut c_void;
     pub fn scm_shell(_argc: c_int, _argv: *const *const c_char);
 
     pub fn scm_from_utf8_stringn(_: *const c_char, _: usize) -> SCM;
