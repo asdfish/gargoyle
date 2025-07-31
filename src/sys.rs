@@ -97,7 +97,7 @@ unsafe extern "C" {
     pub static GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE: c_int;
     pub static GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY: c_int;
 
-    pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> bool;
+    pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> c_int;
 
     pub fn scm_with_guile(
         _func: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
@@ -113,7 +113,7 @@ unsafe extern "C" {
     pub fn scm_to_utf8_stringn(_: SCM, _: *mut usize) -> *mut c_char;
     pub fn scm_string_equal_p(_s1: SCM, _s2: SCM) -> SCM;
 
-    pub fn scm_to_bool(_: SCM) -> bool;
+    pub fn scm_to_bool(_: SCM) -> c_int;
     pub fn scm_not(_: SCM) -> SCM;
 
     pub fn scm_integer_to_char(_: SCM) -> SCM;
@@ -209,19 +209,19 @@ unsafe extern "C" {
     pub fn scm_list_p(_x: SCM) -> SCM;
     pub fn scm_null_p(_x: SCM) -> SCM;
 
-    pub fn scm_is_signed_integer(_: SCM, _: isize, _: isize) -> bool;
-    pub fn scm_is_unsigned_integer(_: SCM, _: usize, _: usize) -> bool;
+    pub fn scm_is_signed_integer(_: SCM, _: isize, _: isize) -> c_int;
+    pub fn scm_is_unsigned_integer(_: SCM, _: usize, _: usize) -> c_int;
 
-    pub fn scm_is_bool(_val: SCM) -> bool;
-    pub fn scm_is_complex(_val: SCM) -> bool;
-    pub fn scm_is_exact(_val: SCM) -> bool;
+    pub fn scm_is_bool(_val: SCM) -> c_int;
+    pub fn scm_is_complex(_val: SCM) -> c_int;
+    pub fn scm_is_exact(_val: SCM) -> c_int;
 
-    pub fn scm_is_inexact(_val: SCM) -> bool;
-    pub fn scm_is_rational(_val: SCM) -> bool;
-    pub fn scm_is_string(_val: SCM) -> bool;
-    pub fn gargoyle_reexports_scm_is_true(_val: SCM) -> bool;
+    pub fn scm_is_inexact(_val: SCM) -> c_int;
+    pub fn scm_is_rational(_val: SCM) -> c_int;
+    pub fn scm_is_string(_val: SCM) -> c_int;
+    pub fn gargoyle_reexports_scm_is_true(_val: SCM) -> c_int;
 
-    pub fn scm_is_exact_integer(_val: SCM) -> bool;
+    pub fn scm_is_exact_integer(_val: SCM) -> c_int;
     pub fn scm_exact_to_inexact(_z: SCM) -> SCM;
     pub fn scm_inexact_to_exact(_z: SCM) -> SCM;
 
