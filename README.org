@@ -5,3 +5,16 @@ guile bindings for rust
 
 * Status
 This project is still in development, so the api may still change. As of right now, *DO NOT* rely on the api.
+
+** Immutable strucutres
+ - [ ] Add ice-9 vlists/vhashes
+ - [ ] Add srfi-41 streams
+ - [ ] Add srfi-19 dates
+ - [ ] Add mutexes
+ - [ ] Add srfi-9 immutable records
+ - [ ] Add symbols
+ - [ ] Add booleans
+ - [ ] Add numbers
+ - [ ] Add array/vectors
+ - [ ] Add r6rs conditions
+ - [ ] Add r6rs immutable hash tables

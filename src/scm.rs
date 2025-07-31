@@ -18,7 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use {crate::sys::SCM, std::marker::PhantomData};
+use {
+    crate::{exception::Exception, sys::SCM},
+    std::{convert::Infallible, marker::PhantomData},
+};
 
 pub struct Scm<'guile_mode> {
     ptr: SCM,
@@ -37,4 +40,29 @@ impl Scm<'_> {
             _marker: PhantomData,
         }
     }
+}
+impl<'gm> TryFromScm<'gm> for Scm<'gm> {
+    type Error = Infallible;
+
+    fn try_from_scm(scm: Scm<'gm>) -> Result<Self, Infallible> {
+        Ok(scm)
+    }
+}
+impl<'gm> ToScm<'gm> for Scm<'gm> {
+    fn to_scm(self) -> Scm<'gm> {
+        self
+    }
+}
+
+pub trait TryFromScm<'guile_mode> {
+    type Error: Exception;
+
+    fn try_from_scm(_: Scm<'guile_mode>) -> Result<Self, Self::Error>
+    where
+        Self: Sized;
+}
+pub trait ToScm<'guile_mode> {
+    fn to_scm(self) -> Scm<'guile_mode>
+    where
+        Self: Sized;
 }
