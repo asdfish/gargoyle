@@ -24,8 +24,8 @@ use {
 };
 
 unsafe extern "C" {
-    fn malloc(_: usize) -> *mut c_void;
-    fn free(_: *mut c_void);
+    pub fn malloc(_: usize) -> *mut c_void;
+    pub fn free(_: *mut c_void);
 }
 
 /// Allocator that allocates using [malloc] and [free].

@@ -24,6 +24,7 @@ pub mod alloc;
 mod catch;
 pub mod char_set;
 mod guard;
+pub mod hash_map;
 pub mod list;
 pub mod num;
 mod protection;
