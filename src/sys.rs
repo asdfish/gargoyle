@@ -134,6 +134,22 @@ unsafe extern "C" {
     pub fn scm_make_symbol(_name: SCM) -> SCM;
     pub fn scm_symbol_interned_p(_symbol: SCM) -> SCM;
 
+    pub fn scm_make_hash_table(_n: SCM) -> SCM;
+    pub fn scm_hash_table_p(_obj: SCM) -> SCM;
+    pub fn scm_hash_set_x(_table: SCM, _key: SCM, _val: SCM) -> SCM;
+    pub fn scm_hashq_set_x(_table: SCM, _key: SCM, _val: SCM) -> SCM;
+    pub fn scm_hashv_set_x(_table: SCM, _key: SCM, _val: SCM) -> SCM;
+    pub fn scm_hash_remove_x(_table: SCM, _key: SCM) -> SCM;
+    pub fn scm_hashq_remove_x(_table: SCM, _key: SCM) -> SCM;
+    pub fn scm_hashv_remove_x(_table: SCM, _key: SCM) -> SCM;
+    pub fn scm_hash_get_handle(_table: SCM, _key: SCM) -> SCM;
+    pub fn scm_hashq_get_handle(_table: SCM, _key: SCM) -> SCM;
+    pub fn scm_hashv_get_handle(_table: SCM, _key: SCM) -> SCM;
+    pub fn scm_hash_create_handle_x(_table: SCM, _key: SCM, _init: SCM) -> SCM;
+    pub fn scm_hashq_create_handle_x(_table: SCM, _key: SCM, _init: SCM) -> SCM;
+    pub fn scm_hashv_create_handle_x(_table: SCM, _key: SCM, _init: SCM) -> SCM;
+    pub fn scm_hash_fold(_proc: SCM, _init: SCM, _table: SCM) -> SCM;
+
     pub fn scm_from_double(_: c_double) -> SCM;
     pub fn scm_from_int8(_: i8) -> SCM;
     pub fn scm_from_uint8(_: u8) -> SCM;
