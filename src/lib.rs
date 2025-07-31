@@ -22,6 +22,7 @@
 
 pub mod exception;
 mod guile_mode;
+pub mod num;
 pub mod scm;
 pub mod sys;
 
