@@ -18,24 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//! Rust bindings to guile.
+use std::convert::Infallible;
 
-pub mod exception;
-mod guile_mode;
-pub mod scm;
-pub mod sys;
-
-pub use guile_mode::*;
-
-#[repr(transparent)]
-pub struct Guile {
-    _marker: (),
-}
-impl Guile {
-    /// # Safety
-    ///
-    /// This can be run safely if you run it in guile mode and drop it before guile mode ends.
-    pub unsafe fn new_unchecked() -> Self {
-        Self { _marker: () }
-    }
-}
+pub trait Exception {}
+impl Exception for Infallible {}
