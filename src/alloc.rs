@@ -29,8 +29,6 @@ unsafe extern "C" {
 }
 
 /// Allocator that allocates using [malloc] and [free].
-///
-/// You should use this over the global allocator since that may be changed.
 pub struct CAllocator;
 
 unsafe impl Allocator for CAllocator {

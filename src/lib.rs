@@ -20,7 +20,7 @@
 
 //! Rust bindings to guile.
 
-mod alloc;
+pub mod alloc;
 mod catch;
 pub mod char_set;
 mod guard;
@@ -28,6 +28,7 @@ pub mod list;
 pub mod num;
 mod protection;
 pub mod string;
+pub mod symbol;
 pub mod sys;
 pub mod vector;
 
