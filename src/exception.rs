@@ -18,7 +18,64 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use std::convert::Infallible;
+use {
+    crate::{
+        Guile,
+        scm::{Scm, ToScm, TryFromScm},
+        sys::scm_wrong_type_arg_msg,
+    },
+    std::{convert::Infallible, ffi::CStr, marker::PhantomData},
+};
 
-pub trait Exception {}
-impl Exception for Infallible {}
+pub trait Exception<'guile_mode> {
+    fn throw(self, _: &'guile_mode Guile) -> !
+    where
+        Self: Sized;
+}
+
+impl Exception<'_> for Infallible {
+    fn throw(self, _: &Guile) -> ! {
+        unreachable!()
+    }
+}
+pub struct WrongTypeArg<'gm, T, E>
+where
+    T: ToScm<'gm>,
+    E: TryFromScm<'gm>,
+{
+    subr: &'static CStr,
+    arg: usize,
+    val: T,
+    _marker: PhantomData<&'gm E>,
+}
+impl<'gm, T, E> WrongTypeArg<'gm, T, E>
+where
+    T: ToScm<'gm>,
+    E: TryFromScm<'gm>,
+{
+    pub fn new(subr: &'static CStr, arg: usize, val: T) -> Self {
+        Self {
+            subr,
+            arg,
+            val,
+            _marker: PhantomData,
+        }
+    }
+}
+impl<'gm, T, E> Exception<'gm> for WrongTypeArg<'gm, T, E>
+where
+    T: ToScm<'gm>,
+    E: TryFromScm<'gm>,
+{
+    fn throw(self, g: &'gm Guile) -> ! {
+        unsafe {
+            scm_wrong_type_arg_msg(
+                self.subr.as_ptr(),
+                self.arg.try_into().unwrap(),
+                self.val.to_scm(g).as_ptr(),
+                E::type_name().as_ref().as_ptr(),
+            );
+        }
+        unreachable!()
+    }
+}
