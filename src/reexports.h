@@ -33,8 +33,8 @@ extern const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED;
 extern const int GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE;
 extern const int GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY;
 
-extern _Bool gargoyle_reexports_scm_is_true(SCM);
-extern _Bool GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM);
+extern int gargoyle_reexports_scm_is_true(SCM);
+extern int GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM);
 
 extern uintptr_t gargoyle_reexports_scm_to_uintptr_t(SCM);
 extern intptr_t gargoyle_reexports_scm_to_intptr_t(SCM);

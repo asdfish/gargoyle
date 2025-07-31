@@ -30,10 +30,10 @@ const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED = SCM_UNDEFINED;
 const int GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE = SCM_F_DYNWIND_REWINDABLE;
 const int GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY = SCM_F_WIND_EXPLICITLY;
 
-_Bool gargoyle_reexports_scm_is_true(SCM b) {
+int gargoyle_reexports_scm_is_true(SCM b) {
   return scm_is_true(b);
 }
-_Bool GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM scm) {
+int GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM scm) {
   return SCM_UNBNDP(scm);
 }
 
