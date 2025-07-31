@@ -18,10 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use {
-    crate::{exception::Exception, sys::SCM},
-    std::{convert::Infallible, marker::PhantomData},
-};
+use {crate::sys::SCM, std::marker::PhantomData};
 
 pub struct Scm<'guile_mode> {
     ptr: SCM,
@@ -41,28 +38,33 @@ impl Scm<'_> {
         }
     }
 }
-impl<'gm> TryFromScm<'gm> for Scm<'gm> {
-    type Error = Infallible;
 
-    fn try_from_scm(scm: Scm<'gm>) -> Result<Self, Infallible> {
-        Ok(scm)
+/// Trait for types that can be converted from [Scm].
+///
+/// # Safety
+///
+/// To implement this trait safely, you must ensure that [Self::from_scm] is safe to evaluate if [Self::predicate] returns [true].
+pub unsafe trait FromScm<'gm> {
+    fn predicate(_: &Scm<'gm>) -> bool;
+    unsafe fn from_scm_unchecked(_: Scm<'gm>) -> Self;
+}
+pub trait ToScm<'guile_mode> {
+    fn to_scm(self) -> Scm<'guile_mode>
+    where
+        Self: Sized;
+}
+
+unsafe impl<'gm> FromScm<'gm> for Scm<'gm> {
+    fn predicate(_: &Scm<'gm>) -> bool {
+        true
+    }
+
+    unsafe fn from_scm_unchecked(scm: Scm<'gm>) -> Self {
+        scm
     }
 }
 impl<'gm> ToScm<'gm> for Scm<'gm> {
     fn to_scm(self) -> Scm<'gm> {
         self
     }
-}
-
-pub trait TryFromScm<'guile_mode> {
-    type Error: Exception;
-
-    fn try_from_scm(_: Scm<'guile_mode>) -> Result<Self, Self::Error>
-    where
-        Self: Sized;
-}
-pub trait ToScm<'guile_mode> {
-    fn to_scm(self) -> Scm<'guile_mode>
-    where
-        Self: Sized;
 }
