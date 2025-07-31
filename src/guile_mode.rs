@@ -52,8 +52,8 @@ unsafe trait GuileModeToggle {
 
     const LOCK_INIT: bool;
     const GUILE_MODE_STATUS: bool;
-    const SCOPE: unsafe extern "C" fn(
-        _: Option<unsafe extern "C" fn(_: *mut c_void) -> *mut c_void>,
+    const SCOPE: unsafe extern "C-unwind" fn(
+        _: Option<unsafe extern "C-unwind" fn(_: *mut c_void) -> *mut c_void>,
         *mut c_void,
     ) -> *mut c_void;
 
@@ -61,7 +61,7 @@ unsafe trait GuileModeToggle {
     ///
     /// This should be safe to run if [GUILE_MODE] is [Self::GUILE_MODE_STATUS].
     unsafe fn eval(_: Self::Fn) -> Self::Output;
-    unsafe extern "C" fn callback(ptr: *mut c_void) -> *mut c_void {
+    unsafe extern "C-unwind" fn callback(ptr: *mut c_void) -> *mut c_void {
         INIT.with(|mode| mode.store(true, atomic::Ordering::Release));
         GUILE_MODE.with(|mode| mode.store(Self::GUILE_MODE_STATUS, atomic::Ordering::Release));
 
@@ -110,8 +110,8 @@ where
 
     const LOCK_INIT: bool = true;
     const GUILE_MODE_STATUS: bool = true;
-    const SCOPE: unsafe extern "C" fn(
-        _: Option<unsafe extern "C" fn(_: *mut c_void) -> *mut c_void>,
+    const SCOPE: unsafe extern "C-unwind" fn(
+        _: Option<unsafe extern "C-unwind" fn(_: *mut c_void) -> *mut c_void>,
         *mut c_void,
     ) -> *mut c_void = scm_with_guile;
 
@@ -142,8 +142,8 @@ where
 
     const LOCK_INIT: bool = false;
     const GUILE_MODE_STATUS: bool = false;
-    const SCOPE: unsafe extern "C" fn(
-        _: Option<unsafe extern "C" fn(_: *mut c_void) -> *mut c_void>,
+    const SCOPE: unsafe extern "C-unwind" fn(
+        _: Option<unsafe extern "C-unwind" fn(_: *mut c_void) -> *mut c_void>,
         *mut c_void,
     ) -> *mut c_void = scm_without_guile;
 
@@ -167,13 +167,11 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     #[test]
     fn multithreading() {
-        fn spawn_with_guile() -> thread::JoinHandle<()> {
-            thread::spawn(|| with_guile(|_| with_guile(|_| {}).unwrap()).unwrap())
+        fn spawn_with_guile() -> thread::JoinHandle<Option<()>> {
+            thread::spawn(|| with_guile(|_| with_guile(|_| {})).flatten())
         }
-        fn spawn_without_guile() -> thread::JoinHandle<()> {
-            thread::spawn(|| {
-                with_guile(|guile| guile.block_on(|| with_guile(|_| {})).unwrap()).unwrap()
-            })
+        fn spawn_without_guile() -> thread::JoinHandle<Option<()>> {
+            thread::spawn(|| with_guile(|guile| guile.block_on(|| with_guile(|_| {}))).flatten())
         }
 
         [spawn_with_guile, spawn_without_guile]
@@ -184,7 +182,8 @@ mod tests {
                     .map(|spawn| spawn())
                     .into_iter()
                     .map(|thread| thread.join())
-                    .collect::<Result<_, _>>()
+                    .collect::<Result<Option<()>, _>>()
+                    .unwrap()
                     .unwrap()
             });
     }
