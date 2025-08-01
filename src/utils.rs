@@ -20,7 +20,12 @@
 
 use {
     crate::sys::{SCM, scm_is_true},
-    std::ffi::c_int,
+    bstr::BStr,
+    std::{
+        borrow::Cow,
+        ffi::{CStr, c_int},
+        fmt::{self, Display, Formatter},
+    },
 };
 
 pub fn c_predicate<F>(f: F) -> bool
@@ -35,4 +40,19 @@ where
     F: FnOnce() -> SCM,
 {
     c_predicate(|| unsafe { scm_is_true(f()) })
+}
+
+pub trait CowCStrExt<'a> {
+    fn display(&'a self) -> CowCStrDisplay<'a>;
+}
+impl<'a> CowCStrExt<'a> for Cow<'a, CStr> {
+    fn display(&'a self) -> CowCStrDisplay<'a> {
+        CowCStrDisplay(self)
+    }
+}
+pub struct CowCStrDisplay<'a>(&'a Cow<'a, CStr>);
+impl<'a> Display for CowCStrDisplay<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        BStr::new(self.0.as_ref().to_bytes()).fmt(f)
+    }
 }

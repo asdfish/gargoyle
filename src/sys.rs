@@ -200,7 +200,10 @@ unsafe extern "C" {
 
     pub fn scm_car(_pair: SCM) -> SCM;
     pub fn scm_cdr(_pair: SCM) -> SCM;
+    pub fn scm_set_car_x(_pair: SCM, _value: SCM) -> SCM;
+    pub fn scm_set_cdr_x(_pair: SCM, _value: SCM) -> SCM;
     pub fn scm_cons(_x: SCM, _y: SCM) -> SCM;
+    pub fn scm_copy_tree(_obj: SCM) -> SCM;
     pub fn scm_length(_lst: SCM) -> SCM;
 
     pub fn scm_list_p(_x: SCM) -> SCM;
@@ -212,6 +215,7 @@ unsafe extern "C" {
     pub fn scm_is_bool(_val: SCM) -> c_int;
     pub fn scm_is_complex(_val: SCM) -> c_int;
     pub fn scm_is_exact(_val: SCM) -> c_int;
+    pub fn scm_is_pair(_x: SCM) -> c_int;
 
     pub fn scm_is_inexact(_val: SCM) -> c_int;
     pub fn scm_is_string(_val: SCM) -> c_int;
