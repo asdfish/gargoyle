@@ -20,8 +20,11 @@
 
 //! Rust bindings to guile.
 
+#![expect(private_bounds)]
+
 mod guile_mode;
-mod num;
+pub mod num;
+pub mod rand;
 pub mod scm;
 pub mod sys;
 mod utils;
