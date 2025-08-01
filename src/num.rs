@@ -179,7 +179,7 @@ impl<'gm> TryFromScm<'gm> for f64 {
 }
 impl<'gm> ToScm<'gm> for f64 {
     fn to_scm(self, guile: &'gm Guile) -> Scm<'gm> {
-        Scm::from_ptr(unsafe { scm_from_double(self.into()) }, guile)
+        Scm::from_ptr(unsafe { scm_from_double(self) }, guile)
     }
 }
 unsafe impl Num<'_> for f64 {}
