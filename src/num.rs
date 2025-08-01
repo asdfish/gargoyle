@@ -198,3 +198,47 @@ macro_rules! impl_scm_traits_for_float {
 }
 impl_scm_traits_for_float!(f32);
 impl_scm_traits_for_float!(f64);
+
+#[cfg(test)]
+mod tests {
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn ty_min_max() {
+        macro_rules! test_ty {
+            ($ty:ty) => {
+                $crate::with_guile(|guile| {
+                    assert_eq!(
+                        <$ty as $crate::scm::TryFromScm>::try_from_scm(
+                            <$ty as $crate::scm::ToScm>::to_scm(<$ty>::MIN, guile),
+                            guile
+                        ),
+                        Ok(<$ty>::MIN),
+                    );
+                    assert_eq!(
+                        <$ty as $crate::scm::TryFromScm>::try_from_scm(
+                            <$ty as $crate::scm::ToScm>::to_scm(<$ty>::MAX, guile),
+                            guile
+                        ),
+                        Ok(<$ty>::MAX),
+                    );
+                })
+                .unwrap();
+            };
+        }
+        test_ty!(i8);
+        test_ty!(i16);
+        test_ty!(i32);
+        test_ty!(isize);
+        test_ty!(u8);
+        test_ty!(u16);
+        test_ty!(u32);
+        test_ty!(usize);
+        #[cfg(target_pointer_width = "64")]
+        {
+            test_ty!(i64);
+            test_ty!(u64);
+        }
+        test_ty!(f32);
+        test_ty!(f64);
+    }
+}

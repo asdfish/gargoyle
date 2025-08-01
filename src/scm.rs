@@ -19,10 +19,15 @@
 // THE SOFTWARE.
 
 use {
-    crate::{Guile, sys::SCM},
+    crate::{
+        Guile,
+        sys::{SCM, scm_equal_p, scm_is_true},
+        utils::c_predicate,
+    },
     std::{borrow::Cow, ffi::CStr, marker::PhantomData},
 };
 
+#[derive(Debug)]
 pub struct Scm<'guile_mode> {
     ptr: SCM,
     _marker: PhantomData<&'guile_mode ()>,
@@ -36,6 +41,17 @@ impl<'gm> Scm<'gm> {
             ptr,
             _marker: PhantomData,
         }
+    }
+
+    /// Compare equality using `equal?`
+    pub fn is_equal(&self, r: &Self) -> bool {
+        c_predicate(|| unsafe { scm_is_true(scm_equal_p(self.as_ptr(), r.as_ptr())) })
+    }
+}
+impl PartialEq for Scm<'_> {
+    /// See [Self::is_equal].
+    fn eq(&self, r: &Self) -> bool {
+        self.is_equal(r)
     }
 }
 
