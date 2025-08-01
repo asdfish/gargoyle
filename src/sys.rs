@@ -252,8 +252,8 @@ unsafe extern "C" {
     pub fn scm_eqv_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_equal_p(_: SCM, _: SCM) -> SCM;
 
-    pub fn scm_is_number(_: SCM) -> bool;
-    pub fn scm_is_real(_: SCM) -> bool;
+    pub fn scm_is_number(_: SCM) -> c_int;
+    pub fn scm_is_real(_: SCM) -> c_int;
 
     pub fn scm_num_eq_p(_: SCM, _: SCM) -> SCM;
     pub fn scm_less_p(_: SCM, _: SCM) -> SCM;
