@@ -92,7 +92,7 @@ pub trait TryFromScm<'guile_mode> {
     /// # Safety
     ///
     /// [Self::predicate] should implement type checking.
-    unsafe fn from_scm_unchecked(scm: Scm<'guile_mode>, _: &'guile_mode Guile) -> Self
+    unsafe fn from_scm_unchecked(_: Scm<'guile_mode>, _: &'guile_mode Guile) -> Self
     where
         Self: Sized;
 }
