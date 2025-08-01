@@ -21,7 +21,7 @@
 use {
     crate::{
         Guile,
-        reference::{MutRef, Ref, ReprScm},
+        reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
         sys::{
             SCM, scm_car, scm_cdr, scm_cons, scm_copy_tree, scm_is_pair, scm_set_car_x,
@@ -61,11 +61,11 @@ impl<'gm, L, R> Pair<'gm, L, R> {
     pub fn as_cdr<'a>(&'a self) -> Ref<'a, 'gm, R> {
         unsafe { Ref::new_unchecked(scm_cdr(self.scm)) }
     }
-    pub fn as_mut_car<'a>(&'a mut self) -> MutRef<'a, 'gm, L> {
-        unsafe { MutRef::new_unchecked(scm_car(self.scm)) }
+    pub fn as_mut_car<'a>(&'a mut self) -> RefMut<'a, 'gm, L> {
+        unsafe { RefMut::new_unchecked(scm_car(self.scm)) }
     }
-    pub fn as_mut_cdr<'a>(&'a mut self) -> MutRef<'a, 'gm, R> {
-        unsafe { MutRef::new_unchecked(scm_cdr(self.scm)) }
+    pub fn as_mut_cdr<'a>(&'a mut self) -> RefMut<'a, 'gm, R> {
+        unsafe { RefMut::new_unchecked(scm_cdr(self.scm)) }
     }
 }
 impl<L, R> Clone for Pair<'_, L, R> {
@@ -161,8 +161,8 @@ mod tests {
             assert_eq!(pair.as_car().into_inner(), 2);
 
             let mut pair = Pair::new(1, Pair::new(2, 3, guile), guile);
-            pair.as_mut_cdr().deref_mut(|cdr| cdr.set_car(3));
-            assert_eq!(pair.as_cdr().deref(|cdr| cdr.as_car().into_inner()), 3);
+            pair.as_mut_cdr().set_car(3);
+            assert_eq!(pair.as_cdr().as_car().into_inner(), 3);
         })
         .unwrap();
     }

@@ -24,7 +24,11 @@ use {
         scm::{Scm, TryFromScm},
         sys::SCM,
     },
-    std::{marker::PhantomData, mem, ops::Deref},
+    std::{
+        marker::PhantomData,
+        mem,
+        ops::{Deref, DerefMut},
+    },
 };
 
 /// Marker trait for types that are `repr(transparent)` to a [SCM] pointer.
@@ -59,19 +63,21 @@ impl<'gm, T> Ref<'_, 'gm, T> {
         let ptr = Scm::from_ptr(self.ptr, &guile);
         T::try_from_scm(ptr, &guile).unwrap()
     }
+}
+impl<T> Deref for Ref<'_, '_, T>
+where
+    T: ReprScm,
+{
+    type Target = T;
 
-    pub fn deref<F, O>(&self, operation: F) -> O
-    where
-        F: FnOnce(&T) -> O,
-        T: ReprScm,
-    {
-        operation(unsafe { mem::transmute(self) })
+    fn deref(&self) -> &Self::Target {
+        unsafe { mem::transmute(self) }
     }
 }
 
 #[repr(transparent)]
-pub struct MutRef<'a, 'gm, T>(Ref<'a, 'gm, T>);
-impl<'gm, T> MutRef<'_, 'gm, T> {
+pub struct RefMut<'a, 'gm, T>(Ref<'a, 'gm, T>);
+impl<'gm, T> RefMut<'_, 'gm, T> {
     /// # Safety
     ///
     /// See [Ref::new_unchecked].
@@ -86,19 +92,22 @@ impl<'gm, T> MutRef<'_, 'gm, T> {
     {
         self.0.into_inner()
     }
-
-    pub fn deref_mut<F, O>(&mut self, operation: F) -> O
-    where
-        F: FnOnce(&mut T) -> O,
-        T: ReprScm,
-    {
-        operation(unsafe { mem::transmute(self) })
-    }
 }
-impl<'a, 'gm, T> Deref for MutRef<'a, 'gm, T> {
-    type Target = Ref<'a, 'gm, T>;
+impl<T> Deref for RefMut<'_, '_, T>
+where
+    T: ReprScm,
+{
+    type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        self.0.deref()
+    }
+}
+impl<T> DerefMut for RefMut<'_, '_, T>
+where
+    T: ReprScm,
+{
+    fn deref_mut(&mut self) -> &mut T {
+        unsafe { mem::transmute(self) }
     }
 }
