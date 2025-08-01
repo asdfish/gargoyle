@@ -19,3 +19,4 @@
 // THE SOFTWARE.
 
 mod bool;
+mod char;
