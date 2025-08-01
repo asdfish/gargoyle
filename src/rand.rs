@@ -104,8 +104,10 @@ mod tests {
             let mut b = Generator::new(0, RANGE, &guile);
             let mut c = a.clone();
 
-            (0..=100).for_each(|_| {
-                let [a, b, c] = [&mut a, &mut b, &mut c].map(|g| g.next());
+            (0..=10_000).for_each(|_| {
+                let [a, b, c] = [&mut a, &mut b, &mut c]
+                    .map(|g| g.next())
+                    .map(Option::unwrap);
 
                 assert_eq!(a, b);
                 assert_eq!(b, c);
