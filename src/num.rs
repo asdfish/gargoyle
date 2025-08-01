@@ -186,6 +186,14 @@ macro_rules! impl_scm_traits_for_float {
                 }
             }
         }
+        impl<'gm> $crate::scm::ToScm<'gm> for $ty {
+            fn to_scm(self, guile: &'gm $crate::Guile) -> $crate::scm::Scm<'gm> {
+                $crate::scm::Scm::from_ptr(
+                    unsafe { $crate::sys::scm_from_double(self.into()) },
+                    guile,
+                )
+            }
+        }
     };
 }
 impl_scm_traits_for_float!(f32);
