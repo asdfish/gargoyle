@@ -27,14 +27,11 @@ pub struct Scm<'guile_mode> {
     ptr: SCM,
     _marker: PhantomData<&'guile_mode ()>,
 }
-impl Scm<'_> {
+impl<'gm> Scm<'gm> {
     pub fn as_ptr(&self) -> SCM {
         self.ptr
     }
-    /// # Safety
-    ///
-    /// You must ensure that the lifetime is attached to a [Guile][crate::Guile] object to ensure that it is in guile mode.
-    pub unsafe fn from_ptr(ptr: SCM) -> Self {
+    pub fn from_ptr(ptr: SCM, _: &'gm Guile) -> Self {
         Self {
             ptr,
             _marker: PhantomData,
@@ -45,7 +42,28 @@ impl Scm<'_> {
 pub trait TryFromScm<'guile_mode> {
     fn type_name() -> Cow<'static, CStr>;
 
-    fn try_from_scm(_: Scm<'guile_mode>) -> Option<Self>
+    fn predicate(_: &Scm<'guile_mode>, _: &'guile_mode Guile) -> bool;
+
+    fn try_from_scm(
+        scm: Scm<'guile_mode>,
+        guile: &'guile_mode Guile,
+    ) -> Result<Self, Scm<'guile_mode>>
+    where
+        Self: Sized,
+    {
+        if Self::predicate(&scm, guile) {
+            Ok(unsafe { Self::from_scm_unchecked(scm, guile) })
+        } else {
+            Err(scm)
+        }
+    }
+
+    /// Create [Self] without type checking.
+    ///
+    /// # Safety
+    ///
+    /// [Self::predicate] should implement type checking.
+    unsafe fn from_scm_unchecked(scm: Scm<'guile_mode>, _: &'guile_mode Guile) -> Self
     where
         Self: Sized;
 }
@@ -60,8 +78,12 @@ impl<'gm> TryFromScm<'gm> for Scm<'gm> {
         Cow::Borrowed(c"any")
     }
 
-    fn try_from_scm(scm: Scm<'gm>) -> Option<Self> {
-        Some(scm)
+    fn predicate(scm: &Scm<'gm>, _: &'gm Guile) -> bool {
+        true
+    }
+
+    unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile) -> Self {
+        scm
     }
 }
 impl<'gm> ToScm<'gm> for Scm<'gm> {
