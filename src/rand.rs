@@ -36,7 +36,6 @@ where
     end: RangeTo<T>,
 }
 
-// pub struct Generator<'guile_mode, T>(Scm<'guile_mode>);
 impl<'gm, T> Clone for Generator<'gm, T>
 where
     T: UInt<'gm>,
@@ -91,6 +90,10 @@ where
             &guile,
         )
         .ok()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, None)
     }
 }
 
