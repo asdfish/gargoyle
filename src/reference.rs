@@ -32,13 +32,17 @@ use {
 };
 
 /// Marker trait for types that are `repr(transparent)` to a [SCM] pointer.
+///
+/// # Safety
+///
+/// Implementing types must be `repr(transparent)` to a [SCM] pointer.
 pub unsafe trait ReprScm {}
 
 pub struct Ref<'a, 'gm, T> {
     ptr: SCM,
     _marker: PhantomData<&'a &'gm T>,
 }
-impl<'a, 'gm, T> Clone for Ref<'_, 'gm, T> {
+impl<'gm, T> Clone for Ref<'_, 'gm, T> {
     fn clone(&self) -> Self {
         *self
     }
