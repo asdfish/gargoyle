@@ -33,8 +33,8 @@ use {
 
 static INIT_LOCK: Mutex<()> = Mutex::new(());
 thread_local! {
-    static INIT: AtomicBool = AtomicBool::new(false);
-    static GUILE_MODE: AtomicBool = AtomicBool::new(false);
+    static INIT: AtomicBool = const { AtomicBool::new(false) };
+    static GUILE_MODE: AtomicBool = const { AtomicBool::new(false) };
 }
 
 struct CallbackData<T>

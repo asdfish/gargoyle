@@ -33,6 +33,9 @@ const int GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY = SCM_F_WIND_EXPLICITLY;
 int gargoyle_reexports_scm_is_true(SCM b) {
   return scm_is_true(b);
 }
+int gargoyle_reexports_scm_is_false(SCM b) {
+  return scm_is_false(b);
+}
 int GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM scm) {
   return SCM_UNBNDP(scm);
 }

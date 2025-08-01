@@ -220,6 +220,7 @@ unsafe extern "C" {
     pub fn scm_is_rational(_val: SCM) -> c_int;
     pub fn scm_is_string(_val: SCM) -> c_int;
     pub fn gargoyle_reexports_scm_is_true(_val: SCM) -> c_int;
+    pub fn gargoyle_reexports_scm_is_false(_val: SCM) -> c_int;
 
     pub fn scm_is_exact_integer(_val: SCM) -> c_int;
     pub fn scm_exact_to_inexact(_z: SCM) -> SCM;
@@ -312,6 +313,7 @@ pub use GARGOYLE_REEXPORTS_SCM_UNBNDP as SCM_UNBNDP;
 pub use GARGOYLE_REEXPORTS_SCM_UNDEFINED as SCM_UNDEFINED;
 pub use gargoyle_reexports_scm_from_intptr_t as scm_from_intptr_t;
 pub use gargoyle_reexports_scm_from_uintptr_t as scm_from_uintptr_t;
+pub use gargoyle_reexports_scm_is_false as scm_is_false;
 pub use gargoyle_reexports_scm_is_true as scm_is_true;
 pub use gargoyle_reexports_scm_to_intptr_t as scm_to_intptr_t;
 pub use gargoyle_reexports_scm_to_uintptr_t as scm_to_uintptr_t;
