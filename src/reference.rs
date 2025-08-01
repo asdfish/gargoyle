@@ -111,3 +111,34 @@ where
         unsafe { mem::transmute(self) }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use {super::*, std::ptr};
+
+    #[test]
+    fn deref() {
+        #[repr(transparent)]
+        struct TestObj(SCM);
+        unsafe impl ReprScm for TestObj {}
+        impl TestObj {
+            fn addr(&self) -> usize {
+                self.0.addr()
+            }
+            fn set_ptr(&mut self, ptr: SCM) {
+                self.0 = ptr;
+            }
+        }
+
+        let null = ptr::null_mut();
+        let r = unsafe { Ref::<TestObj>::new_unchecked(null) };
+        assert_eq!(r.addr(), null.addr());
+
+        let null = ptr::null_mut();
+        let mut r = unsafe { RefMut::<TestObj>::new_unchecked(null) };
+        assert_eq!(r.addr(), null.addr());
+        let ptr = ptr::dangling_mut();
+        r.set_ptr(ptr);
+        assert_eq!(r.addr(), ptr.addr());
+    }
+}
