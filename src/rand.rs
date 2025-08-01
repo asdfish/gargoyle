@@ -45,7 +45,7 @@ where
             random_state: unsafe {
                 Scm::from_ptr_unchecked(scm_copy_random_state(self.random_state.as_ptr()))
             },
-            end: self.end.clone(),
+            end: self.end,
         }
     }
 }
