@@ -18,11 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use std::ffi::c_int;
+use {
+    crate::sys::{SCM, scm_is_true},
+    std::ffi::c_int,
+};
 
 pub fn c_predicate<F>(f: F) -> bool
 where
     F: FnOnce() -> c_int,
 {
     f() != 0
+}
+
+pub fn scm_predicate<F>(f: F) -> bool
+where
+    F: FnOnce() -> SCM,
+{
+    c_predicate(|| unsafe { scm_is_true(f()) })
 }

@@ -29,7 +29,7 @@ use {
 
 #[derive(Debug)]
 pub struct Scm<'guile_mode> {
-    ptr: SCM,
+    pub(crate) ptr: SCM,
     _marker: PhantomData<&'guile_mode ()>,
 }
 impl<'gm> Scm<'gm> {
@@ -42,10 +42,23 @@ impl<'gm> Scm<'gm> {
             _marker: PhantomData,
         }
     }
+    /// # Safety
+    ///
+    /// The lifetime of the [Scm] object should be tied to a [Guile] so that it will always be in guile mode.
+    pub unsafe fn from_ptr_unchecked(ptr: SCM) -> Self {
+        Self {
+            ptr,
+            _marker: PhantomData,
+        }
+    }
 
     /// Compare equality using `equal?`
     pub fn is_equal(&self, r: &Self) -> bool {
-        c_predicate(|| unsafe { scm_is_true(scm_equal_p(self.as_ptr(), r.as_ptr())) })
+        unsafe { Scm::from_ptr_unchecked(scm_equal_p(self.as_ptr(), r.as_ptr())) }.is_true()
+    }
+
+    pub fn is_true(&self) -> bool {
+        c_predicate(|| unsafe { scm_is_true(self.as_ptr()) })
     }
 }
 impl PartialEq for Scm<'_> {
