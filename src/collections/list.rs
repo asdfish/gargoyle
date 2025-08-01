@@ -18,31 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//! Rust bindings to guile.
-
-#![expect(private_bounds)]
-
-pub mod collections;
-mod guile_mode;
-pub mod num;
-mod primitive;
-pub mod rand;
-pub mod reference;
-pub mod scm;
-pub mod sys;
-mod utils;
-
-pub use guile_mode::*;
+use {
+    crate::{
+        reference::ReprScm,
+        scm::{Scm, ToScm},
+    },
+    std::marker::PhantomData,
+};
 
 #[repr(transparent)]
-pub struct Guile {
-    _marker: (),
+pub struct List<'gm, T>
+where
+    T: ToScm<'gm>,
+{
+    scm: Scm<'gm>,
+    _marker: PhantomData<T>,
 }
-impl Guile {
-    /// # Safety
-    ///
-    /// This can be run safely if you run it in guile mode and drop it before guile mode ends.
-    pub unsafe fn new_unchecked() -> Self {
-        Self { _marker: () }
-    }
-}
+unsafe impl<'gm, T> ReprScm for List<'gm, T> where T: ToScm<'gm> {}
+// impl<'gm, T> FromIterator<T> for List<'gm, T>
+// where
+//     T: ToScm<'gm>,
+// {
+//     fn from_iter<I>(iter: I) -> Self
+//     where
+//         I: IntoIterator<Item = T>,
+//     {
+//         todo!()
+//     }
+// }

@@ -21,16 +21,49 @@
 use {
     crate::{
         Guile,
+        reference::ReprScm,
         sys::{SCM, scm_equal_p, scm_is_true},
         utils::c_predicate,
     },
     std::{borrow::Cow, ffi::CStr, marker::PhantomData},
 };
 
+pub trait TryFromScm<'gm> {
+    fn type_name() -> Cow<'static, CStr>;
+
+    fn predicate(_: &Scm<'gm>, _: &'gm Guile) -> bool;
+
+    fn try_from_scm(scm: Scm<'gm>, guile: &'gm Guile) -> Result<Self, Scm<'gm>>
+    where
+        Self: Sized,
+    {
+        if Self::predicate(&scm, guile) {
+            Ok(unsafe { Self::from_scm_unchecked(scm, guile) })
+        } else {
+            Err(scm)
+        }
+    }
+
+    /// Create [Self] without type checking.
+    ///
+    /// # Safety
+    ///
+    /// [Self::predicate] should implement type checking.
+    unsafe fn from_scm_unchecked(_: Scm<'gm>, _: &'gm Guile) -> Self
+    where
+        Self: Sized;
+}
+pub trait ToScm<'gm> {
+    fn to_scm(self, _: &'gm Guile) -> Scm<'gm>
+    where
+        Self: Sized;
+}
+
 #[derive(Debug)]
-pub struct Scm<'guile_mode> {
+#[repr(transparent)]
+pub struct Scm<'gm> {
     pub(crate) ptr: SCM,
-    _marker: PhantomData<&'guile_mode ()>,
+    _marker: PhantomData<&'gm ()>,
 }
 impl<'gm> Scm<'gm> {
     pub fn as_ptr(&self) -> SCM {
@@ -67,41 +100,7 @@ impl PartialEq for Scm<'_> {
         self.is_equal(r)
     }
 }
-
-pub trait TryFromScm<'guile_mode> {
-    fn type_name() -> Cow<'static, CStr>;
-
-    fn predicate(_: &Scm<'guile_mode>, _: &'guile_mode Guile) -> bool;
-
-    fn try_from_scm(
-        scm: Scm<'guile_mode>,
-        guile: &'guile_mode Guile,
-    ) -> Result<Self, Scm<'guile_mode>>
-    where
-        Self: Sized,
-    {
-        if Self::predicate(&scm, guile) {
-            Ok(unsafe { Self::from_scm_unchecked(scm, guile) })
-        } else {
-            Err(scm)
-        }
-    }
-
-    /// Create [Self] without type checking.
-    ///
-    /// # Safety
-    ///
-    /// [Self::predicate] should implement type checking.
-    unsafe fn from_scm_unchecked(_: Scm<'guile_mode>, _: &'guile_mode Guile) -> Self
-    where
-        Self: Sized;
-}
-pub trait ToScm<'guile_mode> {
-    fn to_scm(self, _: &'guile_mode Guile) -> Scm<'guile_mode>
-    where
-        Self: Sized;
-}
-
+unsafe impl ReprScm for Scm<'_> {}
 impl<'gm> TryFromScm<'gm> for Scm<'gm> {
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"any")

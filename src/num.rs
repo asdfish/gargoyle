@@ -34,10 +34,7 @@ use {
 /// # Safety
 ///
 /// All implementors must be able to be used functions like [scm_sum][crate::sys::scm_sum].
-pub(crate) unsafe trait Num<'guile_mode>:
-    Copy + ToScm<'guile_mode> + TryFromScm<'guile_mode>
-{
-}
+pub(crate) unsafe trait Num<'gm>: Copy + ToScm<'gm> + TryFromScm<'gm> {}
 
 pub(crate) trait UInt<'gm>: Num<'gm> {}
 impl UInt<'_> for u8 {}
@@ -210,10 +207,11 @@ macro_rules! define_num {
     ($ident:ident, $type_name:literal, $predicate:path) => {
         // Numbers can be aliased since you cannot mutate them.
         #[derive(Clone, Copy)]
-        pub struct $ident<'guile_mode> {
+        pub struct $ident<'gm> {
             scm: $crate::sys::SCM,
-            _marker: ::std::marker::PhantomData<&'guile_mode ()>,
+            _marker: ::std::marker::PhantomData<&'gm ()>,
         }
+        unsafe impl $crate::reference::ReprScm for $ident<'_> {}
         impl<'gm> $crate::scm::TryFromScm<'gm> for $ident<'gm> {
             fn type_name() -> ::std::borrow::Cow<'static, ::std::ffi::CStr> {
                 const {

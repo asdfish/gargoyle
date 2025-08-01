@@ -46,6 +46,9 @@ where
     _marker: PhantomData<T>,
 }
 
+/// # Safety
+///
+/// [Self::SCOPE] should change guile mode to [Self::GUILE_MODE_STATUS], where entering guile mode is true and so on.
 unsafe trait GuileModeToggle {
     type Fn;
     type Output;

@@ -18,31 +18,5 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//! Rust bindings to guile.
-
-#![expect(private_bounds)]
-
-pub mod collections;
-mod guile_mode;
-pub mod num;
-mod primitive;
-pub mod rand;
-pub mod reference;
-pub mod scm;
-pub mod sys;
-mod utils;
-
-pub use guile_mode::*;
-
-#[repr(transparent)]
-pub struct Guile {
-    _marker: (),
-}
-impl Guile {
-    /// # Safety
-    ///
-    /// This can be run safely if you run it in guile mode and drop it before guile mode ends.
-    pub unsafe fn new_unchecked() -> Self {
-        Self { _marker: () }
-    }
-}
+pub mod list;
+pub mod pair;
