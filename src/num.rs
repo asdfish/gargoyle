@@ -182,6 +182,7 @@ impl<'gm> ToScm<'gm> for f64 {
         Scm::from_ptr(unsafe { scm_from_double(self.into()) }, guile)
     }
 }
+unsafe impl Num<'_> for f64 {}
 
 macro_rules! impl_ops_for_num {
     ($ident:ident, $op:ident, $fn:ident, $bin_fn:path) => {
@@ -368,5 +369,22 @@ mod tests {
             test_ty!(i64);
             test_ty!(u64);
         }
+    }
+
+    /// test that we can alias the pointers with [Copy]
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn aliasing() {
+        with_guile(|guile| {
+            let fst = Complex::new(10.0, 30.0, &guile);
+            let snd = fst;
+            let fst = fst + 10.0;
+
+            assert_eq!(
+                Complex::try_from_scm(fst.to_scm(&guile), &guile).map(|c| c.real_part()),
+                Ok(20.0)
+            );
+            assert_eq!(snd.real_part(), 10.0);
+        });
     }
 }
