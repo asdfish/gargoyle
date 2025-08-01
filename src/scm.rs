@@ -78,7 +78,7 @@ impl<'gm> TryFromScm<'gm> for Scm<'gm> {
         Cow::Borrowed(c"any")
     }
 
-    fn predicate(scm: &Scm<'gm>, _: &'gm Guile) -> bool {
+    fn predicate(_: &Scm<'gm>, _: &'gm Guile) -> bool {
         true
     }
 
