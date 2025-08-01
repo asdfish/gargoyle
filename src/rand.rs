@@ -66,6 +66,9 @@ where
             end,
         }
     }
+    pub fn set_end(self, end: RangeTo<T>) -> Self {
+        Self { end, ..self }
+    }
 }
 impl<T> Iterator for Generator<'_, T>
 where
