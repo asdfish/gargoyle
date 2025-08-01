@@ -62,7 +62,7 @@ mod tests {
     fn char_conv() {
         with_guile(|guile| {
             (char::MIN..=char::MAX).for_each(|ch| {
-                assert_eq!(char::try_from_scm(ch.to_scm(&guile), &guile), Ok(ch));
+                assert_eq!(char::try_from_scm(ch.to_scm(guile), guile), Ok(ch));
             });
         })
         .unwrap();
