@@ -166,4 +166,17 @@ mod tests {
         })
         .unwrap();
     }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn pair_clone() {
+        with_guile(|guile| {
+            let mut pair = Pair::new(1, Pair::new(2, 3, guile), guile);
+            let copy = pair.clone();
+            pair.as_mut_cdr().set_car(3);
+            assert_eq!(pair.as_cdr().as_car().into_inner(), 3);
+            assert_eq!(copy.as_cdr().as_car().into_inner(), 2);
+        })
+        .unwrap();
+    }
 }
