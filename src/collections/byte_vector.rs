@@ -18,6 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-pub mod list;
-pub mod pair;
-pub mod vector;
+trait ByteVectorType {
+    const TYPE_NAME: &CStr;
+}
+
+pub struct ByteVector<'gm, T>
+{
+    scm: Scm<'gm>,
+    _marker: PhantomData<T>,
+}

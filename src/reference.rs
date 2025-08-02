@@ -110,7 +110,7 @@ impl<'gm, T> RefMut<'_, 'gm, T> {
 
     pub fn into_inner(self) -> T
     where
-        T: Copy + for<'a> TryFromScm<'a>,
+        T: Copy + TryFromScm<'gm>,
     {
         self.0.into_inner()
     }
