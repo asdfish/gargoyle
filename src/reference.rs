@@ -173,6 +173,8 @@ mod tests {
         struct Foo(SCM);
         unsafe impl ReprScm for Foo {}
 
-        unsafe { Foo::from_ptr(ptr::null_mut()); }
+        unsafe {
+            Foo::from_ptr(ptr::null_mut());
+        }
     }
 }
