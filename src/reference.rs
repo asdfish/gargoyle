@@ -37,7 +37,10 @@ use {
 ///
 /// Implementing types must be `repr(transparent)` to a [SCM] pointer.
 pub unsafe trait ReprScm {
-    fn from_ptr(scm: SCM) -> Self
+    /// # Safety
+    ///
+    /// You must check the type of the scm.
+    unsafe fn from_ptr(scm: SCM) -> Self
     where
         Self: Sized,
     {
@@ -170,6 +173,6 @@ mod tests {
         struct Foo(SCM);
         unsafe impl ReprScm for Foo {}
 
-        Foo::from_ptr(ptr::null_mut());
+        unsafe { Foo::from_ptr(ptr::null_mut()); }
     }
 }

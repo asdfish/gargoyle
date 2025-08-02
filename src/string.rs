@@ -23,6 +23,7 @@ use {
         Guile,
         alloc::CAllocator,
         collections::list::List,
+        reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
         symbol::Symbol,
         sys::{
@@ -37,6 +38,7 @@ use {
 };
 
 #[derive(Debug)]
+#[repr(transparent)]
 pub struct String<'gm> {
     pub(crate) scm: Scm<'gm>,
     _marker: PhantomData<&'gm ()>,
@@ -100,6 +102,7 @@ impl PartialEq for String<'_> {
         scm_predicate(unsafe { scm_string_equal_p(self.scm.as_ptr(), r.scm.as_ptr()) })
     }
 }
+unsafe impl ReprScm for String<'_> {}
 impl<'gm> ToScm<'gm> for String<'gm> {
     fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
         self.scm

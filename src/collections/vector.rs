@@ -22,7 +22,7 @@ use {
     crate::{
         Guile,
         collections::list::List,
-        reference::{Ref, RefMut},
+        reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
         sys::{
             SCM, scm_array_handle_release, scm_c_make_vector, scm_t_array_handle, scm_vector,
@@ -39,6 +39,7 @@ use {
     },
 };
 
+#[repr(transparent)]
 pub struct Vector<'gm, T> {
     pub(crate) scm: Scm<'gm>,
     _marker: PhantomData<T>,
@@ -166,6 +167,7 @@ where
         self.iter_mut()
     }
 }
+unsafe impl<'gm, T> ReprScm for Vector<'gm, T> {}
 impl<'gm, T> ToScm<'gm> for Vector<'gm, T> {
     fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
         self.scm
