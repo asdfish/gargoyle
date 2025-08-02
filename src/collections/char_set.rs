@@ -26,12 +26,13 @@ use crate::{
     string::String,
     sys::{
         SCM_UNDEFINED, scm_char_set_contains_p, scm_char_set_cursor, scm_char_set_cursor_next,
-        scm_char_set_eq, scm_char_set_ref, scm_end_of_char_set_p, scm_list_to_char_set,
+        scm_char_set_ref, scm_end_of_char_set_p, scm_list_to_char_set,
         scm_string_to_char_set, scm_to_char_set,
     },
     utils::scm_predicate,
 };
 
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct CharSet<'gm>(pub(crate) Scm<'gm>);
 impl<'gm> CharSet<'gm> {
@@ -70,11 +71,6 @@ impl<'gm> From<String<'gm>> for CharSet<'gm> {
         Self(unsafe {
             Scm::from_ptr_unchecked(scm_string_to_char_set(string.scm.as_ptr(), SCM_UNDEFINED))
         })
-    }
-}
-impl PartialEq for CharSet<'_> {
-    fn eq(&self, r: &Self) -> bool {
-        scm_predicate(unsafe { scm_char_set_eq(self.0.as_ptr(), r.0.as_ptr()) })
     }
 }
 unsafe impl ReprScm for CharSet<'_> {}
@@ -122,5 +118,15 @@ mod tests {
             );
         })
         .unwrap();
+    }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn char_set_contains() {
+        with_guile(|guile| {
+            let set = CharSet::from(List::from_iter("thequickbrownfoxjumpsoverthelazydog".chars(), guile));
+            ('a'..='z')
+                .for_each(|ch| assert!(set.contains(ch)));
+        });
     }
 }
