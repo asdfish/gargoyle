@@ -22,10 +22,16 @@ use {
     crate::{
         Guile,
         reference::ReprScm,
-        scm::{Scm, ToScm},
-        sys::{SCM_EOL, scm_cons},
+        scm::{Scm, ToScm, TryFromScm},
+        sys::{SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p},
+        utils::{CowCStrExt, scm_predicate},
     },
-    std::{iter, marker::PhantomData},
+    std::{
+        borrow::Cow,
+        ffi::{CStr, CString},
+        iter::{self, FusedIterator},
+        marker::PhantomData,
+    },
 };
 
 #[derive(Debug)]
@@ -47,7 +53,7 @@ impl<'gm, T> List<'gm, T> {
     pub fn from_iter<I>(iter: I, guile: &'gm Guile) -> Self
     where
         I: IntoIterator<Item = T>,
-        T: for<'a> ToScm<'a>,
+        T: ToScm<'gm>,
     {
         let mut list = Self::new(guile);
         list.extend(iter);
@@ -55,29 +61,99 @@ impl<'gm, T> List<'gm, T> {
     }
     pub fn push_front(&mut self, item: T)
     where
-        T: for<'a> ToScm<'a>,
+        T: ToScm<'gm>,
     {
         self.extend(iter::once(item));
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.scm.is_eol()
+    }
 }
-impl<T> Extend<T> for List<'_, T>
+impl<'gm, T> Extend<T> for List<'gm, T>
 where
-    T: for<'a> ToScm<'a>,
+    T: ToScm<'gm>,
 {
     fn extend<I>(&mut self, iter: I)
     where
         I: IntoIterator<Item = T>,
     {
-        let guile = unsafe { Guile::new_unchecked() };
-        let car = iter.into_iter().fold(self.scm.as_ptr(), |cdr, car| unsafe {
-            scm_cons(car.to_scm(&guile).as_ptr(), cdr)
+        let guile = unsafe { Guile::new_unchecked_ref() };
+        let pair = iter.into_iter().fold(self.scm.as_ptr(), |cdr, car| unsafe {
+            scm_cons(car.to_scm(guile).as_ptr(), cdr)
         });
-        self.scm = unsafe { Scm::from_ptr_unchecked(car) };
+        self.scm = unsafe { Scm::from_ptr_unchecked(pair) };
+    }
+}
+impl<'gm, T> IntoIterator for List<'gm, T>
+where
+    T: TryFromScm<'gm>,
+{
+    type Item = T;
+    type IntoIter = IntoIter<'gm, T>;
+
+    fn into_iter(self) -> IntoIter<'gm, T> {
+        IntoIter(self)
     }
 }
 impl<T> PartialEq for List<'_, T> {
     fn eq(&self, r: &Self) -> bool {
         self.scm.is_equal(&r.scm)
+    }
+}
+impl<'gm, T> ToScm<'gm> for List<'gm, T> {
+    fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
+        self.scm
+    }
+}
+impl<'gm, T> TryFromScm<'gm> for List<'gm, T>
+where
+    T: TryFromScm<'gm>,
+{
+    fn type_name() -> Cow<'static, CStr> {
+        CString::new(format!("(list {})", T::type_name().display()))
+            .map(Cow::Owned)
+            .unwrap_or(Cow::Borrowed(c"list"))
+    }
+    fn predicate(scm: &Scm<'gm>, guile: &'gm Guile) -> bool {
+        scm_predicate(|| unsafe { scm_list_p(scm.as_ptr()) }) && {
+            IntoIter(List {
+                scm: unsafe { scm.clone_unchecked() },
+                _marker: PhantomData::<Scm>,
+            })
+            .all(|i| T::predicate(&i, guile))
+        }
+    }
+    unsafe fn from_scm_unchecked(_: Scm<'gm>, _: &'gm Guile) -> Self {
+        todo!()
+    }
+}
+
+pub struct IntoIter<'gm, T>(List<'gm, T>);
+impl<'gm, T> From<IntoIter<'gm, T>> for List<'gm, T> {
+    fn from(IntoIter(lst): IntoIter<'gm, T>) -> List<'gm, T> {
+        lst
+    }
+}
+impl<'gm, T> FusedIterator for IntoIter<'gm, T> where T: TryFromScm<'gm> {}
+impl<'gm, T> Iterator for IntoIter<'gm, T>
+where
+    T: TryFromScm<'gm>,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<T> {
+        if self.0.scm.is_eol() {
+            None
+        } else {
+            let [car, cdr] = [scm_car, scm_cdr]
+                .map(|morphism| unsafe { morphism(self.0.scm.as_ptr()) })
+                .map(|ptr| unsafe { Scm::from_ptr_unchecked(ptr) });
+            self.0.scm = cdr;
+
+            let guile = unsafe { Guile::new_unchecked_ref() };
+            Some(unsafe { T::from_scm_unchecked(car, guile) })
+        }
     }
 }
 
@@ -96,4 +172,39 @@ mod tests {
         })
         .unwrap();
     }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn list_into_iter() {
+        with_guile(|guile| {
+            assert_eq!(
+                List::from_iter('a'..='c', guile)
+                    .into_iter()
+                    .collect::<String>(),
+                "cba"
+            );
+        })
+        .unwrap();
+    }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn list_is_empty() {
+        with_guile(|guile| {
+            assert!(List::<i32>::new(guile).is_empty());
+            assert!(List::<i32>::from_iter([], guile).is_empty());
+        })
+        .unwrap();
+    }
+
+    // #[cfg_attr(miri, ignore)]
+    // #[test]
+    // fn list_append() {
+    //     with_guile(|guile| {
+    //         let mut list = List::from_iter([1, 2, 3], guile);
+    //         list.append(List::from_iter([1, 2, 3], guile));
+    //         assert_eq!(list.into_iter().collect::<Vec<_>>(), [3, 2, 1, 3, 2, 1]);
+    //     })
+    //     .unwrap();
+    // }
 }

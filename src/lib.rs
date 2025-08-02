@@ -29,8 +29,11 @@ mod primitive;
 pub mod rand;
 pub mod reference;
 pub mod scm;
+pub mod symbol;
 pub mod sys;
 mod utils;
+
+use std::ptr::NonNull;
 
 pub use guile_mode::*;
 
@@ -44,5 +47,33 @@ impl Guile {
     /// This can be run safely if you run it in guile mode and drop it before guile mode ends.
     pub unsafe fn new_unchecked() -> Self {
         Self { _marker: () }
+    }
+
+    /// # Safety
+    ///
+    /// You must be in guile mode or never dereference the returned reference.
+    pub unsafe fn new_unchecked_ref<'a>() -> &'a Self {
+        unsafe { NonNull::<Self>::dangling().as_ref() }
+    }
+    /// # Safety
+    ///
+    /// You must be in guile mode or never dereference the returned reference.
+    pub unsafe fn new_unchecked_mut<'a>() -> &'a mut Self {
+        unsafe { NonNull::<Self>::dangling().as_mut() }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_refs() {
+        unsafe {
+            Guile::new_unchecked_ref();
+        }
+        unsafe {
+            Guile::new_unchecked_mut();
+        }
     }
 }
