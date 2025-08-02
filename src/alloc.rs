@@ -19,7 +19,7 @@
 // THE SOFTWARE.
 
 use {
-    allocator_api2::alloc::{Allocator, AllocError, Layout},
+    allocator_api2::alloc::{AllocError, Allocator, Layout},
     std::{ffi::c_void, ptr::NonNull},
 };
 
@@ -35,10 +35,8 @@ unsafe impl Allocator for CAllocator {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         match layout.size() {
             0 => None,
-            bytes => {
-                NonNull::new(unsafe { malloc(bytes) }.cast::<u8>())
-                    .map(|ptr| NonNull::slice_from_raw_parts(ptr, bytes))
-            }
+            bytes => NonNull::new(unsafe { malloc(bytes) }.cast::<u8>())
+                .map(|ptr| NonNull::slice_from_raw_parts(ptr, bytes)),
         }
         .ok_or(AllocError)
     }
@@ -49,16 +47,12 @@ unsafe impl Allocator for CAllocator {
 
 #[cfg(test)]
 mod tests {
-    use {
-        super::*,
-        allocator_api2::vec::Vec,
-    };
+    use {super::*, allocator_api2::vec::Vec};
 
     #[test]
     fn c_allocator() {
         let mut vec = Vec::new_in(CAllocator);
-        (0..3)
-            .for_each(|i| vec.push(i));
+        (0..3).for_each(|i| vec.push(i));
         assert_eq!(vec, [0, 1, 2]);
     }
 }

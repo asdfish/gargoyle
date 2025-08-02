@@ -21,9 +21,9 @@
 use {
     crate::{
         Guile,
-        reference::ReprScm,
+        reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
-        sys::{SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p},
+        sys::{SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p, SCM},
         utils::{CowCStrExt, scm_predicate},
     },
     std::{
@@ -40,7 +40,8 @@ pub struct List<'gm, T> {
     pub(crate) scm: Scm<'gm>,
     _marker: PhantomData<T>,
 }
-unsafe impl<'gm, T> ReprScm for List<'gm, T> {}
+unsafe impl<'gm, T> ReprScm for List<'gm, T> {
+}
 impl<'gm, T> List<'gm, T> {
     pub fn new(guile: &'gm Guile) -> Self {
         Self {
@@ -69,6 +70,19 @@ impl<'gm, T> List<'gm, T> {
     pub fn is_empty(&self) -> bool {
         self.scm.is_eol()
     }
+
+    pub fn iter<'a>(&'a self) -> Iter<'a, 'gm, T> {
+        Iter {
+            car: self.scm.as_ptr(),
+            _marker: PhantomData,
+        }
+    }
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, 'gm, T> {
+        IterMut {
+            car: self.scm.as_ptr(),
+            _marker: PhantomData,
+        }
+    }
 }
 impl<'gm, T> Extend<T> for List<'gm, T>
 where
@@ -94,6 +108,28 @@ where
 
     fn into_iter(self) -> IntoIter<'gm, T> {
         IntoIter(self)
+    }
+}
+impl<'a, 'gm, T> IntoIterator for &'a List<'gm, T>
+where
+    T: 'gm,
+{
+    type Item = Ref<'a, 'gm, T>;
+    type IntoIter = Iter<'a, 'gm, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+impl<'a, 'gm, T> IntoIterator for &'a mut List<'gm, T>
+where
+    T: 'gm,
+{
+    type Item = RefMut<'a, 'gm, T>;
+    type IntoIter = IterMut<'a, 'gm, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
     }
 }
 impl<T> PartialEq for List<'_, T> {
@@ -156,6 +192,50 @@ where
 
             let guile = unsafe { Guile::new_unchecked_ref() };
             Some(unsafe { T::from_scm_unchecked(car, guile) })
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Iter<'a, 'gm, T> {
+    car: SCM,
+    _marker: PhantomData<&'a &'gm T>,
+}
+impl<T> FusedIterator for Iter<'_, '_, T> {}
+impl<'a, 'gm, T> Iterator for Iter<'a, 'gm, T> {
+    type Item = Ref<'a, 'gm, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if unsafe { Scm::from_ptr_unchecked(self.car) }.is_eol() {
+            None
+        } else {
+            let [car, cdr] = [scm_car, scm_cdr]
+                .map(|morphism| unsafe { morphism(self.car) });
+            self.car = cdr;
+
+            Some(unsafe { Ref::new_unchecked(car) })
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct IterMut<'a, 'gm, T> {
+    car: SCM,
+    _marker: PhantomData<&'a &'gm T>,
+}
+impl<T> FusedIterator for IterMut<'_, '_, T> {}
+impl<'a, 'gm, T> Iterator for IterMut<'a, 'gm, T> {
+    type Item = RefMut<'a, 'gm, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if unsafe { Scm::from_ptr_unchecked(self.car) }.is_eol() {
+            None
+        } else {
+            let [car, cdr] = [scm_car, scm_cdr]
+                .map(|morphism| unsafe { morphism(self.car) });
+            self.car = cdr;
+
+            Some(unsafe { RefMut::new_unchecked(car) })
         }
     }
 }

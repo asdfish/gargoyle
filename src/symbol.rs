@@ -22,8 +22,10 @@ use {
     crate::{
         Guile,
         scm::{Scm, ToScm, TryFromScm},
+        string::String,
         sys::{
-            SCM, scm_c_symbol_length, scm_from_utf8_symboln, scm_symbol_interned_p, scm_symbol_p,
+            SCM, scm_c_symbol_length, scm_from_utf8_symboln, scm_make_symbol, scm_string_to_symbol,
+            scm_symbol_interned_p, scm_symbol_p,
         },
         utils::scm_predicate,
     },
@@ -35,8 +37,14 @@ pub struct Symbol<'gm> {
     pub(crate) ptr: SCM,
     _marker: PhantomData<&'gm ()>,
 }
-// impl<'gm> From<String<'gm>> for Symbol<'gm> {}
-// impl<'gm> From<Symbol<'gm>> for String<'gm> {}
+impl<'gm> From<String<'gm>> for Symbol<'gm> {
+    fn from(string: String<'gm>) -> Self {
+        Self {
+            ptr: unsafe { scm_string_to_symbol(string.scm.as_ptr()) },
+            _marker: PhantomData,
+        }
+    }
+}
 impl<'gm> Symbol<'gm> {
     pub fn from_str(symbol: &str, _: &'gm Guile) -> Self {
         Self {
@@ -46,9 +54,12 @@ impl<'gm> Symbol<'gm> {
         }
     }
 
-    // pub fn new_prefixed(_: String<'gm>) -> Self { todo!() }
-
-    // pub fn new_interned(_: String<'gm>) -> Self { todo!() }
+    pub fn new_interned(string: &String<'gm>) -> Self {
+        Self {
+            ptr: unsafe { scm_make_symbol(string.scm.as_ptr()) },
+            _marker: PhantomData,
+        }
+    }
 
     pub fn is_interned(&self) -> bool {
         scm_predicate(unsafe { scm_symbol_interned_p(self.ptr) })
