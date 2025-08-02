@@ -37,7 +37,7 @@ use {
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct List<'gm, T> {
-    scm: Scm<'gm>,
+    pub(crate) scm: Scm<'gm>,
     _marker: PhantomData<T>,
 }
 unsafe impl<'gm, T> ReprScm for List<'gm, T> {}

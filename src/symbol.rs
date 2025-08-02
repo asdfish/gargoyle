@@ -32,7 +32,7 @@ use {
 
 #[derive(Clone, Copy)]
 pub struct Symbol<'gm> {
-    ptr: SCM,
+    pub(crate) ptr: SCM,
     _marker: PhantomData<&'gm ()>,
 }
 // impl<'gm> From<String<'gm>> for Symbol<'gm> {}
