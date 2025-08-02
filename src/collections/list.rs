@@ -23,7 +23,7 @@ use {
         Guile,
         reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
-        sys::{SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p, SCM},
+        sys::{SCM, SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p},
         utils::{CowCStrExt, scm_predicate},
     },
     std::{
@@ -40,8 +40,7 @@ pub struct List<'gm, T> {
     pub(crate) scm: Scm<'gm>,
     _marker: PhantomData<T>,
 }
-unsafe impl<'gm, T> ReprScm for List<'gm, T> {
-}
+unsafe impl<'gm, T> ReprScm for List<'gm, T> {}
 impl<'gm, T> List<'gm, T> {
     pub fn new(guile: &'gm Guile) -> Self {
         Self {
@@ -209,8 +208,7 @@ impl<'a, 'gm, T> Iterator for Iter<'a, 'gm, T> {
         if unsafe { Scm::from_ptr_unchecked(self.car) }.is_eol() {
             None
         } else {
-            let [car, cdr] = [scm_car, scm_cdr]
-                .map(|morphism| unsafe { morphism(self.car) });
+            let [car, cdr] = [scm_car, scm_cdr].map(|morphism| unsafe { morphism(self.car) });
             self.car = cdr;
 
             Some(unsafe { Ref::new_unchecked(car) })
@@ -231,8 +229,7 @@ impl<'a, 'gm, T> Iterator for IterMut<'a, 'gm, T> {
         if unsafe { Scm::from_ptr_unchecked(self.car) }.is_eol() {
             None
         } else {
-            let [car, cdr] = [scm_car, scm_cdr]
-                .map(|morphism| unsafe { morphism(self.car) });
+            let [car, cdr] = [scm_car, scm_cdr].map(|morphism| unsafe { morphism(self.car) });
             self.car = cdr;
 
             Some(unsafe { RefMut::new_unchecked(car) })
