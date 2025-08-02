@@ -60,7 +60,7 @@ macro_rules! impl_scm_traits_for_int {
             }
 
             fn predicate(scm: &$crate::scm::Scm<'gm>, _: &'gm $crate::Guile) -> bool {
-                $crate::utils::c_predicate(|| unsafe {
+                $crate::utils::c_predicate(unsafe {
                     $scm_is_int(scm.as_ptr(), <$ty>::MIN as $ptr, <$ty>::MAX as $ptr)
                 })
             }
@@ -168,7 +168,7 @@ impl<'gm> TryFromScm<'gm> for f64 {
     }
 
     fn predicate(scm: &Scm<'gm>, _: &'gm Guile) -> bool {
-        c_predicate(|| unsafe { scm_is_real(scm.as_ptr()) })
+        c_predicate(unsafe { scm_is_real(scm.as_ptr()) })
     }
     unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile) -> Self {
         unsafe { scm_to_double(scm.as_ptr()) }
@@ -224,7 +224,7 @@ macro_rules! define_num {
             }
 
             fn predicate(scm: &$crate::scm::Scm<'gm>, _: &'gm $crate::Guile) -> bool {
-                $crate::utils::c_predicate(|| unsafe { $predicate(scm.as_ptr()) })
+                $crate::utils::c_predicate(unsafe { $predicate(scm.as_ptr()) })
             }
             unsafe fn from_scm_unchecked(
                 scm: $crate::scm::Scm<'gm>,
@@ -254,7 +254,7 @@ macro_rules! define_num {
         {
             fn eq(&self, r: &R) -> bool {
                 let guile = unsafe { $crate::Guile::new_unchecked_ref() };
-                $crate::utils::scm_predicate(|| unsafe {
+                $crate::utils::scm_predicate(unsafe {
                     $crate::sys::scm_num_eq_p(self.scm, r.to_scm(guile).as_ptr())
                 })
             }
@@ -267,11 +267,11 @@ macro_rules! define_num {
                 let guile = unsafe { Guile::new_unchecked() };
                 if self == r {
                     ::std::option::Option::Some(::std::cmp::Ordering::Equal)
-                } else if $crate::utils::scm_predicate(|| unsafe {
+                } else if $crate::utils::scm_predicate(unsafe {
                     $crate::sys::scm_less_p(self.to_scm(&guile).as_ptr(), r.to_scm(&guile).as_ptr())
                 }) {
                     ::std::option::Option::Some(::std::cmp::Ordering::Less)
-                } else if $crate::utils::scm_predicate(|| unsafe {
+                } else if $crate::utils::scm_predicate(unsafe {
                     $crate::sys::scm_gr_p(self.to_scm(&guile).as_ptr(), r.to_scm(&guile).as_ptr())
                 }) {
                     ::std::option::Option::Some(::std::cmp::Ordering::Greater)

@@ -91,16 +91,16 @@ impl<'gm> Scm<'gm> {
     }
 
     pub fn is_true(&self) -> bool {
-        c_predicate(|| unsafe { scm_is_true(self.as_ptr()) })
+        c_predicate(unsafe { scm_is_true(self.as_ptr()) })
     }
     pub fn is_eol(&self) -> bool {
-        scm_predicate(|| unsafe { scm_null_p(self.as_ptr()) })
+        scm_predicate(unsafe { scm_null_p(self.as_ptr()) })
     }
 
     /// # Safety
     ///
     /// Ensure the inner type may be cloned.
-    pub unsafe fn clone_unchecked(&self) -> Self {
+    pub unsafe fn copy_unchecked(&self) -> Self {
         Self {
             ptr: self.ptr,
             _marker: PhantomData,

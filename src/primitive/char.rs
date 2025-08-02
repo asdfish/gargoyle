@@ -40,7 +40,7 @@ impl<'gm> TryFromScm<'gm> for char {
     }
 
     fn predicate(scm: &Scm<'gm>, _: &'gm Guile) -> bool {
-        scm_predicate(|| unsafe { scm_char_p(scm.as_ptr()) })
+        scm_predicate(unsafe { scm_char_p(scm.as_ptr()) })
     }
     unsafe fn from_scm_unchecked(scm: Scm<'gm>, guile: &'gm Guile) -> Self {
         u32::try_from_scm(
