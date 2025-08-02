@@ -36,7 +36,14 @@ use {
 /// # Safety
 ///
 /// Implementing types must be `repr(transparent)` to a [SCM] pointer.
-pub unsafe trait ReprScm {}
+pub unsafe trait ReprScm {
+    fn from_ptr(scm: SCM) -> Self
+    where
+        Self: Sized
+    {
+        unsafe { mem::transmute_copy(&scm) }
+    }
+}
 
 pub struct Ref<'a, 'gm, T> {
     ptr: SCM,
@@ -144,5 +151,14 @@ mod tests {
         let ptr = ptr::dangling_mut();
         r.set_ptr(ptr);
         assert_eq!(r.addr(), ptr.addr());
+    }
+
+    #[test]
+    fn from_ptr() {
+        #[repr(transparent)]
+        struct Foo(SCM);
+        unsafe impl ReprScm for Foo {}
+
+        Foo::from_ptr(ptr::null_mut());
     }
 }
