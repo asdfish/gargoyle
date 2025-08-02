@@ -26,19 +26,19 @@ use {
         scm::{Scm, ToScm, TryFromScm},
         symbol::Symbol,
         sys::{
-scm_symbol_to_string,            scm_c_string_length, scm_from_utf8_stringn, scm_is_string, scm_string_equal_p, scm_to_utf8_stringn, scm_string,
-            scm_string_null_p,
+            scm_c_string_length, scm_from_utf8_stringn, scm_is_string, scm_string,
+            scm_string_equal_p, scm_string_null_p, scm_symbol_to_string, scm_to_utf8_stringn,
         },
         utils::{c_predicate, scm_predicate},
     },
     allocator_api2::vec::Vec,
-    string::String as BufString,
     std::{borrow::Cow, ffi::CStr, marker::PhantomData},
+    string::String as BufString,
 };
 
 #[derive(Debug)]
 pub struct String<'gm> {
-    scm: Scm<'gm>,
+    pub(crate) scm: Scm<'gm>,
     _marker: PhantomData<&'gm ()>,
 }
 impl<'gm> String<'gm> {
@@ -59,9 +59,7 @@ impl<'gm> String<'gm> {
     /// There may be exceptions if the it fails to encode into utf8.
     pub fn as_string(&self) -> BufString<Vec<u8, CAllocator>> {
         let mut len = 0;
-        let ptr = unsafe {
-            scm_to_utf8_stringn(self.scm.as_ptr(), &raw mut len)
-        }.cast::<u8>();
+        let ptr = unsafe { scm_to_utf8_stringn(self.scm.as_ptr(), &raw mut len) }.cast::<u8>();
 
         // the documentation does not mention returning NULL.
         assert!(!ptr.is_null());
@@ -163,9 +161,16 @@ mod tests {
     #[test]
     fn into_string() {
         with_guile(|guile| {
-            assert_eq!(String::from_str("210", guile), String::from(List::from_iter('0'..'3', guile)));
-            assert_eq!(String::from_str("foo", guile), String::from(Symbol::from_str("foo", guile)));
-        }).unwrap();
+            assert_eq!(
+                String::from_str("210", guile),
+                String::from(List::from_iter('0'..'3', guile))
+            );
+            assert_eq!(
+                String::from_str("foo", guile),
+                String::from(Symbol::from_str("foo", guile))
+            );
+        })
+        .unwrap();
     }
 
     #[cfg_attr(miri, ignore)]
@@ -173,6 +178,7 @@ mod tests {
     fn to_string() {
         with_guile(|guile| {
             assert_eq!(String::from_str("asdf", guile).as_string().deref(), "asdf");
-        }).unwrap();
+        })
+        .unwrap();
     }
 }

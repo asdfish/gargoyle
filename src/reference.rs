@@ -45,6 +45,7 @@ pub unsafe trait ReprScm {
     }
 }
 
+#[repr(transparent)]
 pub struct Ref<'a, 'gm, T> {
     ptr: SCM,
     _marker: PhantomData<&'a &'gm T>,
@@ -56,6 +57,16 @@ impl<'gm, T> Clone for Ref<'_, 'gm, T> {
 }
 impl<'gm, T> Copy for Ref<'_, 'gm, T> {}
 impl<'gm, T> Ref<'_, 'gm, T> {
+    pub fn new(ptr: SCM) -> Self
+    where
+        T: ReprScm
+    {
+        Self {
+            ptr,
+            _marker: PhantomData,
+        }
+    }
+
     /// # Safety
     ///
     /// `ptr` must be able to safely converted to `T` through [TryFromScm::from_scm_unchecked], where the inner type operates on the [SCM].
