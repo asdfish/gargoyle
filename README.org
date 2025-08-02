@@ -15,6 +15,7 @@ This project is still in development, so the api may still change. As of right n
  - [ ] Add symbols
  - [X] Add booleans
  - [X] Add numbers
+ - [X] Add characters
  - [ ] Add array/vectors
  - [ ] Add r6rs conditions
  - [ ] Add r6rs immutable hash tables

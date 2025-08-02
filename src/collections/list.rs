@@ -25,43 +25,57 @@ use {
         scm::{Scm, ToScm},
         sys::{SCM_EOL, scm_cons},
     },
-    std::marker::PhantomData,
+    std::{iter, marker::PhantomData},
 };
 
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct List<'gm, T>
-where
-    T: ToScm<'gm>,
-{
+pub struct List<'gm, T> {
     scm: Scm<'gm>,
     _marker: PhantomData<T>,
 }
-unsafe impl<'gm, T> ReprScm for List<'gm, T> where T: ToScm<'gm> {}
-impl<'gm, T> List<'gm, T>
-where
-    T: ToScm<'gm>,
-{
-    pub fn new<I>(iter: I, guile: &'gm Guile) -> Self
-    where
-        I: IntoIterator<Item = T>,
-    {
+unsafe impl<'gm, T> ReprScm for List<'gm, T> {}
+impl<'gm, T> List<'gm, T> {
+    pub fn new(guile: &'gm Guile) -> Self {
         Self {
-            scm: Scm::from_ptr(
-                iter.into_iter()
-                    .fold(unsafe { SCM_EOL }, |cdr, car| unsafe {
-                        scm_cons(car.to_scm(guile).as_ptr(), cdr)
-                    }),
-                guile,
-            ),
+            scm: Scm::from_ptr(unsafe { SCM_EOL }, guile),
             _marker: PhantomData,
         }
     }
+
+    /// Create a list in reverse order of the iterator.
+    pub fn from_iter<I>(iter: I, guile: &'gm Guile) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        T: for<'a> ToScm<'a>,
+    {
+        let mut list = Self::new(guile);
+        list.extend(iter);
+        list
+    }
+    pub fn push_front(&mut self, item: T)
+    where
+        T: for<'a> ToScm<'a>,
+    {
+        self.extend(iter::once(item));
+    }
 }
-impl<T> PartialEq for List<'_, T>
+impl<T> Extend<T> for List<'_, T>
 where
     T: for<'a> ToScm<'a>,
 {
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = T>,
+    {
+        let guile = unsafe { Guile::new_unchecked() };
+        let car = iter.into_iter().fold(self.scm.as_ptr(), |cdr, car| unsafe {
+            scm_cons(car.to_scm(&guile).as_ptr(), cdr)
+        });
+        self.scm = unsafe { Scm::from_ptr_unchecked(car) };
+    }
+}
+impl<T> PartialEq for List<'_, T> {
     fn eq(&self, r: &Self) -> bool {
         self.scm.is_equal(&r.scm)
     }
@@ -74,7 +88,12 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     #[test]
     fn list_construction() {
-        with_guile(|guile| assert_eq!(List::new([1, 2, 3], guile), List::new([1, 2, 3], guile)))
-            .unwrap();
+        with_guile(|guile| {
+            assert_eq!(
+                List::from_iter([1, 2, 3], guile),
+                List::from_iter([1, 2, 3], guile)
+            )
+        })
+        .unwrap();
     }
 }
