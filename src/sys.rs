@@ -127,7 +127,7 @@ unsafe extern "C" {
 
     pub fn scm_char_set_p(_obj: SCM) -> SCM;
     pub fn scm_char_set_contains_p(_cs: SCM, _ch: SCM) -> SCM;
-    pub fn scm_char_set_eq(_cs: SCM, _cursor: SCM) -> SCM;
+    // pub fn scm_char_set_eq(_char_sets: SCM) -> SCM;
     pub fn scm_char_set_ref(_cs: SCM, _cursor: SCM) -> SCM;
     pub fn scm_char_set_cursor(_cs: SCM) -> SCM;
     pub fn scm_char_set_cursor_next(_cs: SCM, _cursor: SCM) -> SCM;
