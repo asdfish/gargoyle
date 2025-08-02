@@ -21,7 +21,10 @@
 use {
     crate::{
         Guile,
-        collections::vector::Vector,
+        collections::{
+            byte_vector::{ByteVector, ByteVectorType},
+            vector::Vector,
+        },
         reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
         sys::{SCM, SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p, scm_vector_to_list},
@@ -97,6 +100,17 @@ where
             scm_cons(car.to_scm(guile).as_ptr(), cdr)
         });
         self.scm = unsafe { Scm::from_ptr_unchecked(pair) };
+    }
+}
+impl<'gm, T> From<ByteVector<'gm, T>> for List<'gm, T>
+where
+    T: ByteVectorType,
+{
+    fn from(vector: ByteVector<'gm, T>) -> Self {
+        List {
+            scm: unsafe { Scm::from_ptr_unchecked(T::TO_LIST(vector.scm.as_ptr())) },
+            _marker: PhantomData,
+        }
     }
 }
 impl<'gm, T> From<Vector<'gm, T>> for List<'gm, T> {

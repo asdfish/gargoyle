@@ -25,8 +25,8 @@ use {
         reference::{Ref, RefMut},
         scm::{Scm, ToScm, TryFromScm},
         sys::{
-            SCM, scm_array_handle_release, scm_t_array_handle, scm_vector, scm_vector_elements,
-            scm_vector_p, scm_vector_writable_elements, scm_c_make_vector,
+            SCM, scm_array_handle_release, scm_c_make_vector, scm_t_array_handle, scm_vector,
+            scm_vector_elements, scm_vector_p, scm_vector_writable_elements,
         },
         utils::{CowCStrExt, scm_predicate},
     },
@@ -58,7 +58,9 @@ impl<'gm, T> Vector<'gm, T> {
         T: Copy + ToScm<'gm>,
     {
         Self {
-            scm:unsafe { Scm::from_ptr_unchecked( scm_c_make_vector(n, of.to_scm(guile).as_ptr()) )},
+            scm: unsafe {
+                Scm::from_ptr_unchecked(scm_c_make_vector(n, of.to_scm(guile).as_ptr()))
+            },
             _marker: PhantomData,
         }
     }
@@ -386,8 +388,36 @@ mod tests {
     #[test]
     fn vector_construction() {
         with_guile(|guile| {
-            assert_eq!(Vector::new('a', 3, guile).into_iter().collect::<String>(), "aaa");
-            assert_eq!(Vector::from(List::from_iter([3, 2, 1], guile)).into_iter().sum::<usize>(), 6);
-        }).unwrap();
+            assert_eq!(
+                Vector::new('a', 3, guile).into_iter().collect::<String>(),
+                "aaa"
+            );
+            assert_eq!(
+                Vector::from(List::from_iter([3, 2, 1], guile))
+                    .into_iter()
+                    .sum::<usize>(),
+                6
+            );
+        })
+        .unwrap();
+    }
+
+    /// Test that we can have multiple handles
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn vector_iter() {
+        with_guile(|guile| {
+            let vec = Vector::from(List::from_iter([3, 2, 1], guile));
+            assert_eq!(
+                vec.iter().map(Ref::into_inner)
+                    .zip(vec.iter().map(Ref::into_inner))
+                    .collect::<Vec<_>>(),
+                [(1, 1), (2, 2), (3, 3)]
+            );
+            assert_eq!(vec.iter_mut().map(RefMut::into_inner).collect::<Vec<_>>(), [1, 2, 3]);
+
+            assert_eq!(vec.into_iter().rev().collect::<Vec<_>>(), [3, 2, 1]);
+        })
+        .unwrap();
     }
 }
