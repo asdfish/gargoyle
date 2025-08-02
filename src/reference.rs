@@ -65,7 +65,7 @@ impl<'gm, T> Ref<'_, 'gm, T> {
     {
         let guile = unsafe { Guile::new_unchecked_ref() };
         let ptr = Scm::from_ptr(self.ptr, guile);
-        T::try_from_scm(ptr, &guile).unwrap()
+        T::try_from_scm(ptr, guile).unwrap()
     }
 }
 impl<T> Deref for Ref<'_, '_, T>
