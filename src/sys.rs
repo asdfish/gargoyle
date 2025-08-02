@@ -112,6 +112,7 @@ unsafe extern "C" {
     pub fn scm_from_utf8_stringn(_: *const c_char, _: usize) -> SCM;
     pub fn scm_to_utf8_stringn(_: SCM, _: *mut usize) -> *mut c_char;
     pub fn scm_string_equal_p(_s1: SCM, _s2: SCM) -> SCM;
+    pub fn scm_string_null_p(_str: SCM) -> SCM;
 
     pub fn scm_to_bool(_: SCM) -> c_int;
     pub fn scm_not(_: SCM) -> SCM;

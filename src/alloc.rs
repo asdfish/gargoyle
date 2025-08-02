@@ -19,34 +19,46 @@
 // THE SOFTWARE.
 
 use {
-    crate::sys::{SCM, scm_is_true},
-    bstr::BStr,
-    std::{
-        borrow::Cow,
-        ffi::{CStr, c_int},
-        fmt::{self, Display, Formatter},
-    },
+    allocator_api2::alloc::{Allocator, AllocError, Layout},
+    std::{ffi::c_void, ptr::NonNull},
 };
 
-pub fn c_predicate(b: c_int) -> bool {
-    b != 0
+unsafe extern "C" {
+    pub fn malloc(_: usize) -> *mut c_void;
+    pub fn free(_: *mut c_void);
 }
 
-pub fn scm_predicate(b: SCM) -> bool {
-    c_predicate(unsafe { scm_is_true(b) })
-}
+/// Allocator that uses [malloc] and [free].
+pub struct CAllocator;
 
-pub trait CowCStrExt<'a> {
-    fn display(&'a self) -> CowCStrDisplay<'a>;
-}
-impl<'a> CowCStrExt<'a> for Cow<'a, CStr> {
-    fn display(&'a self) -> CowCStrDisplay<'a> {
-        CowCStrDisplay(self)
+unsafe impl Allocator for CAllocator {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        match layout.size() {
+            0 => None,
+            bytes => {
+                NonNull::new(unsafe { malloc(bytes) }.cast::<u8>())
+                    .map(|ptr| NonNull::slice_from_raw_parts(ptr, bytes))
+            }
+        }
+        .ok_or(AllocError)
+    }
+    unsafe fn deallocate(&self, ptr: NonNull<u8>, _: Layout) {
+        unsafe { free(ptr.as_ptr().cast()) }
     }
 }
-pub struct CowCStrDisplay<'a>(&'a Cow<'a, CStr>);
-impl<'a> Display for CowCStrDisplay<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
-        BStr::new(self.0.as_ref().to_bytes()).fmt(f)
+
+#[cfg(test)]
+mod tests {
+    use {
+        super::*,
+        allocator_api2::vec::Vec,
+    };
+
+    #[test]
+    fn c_allocator() {
+        let mut vec = Vec::new_in(CAllocator);
+        (0..3)
+            .for_each(|i| vec.push(i));
+        assert_eq!(vec, [0, 1, 2]);
     }
 }

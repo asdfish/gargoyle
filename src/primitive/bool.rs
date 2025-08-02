@@ -34,7 +34,7 @@ impl<'gm> TryFromScm<'gm> for bool {
     }
 
     fn predicate(scm: &Scm<'gm>, _: &'gm Guile) -> bool {
-        c_predicate(|| unsafe { scm_is_bool(scm.as_ptr()) })
+        c_predicate(unsafe { scm_is_bool(scm.as_ptr()) })
     }
 
     unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile) -> Self {

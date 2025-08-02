@@ -116,9 +116,9 @@ where
             .unwrap_or(Cow::Borrowed(c"list"))
     }
     fn predicate(scm: &Scm<'gm>, guile: &'gm Guile) -> bool {
-        scm_predicate(|| unsafe { scm_list_p(scm.as_ptr()) }) && {
+        scm_predicate(unsafe { scm_list_p(scm.as_ptr()) }) && {
             IntoIter(List {
-                scm: unsafe { scm.clone_unchecked() },
+                scm: unsafe { scm.copy_unchecked() },
                 _marker: PhantomData::<Scm>,
             })
             .all(|i| T::predicate(&i, guile))
@@ -199,15 +199,4 @@ mod tests {
         })
         .unwrap();
     }
-
-    // #[cfg_attr(miri, ignore)]
-    // #[test]
-    // fn list_append() {
-    //     with_guile(|guile| {
-    //         let mut list = List::from_iter([1, 2, 3], guile);
-    //         list.append(List::from_iter([1, 2, 3], guile));
-    //         assert_eq!(list.into_iter().collect::<Vec<_>>(), [3, 2, 1, 3, 2, 1]);
-    //     })
-    //     .unwrap();
-    // }
 }

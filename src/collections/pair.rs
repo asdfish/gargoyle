@@ -120,7 +120,7 @@ where
     fn predicate(scm: &Scm<'gm>, guile: &'gm Guile) -> bool {
         let pair = scm.as_ptr();
         // SAFETY: this should take everything
-        c_predicate(|| unsafe { scm_is_pair(pair) })
+        c_predicate(unsafe { scm_is_pair(pair) })
             // SAFETY: the previous condition should short circuit if it is not a pair, making these safe
             && L::predicate(&Scm::from_ptr(unsafe { scm_car(pair) }, guile), guile)
             && R::predicate(&Scm::from_ptr(unsafe { scm_cdr(pair) }, guile), guile)

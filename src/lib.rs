@@ -22,6 +22,7 @@
 
 #![expect(private_bounds)]
 
+pub mod alloc;
 pub mod collections;
 mod guile_mode;
 pub mod num;
@@ -29,6 +30,7 @@ mod primitive;
 pub mod rand;
 pub mod reference;
 pub mod scm;
+pub mod string;
 pub mod symbol;
 pub mod sys;
 mod utils;
