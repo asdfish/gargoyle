@@ -22,8 +22,8 @@ use {
     crate::{
         Guile,
         reference::ReprScm,
-        sys::{SCM, scm_equal_p, scm_is_true},
-        utils::c_predicate,
+        sys::{SCM, scm_equal_p, scm_is_true, scm_null_p},
+        utils::{c_predicate, scm_predicate},
     },
     std::{borrow::Cow, ffi::CStr, marker::PhantomData},
 };
@@ -92,6 +92,19 @@ impl<'gm> Scm<'gm> {
 
     pub fn is_true(&self) -> bool {
         c_predicate(|| unsafe { scm_is_true(self.as_ptr()) })
+    }
+    pub fn is_eol(&self) -> bool {
+        scm_predicate(|| unsafe { scm_null_p(self.as_ptr()) })
+    }
+
+    /// # Safety
+    ///
+    /// Ensure the inner type may be cloned.
+    pub unsafe fn clone_unchecked(&self) -> Self {
+        Self {
+            ptr: self.ptr,
+            _marker: PhantomData,
+        }
     }
 }
 impl PartialEq for Scm<'_> {

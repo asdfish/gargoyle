@@ -185,15 +185,15 @@ macro_rules! impl_ops_for_num {
     ($ident:ident, $op:ident, $fn:ident, $bin_fn:path) => {
         impl<'gm, R> ::std::ops::$op<R> for $ident<'gm>
         where
-            R: for<'a> $crate::num::Num<'a>,
+            R: $crate::num::Num<'gm>,
         {
             type Output = $crate::num::Number<'gm>;
 
             fn $fn(self, r: R) -> Self::Output {
                 // SAFETY: having a [Self] exist is proof of being in guile mode.
-                let guile = unsafe { $crate::Guile::new_unchecked() };
-                let l = self.to_scm(&guile).as_ptr();
-                let r = r.to_scm(&guile).as_ptr();
+                let guile = unsafe { $crate::Guile::new_unchecked_ref() };
+                let l = self.to_scm(guile).as_ptr();
+                let r = r.to_scm(guile).as_ptr();
 
                 $crate::num::Number {
                     scm: unsafe { $bin_fn(l, r) },
@@ -248,14 +248,14 @@ macro_rules! define_num {
         impl_ops_for_num!($ident, Mul, mul, $crate::sys::scm_product);
         impl_ops_for_num!($ident, Div, div, $crate::sys::scm_divide);
 
-        impl<R> ::std::cmp::PartialEq<R> for $ident<'_>
+        impl<'gm, R> ::std::cmp::PartialEq<R> for $ident<'gm>
         where
-            R: for<'a> $crate::num::Num<'a>,
+            R: $crate::num::Num<'gm>,
         {
             fn eq(&self, r: &R) -> bool {
-                let guile = unsafe { $crate::Guile::new_unchecked() };
+                let guile = unsafe { $crate::Guile::new_unchecked_ref() };
                 $crate::utils::scm_predicate(|| unsafe {
-                    $crate::sys::scm_num_eq_p(self.scm, r.to_scm(&guile).as_ptr())
+                    $crate::sys::scm_num_eq_p(self.scm, r.to_scm(guile).as_ptr())
                 })
             }
         }

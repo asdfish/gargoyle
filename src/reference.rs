@@ -61,10 +61,10 @@ impl<'gm, T> Ref<'_, 'gm, T> {
 
     pub fn into_inner(self) -> T
     where
-        T: Copy + for<'a> TryFromScm<'a>,
+        T: Copy + TryFromScm<'gm>,
     {
-        let guile = unsafe { Guile::new_unchecked() };
-        let ptr = Scm::from_ptr(self.ptr, &guile);
+        let guile = unsafe { Guile::new_unchecked_ref() };
+        let ptr = Scm::from_ptr(self.ptr, guile);
         T::try_from_scm(ptr, &guile).unwrap()
     }
 }

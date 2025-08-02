@@ -23,10 +23,7 @@ use {
         Guile,
         reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
-        sys::{
-            SCM, scm_car, scm_cdr, scm_cons, scm_copy_tree, scm_is_pair, scm_set_car_x,
-            scm_set_cdr_x,
-        },
+        sys::{SCM, scm_car, scm_cdr, scm_cons, scm_is_pair, scm_set_car_x, scm_set_cdr_x},
         utils::{CowCStrExt, c_predicate},
     },
     std::{
@@ -43,14 +40,14 @@ pub struct Pair<'gm, L, R> {
 }
 impl<'gm, L, R> Pair<'gm, L, R>
 where
-    L: for<'a> TryFromScm<'a>,
-    R: for<'a> TryFromScm<'a>,
+    L: TryFromScm<'gm>,
+    R: TryFromScm<'gm>,
 {
     pub fn into_tuple(self) -> (L, R) {
-        let guile = unsafe { Guile::new_unchecked() };
+        let guile = unsafe { Guile::new_unchecked_ref() };
         (
-            unsafe { L::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm), &guile), &guile) },
-            unsafe { R::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm), &guile), &guile) },
+            unsafe { L::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm), guile), guile) },
+            unsafe { R::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm), guile), guile) },
         )
     }
 }
@@ -68,14 +65,6 @@ impl<'gm, L, R> Pair<'gm, L, R> {
         unsafe { RefMut::new_unchecked(scm_cdr(self.scm)) }
     }
 }
-impl<L, R> Clone for Pair<'_, L, R> {
-    fn clone(&self) -> Self {
-        Pair {
-            scm: unsafe { scm_copy_tree(self.scm) },
-            _marker: PhantomData,
-        }
-    }
-}
 impl<'gm, L, R> Pair<'gm, L, R>
 where
     L: ToScm<'gm>,
@@ -90,21 +79,21 @@ where
         }
     }
 }
-impl<L, R> Pair<'_, L, R>
+impl<'gm, L, R> Pair<'gm, L, R>
 where
-    L: for<'gm> ToScm<'gm>,
-    R: for<'gm> ToScm<'gm>,
+    L: ToScm<'gm>,
+    R: ToScm<'gm>,
 {
     pub fn set_car(&mut self, l: L) {
-        let guile = unsafe { Guile::new_unchecked() };
+        let guile = unsafe { Guile::new_unchecked_ref() };
         unsafe {
-            scm_set_car_x(self.scm, l.to_scm(&guile).as_ptr());
+            scm_set_car_x(self.scm, l.to_scm(guile).as_ptr());
         }
     }
     pub fn set_cdr(&mut self, r: R) {
-        let guile = unsafe { Guile::new_unchecked() };
+        let guile = unsafe { Guile::new_unchecked_ref() };
         unsafe {
-            scm_set_cdr_x(self.scm, r.to_scm(&guile).as_ptr());
+            scm_set_cdr_x(self.scm, r.to_scm(guile).as_ptr());
         }
     }
 }
@@ -116,8 +105,8 @@ impl<'gm, L, R> ToScm<'gm> for Pair<'gm, L, R> {
 }
 impl<'gm, L, R> TryFromScm<'gm> for Pair<'gm, L, R>
 where
-    L: for<'a> TryFromScm<'a>,
-    R: for<'a> TryFromScm<'a>,
+    L: TryFromScm<'gm>,
+    R: TryFromScm<'gm>,
 {
     fn type_name() -> Cow<'static, CStr> {
         CString::new(format!(
@@ -163,19 +152,6 @@ mod tests {
             let mut pair = Pair::new(1, Pair::new(2, 3, guile), guile);
             pair.as_mut_cdr().set_car(3);
             assert_eq!(pair.as_cdr().as_car().into_inner(), 3);
-        })
-        .unwrap();
-    }
-
-    #[cfg_attr(miri, ignore)]
-    #[test]
-    fn pair_clone() {
-        with_guile(|guile| {
-            let mut pair = Pair::new(1, Pair::new(2, 3, guile), guile);
-            let copy = pair.clone();
-            pair.as_mut_cdr().set_car(3);
-            assert_eq!(pair.as_cdr().as_car().into_inner(), 3);
-            assert_eq!(copy.as_cdr().as_car().into_inner(), 2);
         })
         .unwrap();
     }
