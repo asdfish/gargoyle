@@ -21,6 +21,7 @@
 use {
     crate::{
         Guile,
+        reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
         string::String,
         sys::{
@@ -33,6 +34,7 @@ use {
 };
 
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct Symbol<'gm> {
     pub(crate) ptr: SCM,
     _marker: PhantomData<&'gm ()>,
@@ -72,6 +74,7 @@ impl<'gm> Symbol<'gm> {
         self.len() != 0
     }
 }
+unsafe impl ReprScm for Symbol<'_> {}
 impl<'gm> ToScm<'gm> for Symbol<'gm> {
     fn to_scm(self, guile: &'gm Guile) -> Scm<'gm> {
         Scm::from_ptr(self.ptr, guile)

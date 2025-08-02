@@ -12,10 +12,10 @@ This project is still in development, so the api may still change. As of right n
  - [ ] Add srfi-19 dates
  - [ ] Add mutexes
  - [ ] Add srfi-9 immutable records
- - [ ] Add symbols
+ - [X] Add symbols
  - [X] Add booleans
  - [X] Add numbers
  - [X] Add characters
- - [ ] Add array/vectors
+ - [X] Add array/vectors
  - [ ] Add r6rs conditions
  - [ ] Add r6rs immutable hash tables

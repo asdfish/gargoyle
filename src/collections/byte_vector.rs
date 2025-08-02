@@ -25,6 +25,7 @@ use {
         Guile,
         alloc::CAllocator,
         collections::list::List,
+        reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
         sys::{SCM, scm_t_array_handle, scm_array_handle_release},
         utils::scm_predicate,
@@ -286,6 +287,7 @@ impl ByteVectorType for f64 {
         crate::sys::scm_take_f64vector;
 }
 
+#[repr(transparent)]
 pub struct ByteVector<'gm, T>
 where
     T: ByteVectorType,
@@ -394,6 +396,7 @@ where
         self.iter_mut()
     }
 }
+unsafe impl<T> ReprScm for ByteVector<'_, T> where T: ByteVectorType {}
 impl<'gm, T> ToScm<'gm> for ByteVector<'gm, T>
 where
     T: ByteVectorType,
