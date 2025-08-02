@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use crate::{
+use {crate::{
     Guile,
     collections::list::List,
     reference::ReprScm,
@@ -27,10 +27,10 @@ use crate::{
     sys::{
         SCM_UNDEFINED, scm_char_set_contains_p, scm_char_set_cursor, scm_char_set_cursor_next,
         scm_char_set_ref, scm_end_of_char_set_p, scm_list_to_char_set,
-        scm_string_to_char_set, scm_to_char_set,
+        scm_string_to_char_set, scm_to_char_set,scm_char_set_p,
     },
     utils::scm_predicate,
-};
+}, std::{borrow::Cow, ffi::CStr}};
 
 #[derive(Debug)]
 #[repr(transparent)]
@@ -74,6 +74,24 @@ impl<'gm> From<String<'gm>> for CharSet<'gm> {
     }
 }
 unsafe impl ReprScm for CharSet<'_> {}
+impl<'gm> ToScm<'gm> for CharSet<'gm> {
+    fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
+        self.0
+    }
+}
+impl<'gm> TryFromScm<'gm> for CharSet<'gm> {
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"char-set")
+    }
+
+    fn predicate(scm: &Scm<'gm>, _: &'gm Guile)->bool {
+        scm_predicate(unsafe { scm_char_set_p(scm.as_ptr()) })
+    }
+
+    unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile)-> Self {
+        Self(scm)
+    }
+}
 
 pub struct Iter<'a, 'gm> {
     cursor: Scm<'gm>,
