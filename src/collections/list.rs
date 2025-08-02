@@ -21,9 +21,10 @@
 use {
     crate::{
         Guile,
+        collections::vector::Vector,
         reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
-        sys::{SCM, SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p},
+        sys::{SCM, SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p, scm_vector_to_list},
         utils::{CowCStrExt, scm_predicate},
     },
     std::{
@@ -96,6 +97,15 @@ where
             scm_cons(car.to_scm(guile).as_ptr(), cdr)
         });
         self.scm = unsafe { Scm::from_ptr_unchecked(pair) };
+    }
+}
+impl<'gm, T> From<Vector<'gm, T>> for List<'gm, T> {
+    fn from(vector: Vector<'gm, T>) -> Self {
+        let guile = unsafe { Guile::new_unchecked_ref() };
+        Self {
+            scm: Scm::from_ptr(unsafe { scm_vector_to_list(vector.scm.as_ptr()) }, guile),
+            _marker: PhantomData,
+        }
     }
 }
 impl<'gm, T> IntoIterator for List<'gm, T>
