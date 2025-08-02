@@ -20,11 +20,13 @@
 
 use {
     crate::{
-        alloc::CAllocator,
         Guile,
+        alloc::CAllocator,
+        collections::list::List,
         scm::{Scm, ToScm, TryFromScm},
+        symbol::Symbol,
         sys::{
-            scm_c_string_length, scm_from_utf8_stringn, scm_is_string, scm_string_equal_p, scm_to_utf8_stringn,
+scm_symbol_to_string,            scm_c_string_length, scm_from_utf8_stringn, scm_is_string, scm_string_equal_p, scm_to_utf8_stringn, scm_string,
             scm_string_null_p,
         },
         utils::{c_predicate, scm_predicate},
@@ -77,6 +79,22 @@ impl<'gm> String<'gm> {
     }
     pub fn is_empty(&self) -> bool {
         scm_predicate(unsafe { scm_string_null_p(self.scm.as_ptr()) })
+    }
+}
+impl<'gm> From<List<'gm, char>> for String<'gm> {
+    fn from(list: List<'gm, char>) -> String<'gm> {
+        String {
+            scm: unsafe { Scm::from_ptr_unchecked(scm_string(list.scm.as_ptr())) },
+            _marker: PhantomData,
+        }
+    }
+}
+impl<'gm> From<Symbol<'gm>> for String<'gm> {
+    fn from(symbol: Symbol<'gm>) -> String<'gm> {
+        String {
+            scm: unsafe { Scm::from_ptr_unchecked(scm_symbol_to_string(symbol.ptr)) },
+            _marker: PhantomData,
+        }
     }
 }
 impl PartialEq for String<'_> {
@@ -139,6 +157,15 @@ mod tests {
             assert_eq!(String::from_str("", guile).is_empty(), true,);
         })
         .unwrap();
+    }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn into_string() {
+        with_guile(|guile| {
+            assert_eq!(String::from_str("210", guile), String::from(List::from_iter('0'..'3', guile)));
+            assert_eq!(String::from_str("foo", guile), String::from(Symbol::from_str("foo", guile)));
+        }).unwrap();
     }
 
     #[cfg_attr(miri, ignore)]
