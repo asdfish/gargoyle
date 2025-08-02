@@ -39,7 +39,7 @@ use {
 pub unsafe trait ReprScm {
     fn from_ptr(scm: SCM) -> Self
     where
-        Self: Sized
+        Self: Sized,
     {
         unsafe { mem::transmute_copy(&scm) }
     }
@@ -59,7 +59,7 @@ impl<'gm, T> Copy for Ref<'_, 'gm, T> {}
 impl<'gm, T> Ref<'_, 'gm, T> {
     pub fn new(ptr: SCM) -> Self
     where
-        T: ReprScm
+        T: ReprScm,
     {
         Self {
             ptr,
