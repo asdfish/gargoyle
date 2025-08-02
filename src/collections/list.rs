@@ -124,8 +124,11 @@ where
             .all(|i| T::predicate(&i, guile))
         }
     }
-    unsafe fn from_scm_unchecked(_: Scm<'gm>, _: &'gm Guile) -> Self {
-        todo!()
+    unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile) -> Self {
+        Self {
+            scm,
+            _marker: PhantomData,
+        }
     }
 }
 
