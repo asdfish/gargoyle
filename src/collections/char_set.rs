@@ -18,19 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use {crate::{
-    Guile,
-    collections::list::List,
-    reference::ReprScm,
-    scm::{Scm, ToScm, TryFromScm},
-    string::String,
-    sys::{
-        SCM_UNDEFINED, scm_char_set_contains_p, scm_char_set_cursor, scm_char_set_cursor_next,
-        scm_char_set_ref, scm_end_of_char_set_p, scm_list_to_char_set,
-        scm_string_to_char_set, scm_to_char_set,scm_char_set_p,
+use {
+    crate::{
+        Guile,
+        collections::list::List,
+        reference::ReprScm,
+        scm::{Scm, ToScm, TryFromScm},
+        string::String,
+        sys::{
+            SCM_UNDEFINED, scm_char_set_contains_p, scm_char_set_cursor, scm_char_set_cursor_next,
+            scm_char_set_p, scm_char_set_ref, scm_end_of_char_set_p, scm_list_to_char_set,
+            scm_string_to_char_set, scm_to_char_set,
+        },
+        utils::scm_predicate,
     },
-    utils::scm_predicate,
-}, std::{borrow::Cow, ffi::CStr}};
+    std::{borrow::Cow, ffi::CStr},
+};
 
 #[derive(Debug)]
 #[repr(transparent)]
@@ -84,11 +87,11 @@ impl<'gm> TryFromScm<'gm> for CharSet<'gm> {
         Cow::Borrowed(c"char-set")
     }
 
-    fn predicate(scm: &Scm<'gm>, _: &'gm Guile)->bool {
+    fn predicate(scm: &Scm<'gm>, _: &'gm Guile) -> bool {
         scm_predicate(unsafe { scm_char_set_p(scm.as_ptr()) })
     }
 
-    unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile)-> Self {
+    unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile) -> Self {
         Self(scm)
     }
 }
@@ -114,7 +117,9 @@ impl Iterator for Iter<'_, '_> {
                     guile,
                 )
             };
-            unsafe { scm_char_set_cursor_next(self.char_set.0.as_ptr(), self.cursor.as_ptr()); }
+            unsafe {
+                scm_char_set_cursor_next(self.char_set.0.as_ptr(), self.cursor.as_ptr());
+            }
 
             Some(ch)
         }
@@ -142,9 +147,11 @@ mod tests {
     #[test]
     fn char_set_contains() {
         with_guile(|guile| {
-            let set = CharSet::from(List::from_iter("thequickbrownfoxjumpsoverthelazydog".chars(), guile));
-            ('a'..='z')
-                .for_each(|ch| assert!(set.contains(ch)));
+            let set = CharSet::from(List::from_iter(
+                "thequickbrownfoxjumpsoverthelazydog".chars(),
+                guile,
+            ));
+            ('a'..='z').for_each(|ch| assert!(set.contains(ch)));
         });
     }
 }
