@@ -19,6 +19,7 @@
 // THE SOFTWARE.
 
 pub mod byte_vector;
+pub mod char_set;
 pub mod list;
 pub mod pair;
 pub mod vector;

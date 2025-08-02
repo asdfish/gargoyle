@@ -22,13 +22,14 @@ use {
     crate::{
         Guile,
         alloc::CAllocator,
-        collections::list::List,
+        collections::{char_set::CharSet, list::List},
         reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
         symbol::Symbol,
         sys::{
-            scm_c_string_length, scm_from_utf8_stringn, scm_is_string, scm_string,
-            scm_string_equal_p, scm_string_null_p, scm_symbol_to_string, scm_to_utf8_stringn,
+            scm_c_string_length, scm_char_set_to_string, scm_from_utf8_stringn, scm_is_string,
+            scm_string, scm_string_equal_p, scm_string_null_p, scm_symbol_to_string,
+            scm_to_utf8_stringn,
         },
         utils::{c_predicate, scm_predicate},
     },
@@ -79,6 +80,14 @@ impl<'gm> String<'gm> {
     }
     pub fn is_empty(&self) -> bool {
         scm_predicate(unsafe { scm_string_null_p(self.scm.as_ptr()) })
+    }
+}
+impl<'gm> From<CharSet<'gm>> for String<'gm> {
+    fn from(chrs: CharSet<'gm>) -> String<'gm> {
+        String {
+            scm: unsafe { Scm::from_ptr_unchecked(scm_char_set_to_string(chrs.0.as_ptr())) },
+            _marker: PhantomData,
+        }
     }
 }
 impl<'gm> From<List<'gm, char>> for String<'gm> {

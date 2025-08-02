@@ -411,12 +411,16 @@ mod tests {
         with_guile(|guile| {
             let vec = Vector::from(List::from_iter([3, 2, 1], guile));
             assert_eq!(
-                vec.iter().map(Ref::into_inner)
+                vec.iter()
+                    .map(Ref::into_inner)
                     .zip(vec.iter().map(Ref::into_inner))
                     .collect::<Vec<_>>(),
                 [(1, 1), (2, 2), (3, 3)]
             );
-            assert_eq!(vec.iter_mut().map(RefMut::into_inner).collect::<Vec<_>>(), [1, 2, 3]);
+            assert_eq!(
+                vec.iter_mut().map(RefMut::into_inner).collect::<Vec<_>>(),
+                [1, 2, 3]
+            );
 
             assert_eq!(vec.into_iter().rev().collect::<Vec<_>>(), [3, 2, 1]);
         })

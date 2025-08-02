@@ -23,11 +23,15 @@ use {
         Guile,
         collections::{
             byte_vector::{ByteVector, ByteVectorType},
+            char_set::CharSet,
             vector::Vector,
         },
         reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
-        sys::{SCM, SCM_EOL, scm_car, scm_cdr, scm_cons, scm_list_p, scm_vector_to_list},
+        sys::{
+            SCM, SCM_EOL, scm_car, scm_cdr, scm_char_set_to_list, scm_cons, scm_list_p,
+            scm_vector_to_list,
+        },
         utils::{CowCStrExt, scm_predicate},
     },
     std::{
@@ -109,6 +113,14 @@ where
     fn from(vector: ByteVector<'gm, T>) -> Self {
         List {
             scm: unsafe { Scm::from_ptr_unchecked(T::TO_LIST(vector.scm.as_ptr())) },
+            _marker: PhantomData,
+        }
+    }
+}
+impl<'gm> From<CharSet<'gm>> for List<'gm, char> {
+    fn from(chrs: CharSet<'gm>) -> Self {
+        List {
+            scm: unsafe { Scm::from_ptr_unchecked(scm_char_set_to_list(chrs.0.as_ptr())) },
             _marker: PhantomData,
         }
     }

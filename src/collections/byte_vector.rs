@@ -27,7 +27,7 @@ use {
         collections::list::List,
         reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
-        sys::{SCM, scm_t_array_handle, scm_array_handle_release},
+        sys::{SCM, scm_array_handle_release, scm_t_array_handle},
         utils::scm_predicate,
     },
     allocator_api2::vec::Vec,
@@ -303,28 +303,42 @@ where
         let mut handle = Default::default();
         let mut len = 0;
         let mut step = 0;
-        let ptr = unsafe { T::ELEMENTS(self.scm.as_ptr(), &raw mut handle, &raw mut len, &raw mut step) };
+        let ptr = unsafe {
+            T::ELEMENTS(
+                self.scm.as_ptr(),
+                &raw mut handle,
+                &raw mut len,
+                &raw mut step,
+            )
+        };
 
-         Iter {
-    handle,
-    ptr,
-    len: NonZeroUsize::new(len),
-    step,
-    _marker: PhantomData
+        Iter {
+            handle,
+            ptr,
+            len: NonZeroUsize::new(len),
+            step,
+            _marker: PhantomData,
         }
     }
     pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, 'gm, T> {
         let mut handle = Default::default();
         let mut len = 0;
         let mut step = 0;
-        let ptr = unsafe { T::ELEMENTS_MUT(self.scm.as_ptr(), &raw mut handle, &raw mut len, &raw mut step) };
+        let ptr = unsafe {
+            T::ELEMENTS_MUT(
+                self.scm.as_ptr(),
+                &raw mut handle,
+                &raw mut len,
+                &raw mut step,
+            )
+        };
 
-         IterMut {
-    handle,
-    ptr,
-    len: NonZeroUsize::new(len),
-    step,
-    _marker: PhantomData
+        IterMut {
+            handle,
+            ptr,
+            len: NonZeroUsize::new(len),
+            step,
+            _marker: PhantomData,
         }
     }
 }
@@ -363,7 +377,14 @@ where
         let mut handle = Default::default();
         let mut len = 0;
         let mut step = 0;
-        let ptr = unsafe { T::ELEMENTS(self.scm.as_ptr(), &raw mut handle, &raw mut len,&raw mut step) };
+        let ptr = unsafe {
+            T::ELEMENTS(
+                self.scm.as_ptr(),
+                &raw mut handle,
+                &raw mut len,
+                &raw mut step,
+            )
+        };
 
         IntoIter {
             handle,
@@ -440,14 +461,16 @@ where
     T: ByteVectorType,
 {
     fn drop(&mut self) {
-        unsafe { scm_array_handle_release(&raw mut self.handle); }
+        unsafe {
+            scm_array_handle_release(&raw mut self.handle);
+        }
     }
 }
 impl<'gm, T> DoubleEndedIterator for IntoIter<'gm, T>
 where
     T: ByteVectorType,
 {
-    fn next_back(&mut self)-> Option<T> {
+    fn next_back(&mut self) -> Option<T> {
         match (self.ptr, self.len) {
             (ptr, Some(len)) if !ptr.is_null() => {
                 let len = len.get() - 1;
@@ -468,7 +491,7 @@ where
 {
     type Item = T;
 
-    fn next(&mut self)-> Option<T> {
+    fn next(&mut self) -> Option<T> {
         match (self.ptr, self.len) {
             (ptr, Some(len)) if !ptr.is_null() => {
                 self.ptr = unsafe { ptr.offset(self.step) };
@@ -501,14 +524,16 @@ where
     T: ByteVectorType,
 {
     fn drop(&mut self) {
-        unsafe { scm_array_handle_release(&raw mut self.handle); }
+        unsafe {
+            scm_array_handle_release(&raw mut self.handle);
+        }
     }
 }
 impl<T> DoubleEndedIterator for Iter<'_, '_, T>
 where
     T: ByteVectorType,
 {
-    fn next_back(&mut self)-> Option<Self::Item> {
+    fn next_back(&mut self) -> Option<Self::Item> {
         match (self.ptr, self.len) {
             (ptr, Some(len)) if !ptr.is_null() => {
                 let len = len.get() - 1;
@@ -529,7 +554,7 @@ where
 {
     type Item = &'a T;
 
-    fn next(&mut self)-> Option<Self::Item> {
+    fn next(&mut self) -> Option<Self::Item> {
         match (self.ptr, self.len) {
             (ptr, Some(len)) if !ptr.is_null() => {
                 self.ptr = unsafe { ptr.offset(self.step) };
@@ -562,14 +587,16 @@ where
     T: ByteVectorType,
 {
     fn drop(&mut self) {
-        unsafe { scm_array_handle_release(&raw mut self.handle); }
+        unsafe {
+            scm_array_handle_release(&raw mut self.handle);
+        }
     }
 }
 impl<T> DoubleEndedIterator for IterMut<'_, '_, T>
 where
     T: ByteVectorType,
 {
-    fn next_back(&mut self)-> Option<Self::Item> {
+    fn next_back(&mut self) -> Option<Self::Item> {
         match (self.ptr, self.len) {
             (ptr, Some(len)) if !ptr.is_null() => {
                 let len = len.get() - 1;
@@ -590,7 +617,7 @@ where
 {
     type Item = &'a mut T;
 
-    fn next(&mut self)-> Option<Self::Item> {
+    fn next(&mut self) -> Option<Self::Item> {
         match (self.ptr, self.len) {
             (ptr, Some(len)) if !ptr.is_null() => {
                 self.ptr = unsafe { ptr.offset(self.step) };
@@ -620,6 +647,7 @@ mod tests {
             vector.iter_mut().for_each(|i| *i += 1);
             assert_eq!(vector.iter().copied().collect::<Vec<_>>(), [2, 3, 4]);
             assert_eq!(vector.into_iter().rev().collect::<Vec<_>>(), [4, 3, 2]);
-        }).unwrap();
+        })
+        .unwrap();
     }
 }

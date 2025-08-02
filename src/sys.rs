@@ -115,6 +115,8 @@ unsafe extern "C" {
     pub fn scm_string_null_p(_str: SCM) -> SCM;
     pub fn scm_symbol_to_string(_s: SCM) -> SCM;
     pub fn scm_string(_lst: SCM) -> SCM;
+    pub fn scm_char_set_to_string(_cs: SCM) -> SCM;
+    pub fn scm_char_set_to_list(_cs: SCM) -> SCM;
 
     pub fn scm_to_bool(_: SCM) -> c_int;
     pub fn scm_not(_: SCM) -> SCM;
@@ -125,13 +127,14 @@ unsafe extern "C" {
 
     pub fn scm_char_set_p(_obj: SCM) -> SCM;
     pub fn scm_char_set_contains_p(_cs: SCM, _ch: SCM) -> SCM;
+    pub fn scm_char_set_eq(_cs: SCM, _cursor: SCM) -> SCM;
     pub fn scm_char_set_ref(_cs: SCM, _cursor: SCM) -> SCM;
     pub fn scm_char_set_cursor(_cs: SCM) -> SCM;
     pub fn scm_char_set_cursor_next(_cs: SCM, _cursor: SCM) -> SCM;
-
     pub fn scm_end_of_char_set_p(_cursor: SCM) -> SCM;
-
     pub fn scm_list_to_char_set(_list: SCM, _base_cs: SCM) -> SCM;
+    pub fn scm_string_to_char_set(_str: SCM, _base_cs: SCM) -> SCM;
+    pub fn scm_to_char_set(_x: SCM) -> SCM;
 
     pub fn scm_symbol_p(_obj: SCM) -> SCM;
     pub fn scm_from_utf8_symboln(_str: *const c_char, _len: usize) -> SCM;
@@ -466,8 +469,6 @@ unsafe extern "C" {
     pub fn scm_c_primitive_load(_: *const c_char) -> SCM;
 
     pub fn scm_c_string_length(_: SCM) -> usize;
-
-    pub fn scm_string_to_char_set(_str: SCM, _base_cs: SCM) -> SCM;
 
     pub fn scm_call_n(_: SCM, _: *mut SCM, _: usize) -> SCM;
 
