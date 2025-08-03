@@ -70,9 +70,6 @@ impl<'gm> Symbol<'gm> {
     pub fn len(&self) -> usize {
         unsafe { scm_c_symbol_length(self.ptr) }
     }
-    pub fn is_empty(&self) -> bool {
-        self.len() != 0
-    }
 }
 unsafe impl ReprScm for Symbol<'_> {}
 impl<'gm> ToScm<'gm> for Symbol<'gm> {
