@@ -21,7 +21,11 @@
 mod fn_args;
 mod macro_args;
 
-use {fn_args::FnArgs, proc_macro::TokenStream, syn::ItemFn};
+use {
+    fn_args::FnArgs,
+    proc_macro::TokenStream,
+    syn::{FnArg, ItemFn, PatType, Receiver},
+};
 
 #[proc_macro_attribute]
 pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -29,17 +33,38 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
         .and_then(|args| syn::parse::<ItemFn>(input).map(|input| (args, input)))
         .and_then(|(args, mut input)| {
             let _config = macro_args::Config::new(args, &input);
-            FnArgs::try_from(input).map(
-                |FnArgs {
-                     guile,
-                     required,
-                     optional,
-                     rest,
-                 }| {
-                    //
-                    todo!()
-                },
-            )
+            FnArgs::try_from(input.clone())
+                .map(
+                    |FnArgs {
+                         guile,
+                         required,
+                         optional,
+                         rest,
+                     }| {
+                        //
+                        todo!()
+                    },
+                )
+                .inspect(|_| {
+                    input
+                        .sig
+                        .inputs
+                        .iter_mut()
+                        .map(
+                            |(FnArg::Receiver(Receiver { attrs, .. })
+                             | FnArg::Typed(PatType { attrs, .. }))| {
+                                attrs
+                            },
+                        )
+                        .for_each(|attrs| {
+                            attrs.retain(|attr| {
+                                !(attr.path().is_ident("guile")
+                                    || attr.path().is_ident("optional")
+                                    || attr.path().is_ident("rest")
+                                    || attr.path().is_ident("keyword"))
+                            })
+                        });
+                })
         })
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
