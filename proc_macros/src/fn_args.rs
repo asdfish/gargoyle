@@ -85,15 +85,28 @@ impl<'a> TryFrom<&'a mut ItemFn> for FnArgs<'a> {
 
         let mut state = State::default();
 
-        args
+        let mut args = args
             .sig
             .inputs
             .iter_mut()
-            .map(|arg| {
-                match arg {
-                    FnArg::Typed(arg) => Ok(arg),
-                    FnArg::Receiver(arg) => Err(syn::Error::new(arg.span(), "functions cannot be methods")),
+            .map(|arg| match arg {
+                FnArg::Typed(arg) => Ok(arg),
+                FnArg::Receiver(arg) => {
+                    Err(syn::Error::new(arg.span(), "functions cannot be methods"))
                 }
+            })
+            .peekable();
+
+        let guile = args
+            .next_if(|arg| {
+                arg.as_ref()
+                    .map(|PatType { attrs, .. }| {
+                        attrs.iter().any(|attr| attr.path().is_ident("guile"))
+                    })
+                    .unwrap_or_default()
+            })
+            .is_some();
+        args.map(|arg| arg
                 .map(|arg| {
                     let PatType { attrs, .. } = arg;
                     if let Some(next_attrs) = state.next_attrs() {
@@ -106,8 +119,7 @@ impl<'a> TryFrom<&'a mut ItemFn> for FnArgs<'a> {
                         }
                     }
                     (state, arg)
-                })
-            })
+                }))
             .try_fold(
                 (Vec::<&'a Box<Type>>::new(), Vec::<&'a Box<Type>>::new(), None),
                 |(mut required, mut optional, mut rest), arg| {
@@ -172,19 +184,12 @@ impl<'a> TryFrom<&'a mut ItemFn> for FnArgs<'a> {
                                     })
                             }
                         }
-                        .inspect(|_| {
-                            attrs.retain(|attr| {
-                                !(attr.path().is_ident("optional")
-                                  || attr.path().is_ident("keyword")
-                                  || attr.path().is_ident("rest"))
-                            })
-                        })
                             .map(|_| (required, optional, rest))
                     })
                 }
             )
             .map(|(required, optional, rest)| Self {
-                guile: false,
+                guile,
                 required,
                 optional,
                 rest,
