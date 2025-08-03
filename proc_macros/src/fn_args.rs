@@ -26,22 +26,22 @@ use {
     },
 };
 
-pub enum Rest {
+pub enum Rest<'a> {
     /// Keyworded arguments so that you can call it with `:arg val`.
-    Keyword(Vec<(String, Box<Type>)>),
+    Keyword(Vec<(String, &'a Box<Type>)>),
     /// Represents the optional variadic arguments.
     ///
     /// This would be the `r` in `(lambda (. r) r)`
-    List(Box<Type>),
+    List(&'a Box<Type>),
 }
 
-pub struct FnArgs {
+pub struct FnArgs<'a> {
     pub guile: bool,
-    pub required: Vec<Box<Type>>,
-    pub optional: Vec<Box<Type>>,
-    pub rest: Option<Rest>,
+    pub required: Vec<&'a Box<Type>>,
+    pub optional: Vec<&'a Box<Type>>,
+    pub rest: Option<Rest<'a>>,
 }
-impl FnArgs {
+impl FnArgs<'_> {
     /// Get the arity in `SCM` pointers.
     pub fn scm_arity(&self) -> usize {
         self.required.len()
@@ -49,10 +49,10 @@ impl FnArgs {
             + self.rest.as_ref().map(|_| 1).unwrap_or_default()
     }
 }
-impl TryFrom<ItemFn> for FnArgs {
+impl<'a> TryFrom<&'a mut ItemFn> for FnArgs<'a> {
     type Error = syn::Error;
 
-    fn try_from(args: ItemFn) -> Result<Self, syn::Error> {
+    fn try_from(args: &'a mut ItemFn) -> Result<Self, syn::Error> {
         #[derive(Clone, Copy)]
         enum RestTy {
             Keyword,
@@ -88,7 +88,7 @@ impl TryFrom<ItemFn> for FnArgs {
         let mut args = args
             .sig
             .inputs
-            .into_iter()
+            .iter_mut()
             .map(|arg| match arg {
                 FnArg::Typed(arg) => Ok(arg),
                 FnArg::Receiver(arg) => {
@@ -108,7 +108,7 @@ impl TryFrom<ItemFn> for FnArgs {
             .is_some();
         args.map(|arg| arg
                 .map(|arg| {
-                    let PatType { ref attrs, .. } = arg;
+                    let PatType { attrs, .. } = arg;
                     if let Some(next_attrs) = state.next_attrs() {
                         if let Some((_, next_state)) =
                             next_attrs.iter().find(|(next_attr, _)| {
@@ -121,7 +121,7 @@ impl TryFrom<ItemFn> for FnArgs {
                     (state, arg)
                 }))
             .try_fold(
-                (Vec::new(), Vec::new(), None),
+                (Vec::<&'a Box<Type>>::new(), Vec::<&'a Box<Type>>::new(), None),
                 |(mut required, mut optional, mut rest), arg| {
                     arg.and_then(|(state, arg)| {
                         let PatType { attrs, pat, ty, .. } = arg;
@@ -180,7 +180,7 @@ impl TryFrom<ItemFn> for FnArgs {
                                                 rest.as_mut().map(|rest| match rest { Rest::Keyword(vec) => vec, _ => unreachable!("it should be set above") }).unwrap() 
                                             },
                                         }
-                                        .push((ident, ty))
+                                        .push((ident, ty as &'a Box<Type>))
                                     })
                             }
                         }
