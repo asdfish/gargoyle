@@ -88,6 +88,8 @@ pub struct scm_t_array_handle {
     vset: scm_t_vector_set,
 }
 
+pub type scm_t_keyword_arguments_flags = c_int;
+
 unsafe extern "C" {
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_T: SCM;
     pub static GARGOYLE_REEXPORTS_SCM_BOOL_F: SCM;
@@ -124,6 +126,14 @@ unsafe extern "C" {
     pub fn scm_integer_to_char(_: SCM) -> SCM;
     pub fn scm_char_to_integer(_: SCM) -> SCM;
     pub fn scm_char_p(_: SCM) -> SCM;
+
+    pub fn scm_symbol_to_keyword(_symbol: SCM) -> SCM;
+    pub fn scm_c_bind_arguments(
+        _subr: *const c_char,
+        _rest: SCM,
+        _flags: scm_t_keyword_arguments_flags,
+        ...
+    );
 
     pub fn scm_char_set_p(_obj: SCM) -> SCM;
     pub fn scm_char_set_contains_p(_cs: SCM, _ch: SCM) -> SCM;
