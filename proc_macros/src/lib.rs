@@ -22,9 +22,10 @@ mod fn_args;
 mod macro_args;
 
 use {
-    fn_args::FnArgs,
+    crate::{fn_args::FnArgs, macro_args::Config},
     proc_macro::TokenStream,
-    syn::{FnArg, ItemFn, PatType, Receiver},
+    quote::quote,
+    syn::{FnArg, ItemFn, PatType, Receiver, Signature},
 };
 
 #[proc_macro_attribute]
@@ -32,7 +33,12 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     syn::parse::<macro_args::Args>(args)
         .and_then(|args| syn::parse::<ItemFn>(input).map(|input| (args, input)))
         .and_then(|(args, mut input)| {
-            let _config = macro_args::Config::new(args, &input);
+            let Config {
+                guile_ident,
+                struct_ident,
+                doc,
+                gargoyle_path,
+            } = Config::new(args, &input);
             FnArgs::try_from(input.clone())
                 .map(
                     |FnArgs {
@@ -41,8 +47,15 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                          optional,
                          rest,
                      }| {
-                        //
-                        todo!()
+                        let ItemFn {
+                            vis,
+                            sig: Signature { generics, .. },
+                            ..
+                        } = input;
+
+                        quote! {
+                            #vis struct #guile_ident;
+                        }
                     },
                 )
                 .inspect(|_| {
