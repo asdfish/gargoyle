@@ -31,6 +31,7 @@ pub mod rand;
 pub mod reference;
 pub mod scm;
 pub mod string;
+pub mod subr;
 pub mod symbol;
 pub mod sys;
 mod utils;
