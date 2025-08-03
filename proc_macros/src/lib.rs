@@ -37,12 +37,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     syn::parse::<macro_args::Args>(args)
         .and_then(|args| syn::parse::<ItemFn>(input).map(|input| (args, input)))
         .and_then(|(args, mut input)| {
-            let Config {
-                guile_ident,
-                struct_ident,
-                doc,
-                gargoyle_path,
-            } = Config::new(args, &input);
+            let _config = macro_args::Config::new(args, &input);
             FnArgs::try_from(input.clone())
                 .map(
                     |FnArgs {
