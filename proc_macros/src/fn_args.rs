@@ -164,10 +164,7 @@ impl<'a> TryFrom<&'a mut ItemFn> for FnArgs<'a> {
                                             Some(Rest::Keyword(keywords)) => keywords,
                                             None => {
                                                 rest = Some(Rest::Keyword(Vec::new()));
-                                                match rest.as_mut().unwrap() {
-                                                    Rest::Keyword(vec) => vec,
-                                                    Rest::List(_) => unreachable!("we just set it above")
-                                                }
+                                                rest.as_mut().map(|rest| match rest { Rest::Keyword(vec) => vec, _ => unreachable!("it should be set above") }).unwrap() 
                                             },
                                         }
                                         .push((ident, ty as &'a Box<Type>))
