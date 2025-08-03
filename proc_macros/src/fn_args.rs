@@ -42,21 +42,21 @@ impl FnAttr {
     }
 }
 
-enum Rest {
+enum Rest<'a> {
     /// Keyworded arguments so that you can call it with `:arg val`.
-    Keyword(Vec<(String, Box<Type>)>),
+    Keyword(Vec<(String, &'a Box<Type>)>),
     /// Represents the optional variadic arguments.
     ///
     /// This would be the `r` in `(lambda (. r) r)`
-    List(Box<Type>),
+    List(&'a Box<Type>),
 }
 
-struct FnArgs {
-    required: Vec<Box<Type>>,
-    optional: Vec<Box<Type>>,
-    rest: Option<Rest>,
+struct FnArgs<'a> {
+    required: Vec<&'a Box<Type>>,
+    optional: Vec<&'a Box<Type>>,
+    rest: Option<Rest<'a>>,
 }
-impl FnArgs {
+impl FnArgs<'_> {
     /// Get the arity in `SCM` pointers.
     pub fn scm_arity(&self) -> usize {
         self.required.len()
@@ -64,10 +64,10 @@ impl FnArgs {
             + self.rest.as_ref().map(|_| 1).unwrap_or_default()
     }
 }
-impl TryFrom<&mut Punctuated<PatType, Token![,]>> for FnArgs {
+impl<'a> TryFrom<&'a mut Punctuated<PatType, Token![,]>> for FnArgs<'a> {
     type Error = syn::Error;
 
-    fn try_from(args: &mut Punctuated<PatType, Token![,]>) -> Result<Self, syn::Error> {
+    fn try_from(args: &'a mut Punctuated<PatType, Token![,]>) -> Result<Self, syn::Error> {
         #[derive(Clone, Copy)]
         enum RestTy {
             Keyword,
@@ -115,21 +115,21 @@ impl TryFrom<&mut Punctuated<PatType, Token![,]>> for FnArgs {
                 (state, arg)
             })
             .try_fold(
-                (Vec::new(), Vec::new(), None),
+                (Vec::<&'a Box<Type>>::new(), Vec::<&'a Box<Type>>::new(), None),
                 |(mut required, mut optional, mut rest),
                  (state, PatType { attrs, pat, ty, .. })| {
                     match state {
                         State::Required => {
-                            required.push(ty.clone());
+                            required.push(ty);
                             Ok(())
                         }
                         State::Optional => {
-                            optional.push(ty.clone());
+                            optional.push(ty);
                             Ok(())
                         }
                         State::Rest(RestTy::List) => {
                             if rest.is_none() {
-                                rest = Some(Rest::List(ty.clone()));
+                                rest = Some(Rest::List(ty));
                                 Ok(())
                             } else {
                                 Err(syn::Error::new(ty.span(), "no more arguments may appear after using the `rest` attribute"))
@@ -176,7 +176,7 @@ impl TryFrom<&mut Punctuated<PatType, Token![,]>> for FnArgs {
                                             }
                                         },
                                     }
-                                    .push((ident, ty.clone()))
+                                    .push((ident, ty as &'a Box<Type>))
                                 })
                         }
                     }
