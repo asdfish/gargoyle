@@ -21,9 +21,9 @@
 use {
     convert_case::{Case, Casing},
     proc_macro2::Span,
-    std::{cell::LazyCell, ops::ControlFlow},
+    std::{cell::LazyCell, ffi::CString, ops::ControlFlow},
     syn::{
-        Attribute, Expr, ExprLit, Ident, ItemFn, Lit, LitStr, Meta, MetaNameValue, Path,
+        Attribute, Expr, ExprLit, Ident, ItemFn, Lit, LitCStr, LitStr, Meta, MetaNameValue, Path,
         PathArguments, PathSegment, Signature, Token,
         parse::{Parse, ParseStream},
         punctuated::Punctuated,
@@ -73,7 +73,7 @@ impl Parse for Key {
 }
 
 enum Arg {
-    GuileIdent(String),
+    GuileIdent(CString),
     StructIdent(Ident),
     Doc(Option<String>),
     GargoylePath(Path),
@@ -82,7 +82,7 @@ impl Parse for Arg {
     fn parse(input: ParseStream) -> Result<Self, syn::Error> {
         Key::parse(input).and_then(|key| match key {
             Key::GuileIdent => <Token![=]>::parse(input)
-                .and_then(|_| <LitStr as Parse>::parse(input))
+                .and_then(|_| <LitCStr as Parse>::parse(input))
                 .and_then(|lit| {
                     let string = lit.value();
                     if string.is_empty() {
@@ -124,7 +124,7 @@ impl Parse for Args {
 }
 
 pub struct Config {
-    pub guile_ident: String,
+    pub guile_ident: CString,
     pub struct_ident: Ident,
     pub doc: Option<String>,
     pub gargoyle_path: Path,
@@ -166,7 +166,8 @@ impl Config {
                             .collect::<String>()
                             .trim_end()
                             .to_string(),
-                    ),
+                    )
+                    .filter(|docs| !docs.is_empty()),
                     None,
                 ),
                 |mut accum, arg| {
@@ -187,7 +188,8 @@ impl Config {
 
         let ident = LazyCell::new(|| ident.to_string());
         Self {
-            guile_ident: guile_ident.unwrap_or_else(|| ident.to_case(Case::Kebab)),
+            guile_ident: guile_ident
+                .unwrap_or_else(|| CString::new(ident.to_case(Case::Kebab)).unwrap()),
             struct_ident: struct_ident
                 .unwrap_or_else(|| Ident::new(&ident.to_case(Case::Pascal), Span::call_site())),
             doc,

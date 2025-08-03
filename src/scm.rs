@@ -22,7 +22,7 @@ use {
     crate::{
         Guile,
         reference::ReprScm,
-        sys::{SCM, scm_equal_p, scm_is_false, scm_is_true, scm_null_p},
+        sys::{SCM, SCM_UNBNDP, scm_equal_p, scm_is_false, scm_is_true, scm_null_p},
         utils::{c_predicate, scm_predicate},
     },
     std::{borrow::Cow, ffi::CStr, marker::PhantomData},
@@ -133,5 +133,26 @@ impl<'gm> TryFromScm<'gm> for Scm<'gm> {
 impl<'gm> ToScm<'gm> for Scm<'gm> {
     fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
         self
+    }
+}
+
+impl<'gm, T> TryFromScm<'gm> for Option<T>
+where
+    T: TryFromScm<'gm>,
+{
+    fn type_name() -> Cow<'static, CStr> {
+        T::type_name()
+    }
+
+    fn predicate(scm: &Scm<'gm>, guile: &'gm Guile) -> bool {
+        c_predicate(unsafe { SCM_UNBNDP(scm.as_ptr()) }) || T::predicate(scm, guile)
+    }
+
+    unsafe fn from_scm_unchecked(scm: Scm<'gm>, guile: &'gm Guile) -> Self {
+        if c_predicate(unsafe { SCM_UNBNDP(scm.as_ptr()) }) {
+            None
+        } else {
+            Some(unsafe { T::from_scm_unchecked(scm, guile) })
+        }
     }
 }

@@ -52,18 +52,27 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                          rest,
                      }| {
                         let ItemFn {
-                            vis,
-                            sig: Signature { generics, .. },
+                            ref vis,
+                            sig: Signature { ref ident, .. },
                             ..
                         } = input;
+
+                        let doc = doc.map(|doc| quote! { Some(#doc) }).unwrap_or_else(|| quote! { None });
 
                         let required_len = required.len();
                         let optional_len = optional.len();
                         let has_rest = rest.is_some();
 
                         let required_idents = (0..required_len).map(|i| format!("required_{i}")).map(|i| Ident::new(&i, Span::call_site()));
+                        let required_idents2 = required_idents.clone();
                         let optional_idents = (0..optional_len).map(|i| format!("optional_{i}")).map(|i| Ident::new(&i, Span::call_site()));
+                        let optional_idents2 = optional_idents.clone();
                         let rest_ident = has_rest.then(|| Ident::new("rest", Span::call_site())).into_iter().collect::<Vec<_>>();
+
+                        let keyword_types = rest.as_ref().and_then(|rest| match rest {
+                            Rest::Keyword(keywords) => Some(keywords.iter().map(|(_, ty)| ty).collect::<Vec<_>>()),
+                            Rest::List(_) => None,
+                        }).into_iter().collect::<Vec<_>>();
                         let keyword_static_idents = rest.as_ref().and_then(|rest| match rest {
                             Rest::Keyword(keywords) => Some((0..keywords.len()).map(|i| format!("KEYWORD_{i}")).map(|i| Ident::new(&i, Span::call_site())).collect::<Vec<_>>()),
                             Rest::List(_) => None,
@@ -72,12 +81,18 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                             Rest::Keyword(keywords) => Some((0..keywords.len()).map(|i| format!("keyword_{i}")).map(|i| Ident::new(&i, Span::call_site())).collect::<Vec<_>>()),
                             Rest::List(_) => None,
                         }).into_iter().collect::<Vec<_>>();
-
-                        let keyword_symbols = rest.and_then(|rest| match rest {
-                            Rest::Keyword(keywords) => Some(keywords.into_iter().map(|(sym, _)| sym).collect::<Vec<_>>()),
+                        let keyword_idents2 = keyword_idents.clone();
+                        let keyword_symbols = rest.as_ref().and_then(|rest| match rest {
+                            Rest::Keyword(keywords) => Some(keywords.iter().map(|(sym, _)| sym).collect::<Vec<_>>()),
                             Rest::List(_) => None,
                         }).into_iter().collect::<Vec<_>>();
 
+                        let guile = guile.then(|| quote! { guile, });
+
+                        let rest_list = rest.as_ref().and_then(|rest| match rest {
+                            Rest::Keyword(_) => None,
+                            Rest::List(_) => Some(quote! { rest }),
+                        }).into_iter().collect::<Vec<_>>();
                         quote! {
                             #vis struct #struct_ident;
                             unsafe impl #gargoyle_path::subr::GuileFn for #struct_ident {
@@ -87,13 +102,31 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                         #(#optional_idents: #gargoyle_path::sys::SCM,)*
                                         #(#rest_ident: #gargoyle_path::sys::SCM,)*
                                     ) -> #gargoyle_path::sys::SCM {
-                                        #(#(static #keyword_static_idents = ::std::sync::LazyLock::new(|_| {
-                                            let symbol = #keyword_symbols;
-                                            unsafe { #gargoyle_path::sys::scm_from_utf8_symboln(symbol.as_bytes().as_ptr().cast(), symbol.len()) }
+                                        #(#(static #keyword_static_idents: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#gargoyle_path::sys::scm_unused_struct>> = ::std::sync::LazyLock::new(|| {
+                                            const SYMBOL: &'static ::std::primitive::str = #keyword_symbols;
+                                            unsafe { #gargoyle_path::sys::scm_from_utf8_symboln(SYMBOL.as_bytes().as_ptr().cast(), SYMBOL.len()) }.into()
                                         });
                                         let mut #keyword_idents = unsafe { #gargoyle_path::sys::SCM_UNDEFINED };)*
-                                        unsafe { #gargoyle_path::sys::scm_c_bind_arguments(); })*
-                                        todo!()
+                                        unsafe { #gargoyle_path::sys::scm_c_bind_arguments(
+                                            #guile_ident.as_ptr(), #rest_ident, 0,
+                                            #(#keyword_static_idents.load(::std::sync::atomic::Ordering::SeqCst) as #gargoyle_path::sys::SCM, (&raw mut #keyword_idents).cast::<#gargoyle_path::sys::scm_unused_struct>(),)*
+                                            #gargoyle_path::sys::SCM_UNDEFINED,
+                                        ); }
+                                        )*
+
+                                        let guile = unsafe { #gargoyle_path::Guile::new_unchecked_ref() };
+                                        let ret = #ident(
+                                            #guile
+                                            #(<#required as #gargoyle_path::scm::TryFromScm>::try_from_scm(#gargoyle_path::scm::Scm::from_ptr(#required_idents2, guile), guile).unwrap(),)*
+                                            #(if unsafe { #gargoyle_path::sys::SCM_UNBNDP(#optional_idents2) != 0 } {
+                                                None
+                                            } else {
+                                                Some(#gargoyle_path::scm::TryFromScm::try_from_scm(#gargoyle_path::scm::Scm::from_ptr(#optional_idents2, guile), guile).unwrap())
+                                            },)*
+                                            #(#(<#keyword_types as #gargoyle_path::scm::TryFromScm>::try_from_scm(#gargoyle_path::scm::Scm::from_ptr(#keyword_idents2, guile), guile).unwrap(),)*)*
+                                            #(<#gargoyle_path::collections::list::List<_> as #gargoyle_path::scm::TryFromScm>::try_from_scm(#gargoyle_path::scm::Scm::from_ptr(#rest_list, guile), guile).unwrap())*
+                                        );
+                                        #gargoyle_path::scm::ToScm::to_scm(ret, guile).as_ptr()
                                     }
 
                                     driver as *mut ::std::ffi::c_void
@@ -104,7 +137,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                 const REST: ::std::primitive::bool = #has_rest;
 
                                 const DOC: ::std::option::Option<&'static ::std::primitive::str> = #doc;
-                                const NAME: &'static ::std::primitive::str = #guile_ident;
+                                const NAME: &'static ::std::ffi::CStr = #guile_ident;
                             }
                         }
                     },
@@ -129,6 +162,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                             })
                         });
                 })
+                .map(|tokens| quote! { #tokens #input })
         })
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
