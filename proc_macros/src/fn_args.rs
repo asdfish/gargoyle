@@ -21,26 +21,10 @@
 use {
     convert_case::{Case, Casing},
     syn::{
-        Attribute, Expr, ExprLit, Lit, Meta, MetaNameValue, Pat, PatIdent, PatType, Token, Type,
-        punctuated::Punctuated, spanned::Spanned,
+        Attribute, Expr, ExprLit, FnArg, ItemFn, Lit, Meta, MetaNameValue, Pat, PatIdent, PatType,
+        Type, spanned::Spanned,
     },
 };
-
-enum FnAttr {
-    Optional,
-    Rest,
-}
-impl FnAttr {
-    pub fn from_path(path: &syn::Path) -> Option<Self> {
-        if path.is_ident("optional") {
-            Some(Self::Optional)
-        } else if path.is_ident("rest") {
-            Some(Self::Rest)
-        } else {
-            None
-        }
-    }
-}
 
 enum Rest<'a> {
     /// Keyworded arguments so that you can call it with `:arg val`.
@@ -51,7 +35,7 @@ enum Rest<'a> {
     List(&'a Box<Type>),
 }
 
-struct FnArgs<'a> {
+pub struct FnArgs<'a> {
     required: Vec<&'a Box<Type>>,
     optional: Vec<&'a Box<Type>>,
     rest: Option<Rest<'a>>,
@@ -64,10 +48,10 @@ impl FnArgs<'_> {
             + self.rest.as_ref().map(|_| 1).unwrap_or_default()
     }
 }
-impl<'a> TryFrom<&'a mut Punctuated<PatType, Token![,]>> for FnArgs<'a> {
+impl<'a> TryFrom<&'a mut ItemFn> for FnArgs<'a> {
     type Error = syn::Error;
 
-    fn try_from(args: &'a mut Punctuated<PatType, Token![,]>) -> Result<Self, syn::Error> {
+    fn try_from(args: &'a mut ItemFn) -> Result<Self, syn::Error> {
         #[derive(Clone, Copy)]
         enum RestTy {
             Keyword,
@@ -100,95 +84,106 @@ impl<'a> TryFrom<&'a mut Punctuated<PatType, Token![,]>> for FnArgs<'a> {
 
         let mut state = State::default();
 
-        args.iter_mut()
+        args
+            .sig
+            .inputs
+            .iter_mut()
             .map(|arg| {
-                let PatType { attrs, .. } = arg;
-                if let Some(next_attrs) = state.next_attrs() {
-                    if let Some((_, next_state)) =
-                        next_attrs.iter().find(|(next_attr, _)| {
-                            attrs.iter().any(|attr| attr.path().is_ident(next_attr))
-                        })
-                    {
-                        state = *next_state;
-                    }
+                match arg {
+                    FnArg::Typed(arg) => Ok(arg),
+                    FnArg::Receiver(arg) => Err(syn::Error::new(arg.span(), "functions cannot be methods")),
                 }
-                (state, arg)
+                .map(|arg| {
+                    let PatType { attrs, .. } = arg;
+                    if let Some(next_attrs) = state.next_attrs() {
+                        if let Some((_, next_state)) =
+                            next_attrs.iter().find(|(next_attr, _)| {
+                                attrs.iter().any(|attr| attr.path().is_ident(next_attr))
+                            })
+                        {
+                            state = *next_state;
+                        }
+                    }
+                    (state, arg)
+                })
             })
             .try_fold(
                 (Vec::<&'a Box<Type>>::new(), Vec::<&'a Box<Type>>::new(), None),
-                |(mut required, mut optional, mut rest),
-                 (state, PatType { attrs, pat, ty, .. })| {
-                    match state {
-                        State::Required => {
-                            required.push(ty);
-                            Ok(())
-                        }
-                        State::Optional => {
-                            optional.push(ty);
-                            Ok(())
-                        }
-                        State::Rest(RestTy::List) => {
-                            if rest.is_none() {
-                                rest = Some(Rest::List(ty));
+                |(mut required, mut optional, mut rest), arg| {
+                    arg.and_then(|(state, arg)| {
+                        let PatType { attrs, pat, ty, .. } = arg;
+                        match state {
+                            State::Required => {
+                                required.push(ty);
                                 Ok(())
-                            } else {
-                                Err(syn::Error::new(ty.span(), "no more arguments may appear after using the `rest` attribute"))
                             }
-                        }
-                        State::Rest(RestTy::Keyword) => {
-                            if let Pat::Ident(PatIdent { ident, .. }) = *pat.clone() {
-                                Some(ident.to_string())
-                            } else {
-                                None
+                            State::Optional => {
+                                optional.push(ty);
+                                Ok(())
                             }
-                            .map(|ident| ident.to_case(Case::Kebab))
-                            .or_else(|| {
-                                attrs.iter().find_map(|attr| {
-                                    if attr.path().is_ident("keyword")
-                                        && let Attribute {
-                                            meta:
-                                                Meta::NameValue(MetaNameValue {
-                                                    value:
+                            State::Rest(RestTy::List) => {
+                                if rest.is_none() {
+                                    rest = Some(Rest::List(ty));
+                                    Ok(())
+                                } else {
+                                    Err(syn::Error::new(ty.span(), "no more arguments may appear after using the `rest` attribute"))
+                                }
+                            }
+                            State::Rest(RestTy::Keyword) => {
+                                if let Pat::Ident(PatIdent { ident, .. }) = *pat.clone() {
+                                    Some(ident.to_string())
+                                } else {
+                                    None
+                                }
+                                .map(|ident| ident.to_case(Case::Kebab))
+                                    .or_else(|| {
+                                        attrs.iter().find_map(|attr| {
+                                            if attr.path().is_ident("keyword")
+                                                && let Attribute {
+                                                    meta:
+                                                    Meta::NameValue(MetaNameValue {
+                                                        value:
                                                         Expr::Lit(ExprLit {
                                                             lit: Lit::Str(val), ..
                                                         }),
+                                                        ..
+                                                    }),
                                                     ..
-                                                }),
-                                            ..
-                                        } = attr
-                                    {
-                                        Some(val.value())
-                                    } else {
-                                        None
-                                    }
-                                })
-                            })
-                                .ok_or_else(|| syn::Error::new(pat.span(), "Unable to create a keyword for this argument. Either bind the pattern to an identifier or use `#[keyword = \"keyword\"]` to set the keyword identifier."))
-                                .map(|ident| {
-                                    match &mut rest {
-                                        Some(Rest::List(_)) => unreachable!(),
-                                        Some(Rest::Keyword(keywords)) => keywords,
-                                        None => {
-                                            rest = Some(Rest::Keyword(Vec::new()));
-                                            match rest.as_mut().unwrap() {
-                                                Rest::Keyword(vec) => vec,
-                                                Rest::List(_) => unreachable!("we just set it above")
+                                                } = attr
+                                            {
+                                                Some(val.value())
+                                            } else {
+                                                None
                                             }
-                                        },
-                                    }
-                                    .push((ident, ty as &'a Box<Type>))
-                                })
+                                        })
+                                    })
+                                    .ok_or_else(|| syn::Error::new(pat.span(), "Unable to create a keyword for this argument. Either bind the pattern to an identifier or use `#[keyword = \"keyword\"]` to set the keyword identifier."))
+                                    .map(|ident| {
+                                        match &mut rest {
+                                            Some(Rest::List(_)) => unreachable!(),
+                                            Some(Rest::Keyword(keywords)) => keywords,
+                                            None => {
+                                                rest = Some(Rest::Keyword(Vec::new()));
+                                                match rest.as_mut().unwrap() {
+                                                    Rest::Keyword(vec) => vec,
+                                                    Rest::List(_) => unreachable!("we just set it above")
+                                                }
+                                            },
+                                        }
+                                        .push((ident, ty as &'a Box<Type>))
+                                    })
+                            }
                         }
-                    }
-                    .inspect(|_| {
-                        attrs.retain(|attr| {
-                            !(attr.path().is_ident("optional")
-                                || attr.path().is_ident("keyword")
-                                || attr.path().is_ident("rest"))
+                        .inspect(|_| {
+                            attrs.retain(|attr| {
+                                !(attr.path().is_ident("optional")
+                                  || attr.path().is_ident("keyword")
+                                  || attr.path().is_ident("rest"))
+                            })
                         })
+                            .map(|_| (required, optional, rest))
                     })
-                    .map(|_| (required, optional, rest))
-                },
+                }
             )
             .map(|(required, optional, rest)| Self {
                 required,

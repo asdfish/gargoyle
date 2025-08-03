@@ -21,14 +21,18 @@
 mod fn_args;
 mod macro_args;
 
-use {proc_macro::TokenStream, syn::ItemFn};
+use {fn_args::FnArgs, proc_macro::TokenStream, syn::ItemFn};
 
 #[proc_macro_attribute]
 pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
     syn::parse::<macro_args::Args>(args)
         .and_then(|args| syn::parse::<ItemFn>(input).map(|input| (args, input)))
-        .map(|(args, input)| {
+        .and_then(|(args, mut input)| {
             let _config = macro_args::Config::new(args, &input);
+            let _fn_args = FnArgs::try_from(&mut input)?;
+            // input.signature
+            //     .inputs
+            //     .iter_mut()
 
             todo!()
         })
