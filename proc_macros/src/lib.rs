@@ -29,7 +29,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
         .and_then(|args| syn::parse::<ItemFn>(input).map(|input| (args, input)))
         .and_then(|(args, mut input)| {
             let _config = macro_args::Config::new(args, &input);
-            FnArgs::try_from(&mut input).map(
+            FnArgs::try_from(input).map(
                 |FnArgs {
                      guile,
                      required,
