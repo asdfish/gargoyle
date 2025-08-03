@@ -32,13 +32,15 @@ pub enum Rest {
     /// Represents the optional variadic arguments.
     ///
     /// This would be the `r` in `(lambda (. r) r)`
+    // the list type may be useful one day
+    #[expect(dead_code)]
     List(Box<Type>),
 }
 
 pub struct FnArgs {
     pub guile: bool,
-    pub required: Vec<Box<Type>>,
-    pub optional: Vec<Box<Type>>,
+    pub required: Vec<Type>,
+    pub optional: Vec<Type>,
     pub rest: Option<Rest>,
 }
 impl TryFrom<ItemFn> for FnArgs {
@@ -182,8 +184,8 @@ impl TryFrom<ItemFn> for FnArgs {
             )
             .map(|(required, optional, rest)| Self {
                 guile,
-                required,
-                optional,
+                required: required.into_iter().map(|r| *r).collect(),
+                optional: optional.into_iter().map(|r| *r).collect(),
                 rest,
             })
     }

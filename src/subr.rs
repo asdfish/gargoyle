@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use {crate::sys::SCM, std::ffi::c_void};
+use std::ffi::{CStr, c_void};
 
 /// # Safety
 ///
@@ -31,5 +31,65 @@ pub unsafe trait GuileFn {
     const REST: bool;
 
     const DOC: Option<&'static str>;
-    const NAME: &'static str;
+    const NAME: &'static CStr;
 }
+
+/// # Examples
+///
+/// ```
+/// # use gargoyle::{subr::guile_fn, subr::GuileFn};
+/// #[guile_fn]
+/// /// Add 2 numbers.
+/// fn add(l: i32, r: i32) -> i32 {
+///     l + r
+/// }
+/// assert_eq!(Add::REQUIRED, 2);
+/// assert_eq!(Add::OPTIONAL, 0);
+/// assert_eq!(Add::REST, false);
+/// assert_eq!(Add::NAME, c"add");
+/// assert_eq!(Add::DOC, Some(" Add 2 numbers."));
+/// ```
+///
+/// ```
+/// # use gargoyle::{collections::list::List, subr::{GuileFn, guile_fn}};
+/// #[guile_fn]
+/// fn sum(init: i32, #[rest] r: List<i32>) -> i32 {
+///     r.into_iter().fold(init, |accum, r| accum + r)
+/// }
+/// assert_eq!(Sum::REQUIRED, 1);
+/// assert_eq!(Sum::OPTIONAL, 0);
+/// assert_eq!(Sum::REST, true);
+/// assert_eq!(Sum::NAME, c"sum");
+/// assert_eq!(Sum::DOC, None);
+/// ```
+///
+/// ```
+/// # use gargoyle::{collections::list::List, subr::{GuileFn, guile_fn}};
+/// #[guile_fn]
+/// fn sub(l: i32, #[optional] r: Option<i32>) -> i32 {
+///     if let Some(r) = r {
+///         l - r
+///     } else {
+///         -l
+///     }
+/// }
+/// assert_eq!(Sub::REQUIRED, 1);
+/// assert_eq!(Sub::OPTIONAL, 1);
+/// assert_eq!(Sub::REST, false);
+/// assert_eq!(Sub::NAME, c"sub");
+/// assert_eq!(Sub::DOC, None);
+/// ```
+///
+/// ```
+/// # use gargoyle::{collections::list::List, subr::{GuileFn, guile_fn}};
+/// #[guile_fn]
+/// fn area(#[keyword] width: Option<i32>, height: Option<i32>) -> i32 {
+///     width.and_then(|width| height.map(|height| width * height)).unwrap_or_default()
+/// }
+/// assert_eq!(Area::REQUIRED, 0);
+/// assert_eq!(Area::OPTIONAL, 0);
+/// assert_eq!(Area::REST, true);
+/// assert_eq!(Area::NAME, c"area");
+/// assert_eq!(Area::DOC, None);
+/// ```
+pub use proc_macros::guile_fn;
