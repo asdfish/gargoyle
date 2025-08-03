@@ -26,7 +26,7 @@ use {
     },
 };
 
-enum Rest<'a> {
+pub enum Rest<'a> {
     /// Keyworded arguments so that you can call it with `:arg val`.
     Keyword(Vec<(String, &'a Box<Type>)>),
     /// Represents the optional variadic arguments.
@@ -36,9 +36,10 @@ enum Rest<'a> {
 }
 
 pub struct FnArgs<'a> {
-    required: Vec<&'a Box<Type>>,
-    optional: Vec<&'a Box<Type>>,
-    rest: Option<Rest<'a>>,
+    pub guile: bool,
+    pub required: Vec<&'a Box<Type>>,
+    pub optional: Vec<&'a Box<Type>>,
+    pub rest: Option<Rest<'a>>,
 }
 impl FnArgs<'_> {
     /// Get the arity in `SCM` pointers.
@@ -183,6 +184,7 @@ impl<'a> TryFrom<&'a mut ItemFn> for FnArgs<'a> {
                 }
             )
             .map(|(required, optional, rest)| Self {
+                guile: false,
                 required,
                 optional,
                 rest,
