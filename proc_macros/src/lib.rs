@@ -22,10 +22,14 @@ mod fn_args;
 mod macro_args;
 
 use {
-    crate::{fn_args::FnArgs, macro_args::Config},
+    crate::{
+        fn_args::{FnArgs, Rest},
+        macro_args::Config,
+    },
     proc_macro::TokenStream,
+    proc_macro2::Span,
     quote::quote,
-    syn::{FnArg, ItemFn, PatType, Receiver, Signature},
+    syn::{FnArg, Ident, ItemFn, PatType, Receiver, Signature},
 };
 
 #[proc_macro_attribute]
@@ -53,8 +57,55 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                             ..
                         } = input;
 
+                        let required_len = required.len();
+                        let optional_len = optional.len();
+                        let has_rest = rest.is_some();
+
+                        let required_idents = (0..required_len).map(|i| format!("required_{i}")).map(|i| Ident::new(&i, Span::call_site()));
+                        let optional_idents = (0..optional_len).map(|i| format!("optional_{i}")).map(|i| Ident::new(&i, Span::call_site()));
+                        let rest_ident = has_rest.then(|| Ident::new("rest", Span::call_site())).into_iter().collect::<Vec<_>>();
+                        let keyword_static_idents = rest.as_ref().and_then(|rest| match rest {
+                            Rest::Keyword(keywords) => Some((0..keywords.len()).map(|i| format!("KEYWORD_{i}")).map(|i| Ident::new(&i, Span::call_site())).collect::<Vec<_>>()),
+                            Rest::List(_) => None,
+                        }).into_iter().collect::<Vec<_>>();
+                        let keyword_idents = rest.as_ref().and_then(|rest| match rest {
+                            Rest::Keyword(keywords) => Some((0..keywords.len()).map(|i| format!("keyword_{i}")).map(|i| Ident::new(&i, Span::call_site())).collect::<Vec<_>>()),
+                            Rest::List(_) => None,
+                        }).into_iter().collect::<Vec<_>>();
+
+                        let keyword_symbols = rest.and_then(|rest| match rest {
+                            Rest::Keyword(keywords) => Some(keywords.into_iter().map(|(sym, _)| sym).collect::<Vec<_>>()),
+                            Rest::List(_) => None,
+                        }).into_iter().collect::<Vec<_>>();
+
                         quote! {
-                            #vis struct #guile_ident;
+                            #vis struct #struct_ident;
+                            unsafe impl #gargoyle_path::subr::GuileFn for #struct_ident {
+                                const ADDR: *mut ::std::ffi::c_void = {
+                                    unsafe extern "C" fn driver(
+                                        #(#required_idents: #gargoyle_path::sys::SCM,)*
+                                        #(#optional_idents: #gargoyle_path::sys::SCM,)*
+                                        #(#rest_ident: #gargoyle_path::sys::SCM,)*
+                                    ) -> #gargoyle_path::sys::SCM {
+                                        #(#(static #keyword_static_idents = ::std::sync::LazyLock::new(|_| {
+                                            let symbol = #keyword_symbols;
+                                            unsafe { #gargoyle_path::sys::scm_from_utf8_symboln(symbol.as_bytes().as_ptr().cast(), symbol.len()) }
+                                        });
+                                        let mut #keyword_idents = unsafe { #gargoyle_path::sys::SCM_UNDEFINED };)*
+                                        unsafe { #gargoyle_path::sys::scm_c_bind_arguments(); })*
+                                        todo!()
+                                    }
+
+                                    driver as *mut ::std::ffi::c_void
+                                };
+
+                                const REQUIRED: ::std::primitive::usize = #required_len;
+                                const OPTIONAL: ::std::primitive::usize = #optional_len;
+                                const REST: ::std::primitive::bool = #has_rest;
+
+                                const DOC: ::std::option::Option<&'static ::std::primitive::str> = #doc;
+                                const NAME: &'static ::std::primitive::str = #guile_ident;
+                            }
                         }
                     },
                 )

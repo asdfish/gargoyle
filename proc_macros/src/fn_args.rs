@@ -41,14 +41,6 @@ pub struct FnArgs {
     pub optional: Vec<Box<Type>>,
     pub rest: Option<Rest>,
 }
-impl FnArgs {
-    /// Get the arity in `SCM` pointers.
-    pub fn scm_arity(&self) -> usize {
-        self.required.len()
-            + self.optional.len()
-            + self.rest.as_ref().map(|_| 1).unwrap_or_default()
-    }
-}
 impl TryFrom<ItemFn> for FnArgs {
     type Error = syn::Error;
 
