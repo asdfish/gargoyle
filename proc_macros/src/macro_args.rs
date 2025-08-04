@@ -23,8 +23,8 @@ use {
     proc_macro2::Span,
     std::{cell::LazyCell, ffi::CString, ops::ControlFlow},
     syn::{
-        Attribute, Expr, ExprLit, Ident, ItemFn, Lit, LitCStr, LitStr, Meta, MetaNameValue, Path,
-        PathArguments, PathSegment, Signature, Token,
+        Attribute, Expr, ExprLit, Ident, ItemFn, Lit, LitCStr, LitStr, Meta, MetaNameValue,
+        Signature, Token,
         parse::{Parse, ParseStream},
         punctuated::Punctuated,
     },
@@ -35,7 +35,6 @@ mod keywords {
     custom_keyword!(guile_ident);
     custom_keyword!(struct_ident);
     custom_keyword!(doc);
-    custom_keyword!(gargoyle_path);
 
     custom_keyword!(r#false);
 
@@ -47,7 +46,6 @@ enum Key {
     GuileIdent,
     StructIdent,
     Doc,
-    GargoylePath,
 }
 impl Parse for Key {
     fn parse(input: ParseStream) -> Result<Self, syn::Error> {
@@ -62,10 +60,6 @@ impl Parse for Key {
                 .map(|_| Self::StructIdent)
         } else if lookahead.peek(keywords::doc) {
             input.parse::<keywords::doc>().map(|_| Self::Doc)
-        } else if lookahead.peek(keywords::gargoyle_path) {
-            input
-                .parse::<keywords::gargoyle_path>()
-                .map(|_| Self::GargoylePath)
         } else {
             Err(lookahead.error())
         }
@@ -76,7 +70,6 @@ enum Arg {
     GuileIdent(CString),
     StructIdent(Ident),
     Doc(Option<String>),
-    GargoylePath(Path),
 }
 impl Parse for Arg {
     fn parse(input: ParseStream) -> Result<Self, syn::Error> {
@@ -109,9 +102,6 @@ impl Parse for Arg {
                     Err(lookahead.error())
                 }
             }),
-            Key::GargoylePath => <Token![=]>::parse(input)
-                .and_then(|_| Path::parse(input))
-                .map(Self::GargoylePath),
         })
     }
 }
@@ -127,7 +117,6 @@ pub struct Config {
     pub guile_ident: CString,
     pub struct_ident: Ident,
     pub doc: Option<String>,
-    pub gargoyle_path: Path,
 }
 impl Config {
     pub fn new(
@@ -138,53 +127,50 @@ impl Config {
             ..
         }: &ItemFn,
     ) -> Self {
-        let (ControlFlow::Break((guile_ident, struct_ident, doc, gargoyle_path))
-        | ControlFlow::Continue((guile_ident, struct_ident, doc, gargoyle_path))) =
-            args.0.into_iter().try_fold(
-                (
-                    None,
-                    None,
-                    Some(
-                        attrs
-                            .iter()
-                            .filter_map(|Attribute { meta, .. }| match meta {
-                                Meta::NameValue(MetaNameValue {
-                                    path,
-                                    value:
-                                        Expr::Lit(ExprLit {
-                                            lit: Lit::Str(doc), ..
-                                        }),
-                                    ..
-                                }) if path.is_ident("doc") => Some(doc),
-                                _ => None,
-                            })
-                            .map(|doc| doc.value())
-                            .map(|mut doc| {
-                                doc.push('\n');
-                                doc
-                            })
-                            .collect::<String>()
-                            .trim_end()
-                            .to_string(),
-                    )
-                    .filter(|docs| !docs.is_empty()),
-                    None,
-                ),
-                |mut accum, arg| {
-                    if accum.0.is_none() && accum.1.is_none() {
-                        ControlFlow::Break(accum)
-                    } else {
-                        match arg {
-                            Arg::GuileIdent(ident) => accum.0 = Some(ident),
-                            Arg::StructIdent(ident) => accum.1 = Some(ident),
-                            Arg::Doc(doc) => accum.2 = doc,
-                            Arg::GargoylePath(path) => accum.3 = Some(path),
-                        }
-
-                        ControlFlow::Continue(accum)
+        let (ControlFlow::Break((guile_ident, struct_ident, doc))
+        | ControlFlow::Continue((guile_ident, struct_ident, doc))) = args.0.into_iter().try_fold(
+            (
+                None,
+                None,
+                Some(
+                    attrs
+                        .iter()
+                        .filter_map(|Attribute { meta, .. }| match meta {
+                            Meta::NameValue(MetaNameValue {
+                                path,
+                                value:
+                                    Expr::Lit(ExprLit {
+                                        lit: Lit::Str(doc), ..
+                                    }),
+                                ..
+                            }) if path.is_ident("doc") => Some(doc),
+                            _ => None,
+                        })
+                        .map(|doc| doc.value())
+                        .map(|mut doc| {
+                            doc.push('\n');
+                            doc
+                        })
+                        .collect::<String>()
+                        .trim_end()
+                        .to_string(),
+                )
+                .filter(|docs| !docs.is_empty()),
+            ),
+            |mut accum, arg| {
+                if accum.0.is_none() && accum.1.is_none() {
+                    ControlFlow::Break(accum)
+                } else {
+                    match arg {
+                        Arg::GuileIdent(ident) => accum.0 = Some(ident),
+                        Arg::StructIdent(ident) => accum.1 = Some(ident),
+                        Arg::Doc(doc) => accum.2 = doc,
                     }
-                },
-            );
+
+                    ControlFlow::Continue(accum)
+                }
+            },
+        );
 
         let ident = LazyCell::new(|| ident.to_string());
         Self {
@@ -193,13 +179,6 @@ impl Config {
             struct_ident: struct_ident
                 .unwrap_or_else(|| Ident::new(&ident.to_case(Case::Pascal), Span::call_site())),
             doc,
-            gargoyle_path: gargoyle_path.unwrap_or_else(|| Path {
-                leading_colon: Some(Default::default()),
-                segments: Punctuated::from_iter([PathSegment {
-                    ident: Ident::new("gargoyle", Span::call_site()),
-                    arguments: PathArguments::None,
-                }]),
-            }),
         }
     }
 }
