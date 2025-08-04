@@ -128,7 +128,7 @@ unsafe extern "C" {
     pub fn scm_char_p(_: SCM) -> SCM;
 
     pub fn scm_symbol_to_keyword(_symbol: SCM) -> SCM;
-    pub fn scm_c_bind_arguments(
+    pub fn scm_c_bind_keyword_arguments(
         _subr: *const c_char,
         _rest: SCM,
         _flags: scm_t_keyword_arguments_flags,

@@ -140,7 +140,7 @@ pub unsafe trait GuileFn {
 /// # Examples
 ///
 /// ```
-/// # use gargoyle::{subr::guile_fn, subr::GuileFn};
+/// # use gargoyle::{string::String, subr::{guile_fn, GuileFn}, with_guile};
 /// #[guile_fn]
 /// /// Add 2 numbers.
 /// fn add(l: i32, r: i32) -> i32 {
@@ -151,6 +151,11 @@ pub unsafe trait GuileFn {
 /// assert_eq!(Add::REST, false);
 /// assert_eq!(Add::NAME, c"add");
 /// assert_eq!(Add::DOC, Some(" Add 2 numbers."));
+/// # #[cfg(not(miri))]
+/// with_guile(|guile| {
+///     Add::define_fn(guile);
+///     assert_eq!(unsafe { String::from_str("(add 1 2)", guile).eval::<i32>() }, Ok(3));
+/// }).unwrap();
 /// ```
 ///
 /// ```
@@ -167,7 +172,7 @@ pub unsafe trait GuileFn {
 /// ```
 ///
 /// ```
-/// # use gargoyle::{collections::list::List, subr::{GuileFn, guile_fn}};
+/// # use gargoyle::{collections::list::List, string::String, subr::{GuileFn, guile_fn}, with_guile};
 /// #[guile_fn]
 /// fn sum(init: i32, #[rest] r: List<i32>) -> i32 {
 ///     r.into_iter().fold(init, |accum, r| accum + r)
@@ -177,6 +182,11 @@ pub unsafe trait GuileFn {
 /// assert_eq!(Sum::REST, true);
 /// assert_eq!(Sum::NAME, c"sum");
 /// assert_eq!(Sum::DOC, None);
+/// # #[cfg(not(miri))]
+/// with_guile(|guile| {
+///     Sum::define_fn(guile);
+///     assert_eq!(unsafe { String::from_str("(sum 1 2 3)", guile).eval::<i32>() }, Ok(6));
+/// }).unwrap();
 /// ```
 ///
 /// ```
@@ -193,7 +203,7 @@ pub unsafe trait GuileFn {
 /// ```
 ///
 /// ```
-/// # use gargoyle::{collections::list::List, subr::{GuileFn, guile_fn}};
+/// # use gargoyle::{collections::list::List, string::String, subr::{GuileFn, guile_fn}, with_guile};
 /// #[guile_fn]
 /// fn sub(l: i32, #[optional] r: Option<i32>) -> i32 {
 ///     if let Some(r) = r {
@@ -207,10 +217,16 @@ pub unsafe trait GuileFn {
 /// assert_eq!(Sub::REST, false);
 /// assert_eq!(Sub::NAME, c"sub");
 /// assert_eq!(Sub::DOC, None);
+/// # #[cfg(not(miri))]
+/// with_guile(|guile| {
+///     Sub::define_fn(guile);
+///     assert_eq!(unsafe { String::from_str("(sub 2 1)", guile).eval::<i32>() }, Ok(1));
+///     assert_eq!(unsafe { String::from_str("(sub 1)", guile).eval::<i32>() }, Ok(-1));
+/// }).unwrap();
 /// ```
 ///
 /// ```
-/// # use gargoyle::{collections::list::List, subr::{GuileFn, guile_fn}};
+/// # use gargoyle::{collections::list::List, string::String, subr::{GuileFn, guile_fn}, with_guile};
 /// #[guile_fn]
 /// fn area(#[keyword] width: Option<i32>, height: Option<i32>) -> i32 {
 ///     width.and_then(|width| height.map(|height| width * height)).unwrap_or_default()
@@ -220,5 +236,11 @@ pub unsafe trait GuileFn {
 /// assert_eq!(Area::REST, true);
 /// assert_eq!(Area::NAME, c"area");
 /// assert_eq!(Area::DOC, None);
+/// # #[cfg(not(miri))]
+/// with_guile(|_guile| {
+///     // Area::define_fn(guile);
+///     // assert_eq!(unsafe { String::from_str("(area #:width 10 #:height 10)", guile).eval::<i32>() }, Ok(100));
+///     // assert_eq!(unsafe { String::from_str("(area #:width 10)", guile).eval::<i32>() }, Ok(0));
+/// }).unwrap();
 /// ```
 pub use proc_macros::guile_fn;
