@@ -113,12 +113,12 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                     ) -> ::gargoyle::sys::SCM {
                                         #(#(static #keyword_static_idents: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<::gargoyle::sys::scm_unused_struct>> = ::std::sync::LazyLock::new(|| {
                                             const SYMBOL: &'static ::std::primitive::str = #keyword_symbols;
-                                            unsafe { ::gargoyle::sys::scm_from_utf8_symboln(SYMBOL.as_bytes().as_ptr().cast(), SYMBOL.len()) }.into()
+                                            unsafe { ::gargoyle::sys::scm_symbol_to_keyword(::gargoyle::sys::scm_from_utf8_symboln(SYMBOL.as_bytes().as_ptr().cast(), SYMBOL.len()))}.into()
                                         });
                                         let mut #keyword_idents = unsafe { ::gargoyle::sys::SCM_UNDEFINED };)*
-                                        unsafe { ::gargoyle::sys::scm_c_bind_arguments(
+                                        unsafe { ::gargoyle::sys::scm_c_bind_keyword_arguments(
                                             #guile_ident.as_ptr(), #rest_ident, 0,
-                                            #(#keyword_static_idents.load(::std::sync::atomic::Ordering::SeqCst) as ::gargoyle::sys::SCM, (&raw mut #keyword_idents).cast::<::gargoyle::sys::scm_unused_struct>(),)*
+                                            #(#keyword_static_idents.load(::std::sync::atomic::Ordering::SeqCst) as ::gargoyle::sys::SCM, &raw mut #keyword_idents,)*
                                             ::gargoyle::sys::SCM_UNDEFINED,
                                         ); }
                                         )*
