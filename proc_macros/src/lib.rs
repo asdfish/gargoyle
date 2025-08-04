@@ -64,12 +64,19 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                         let optional_len = optional.len();
                         let has_rest = rest.is_some();
 
+                        let required_idxs = 0..required_len;
                         let required_idents = (0..required_len).map(|i| format!("required_{i}")).map(|i| Ident::new(&i, Span::call_site()));
                         let required_idents2 = required_idents.clone();
+
+                        let optional_idxs = required_len..required_len + optional_len;
                         let optional_idents = (0..optional_len).map(|i| format!("optional_{i}")).map(|i| Ident::new(&i, Span::call_site()));
                         let optional_idents2 = optional_idents.clone();
                         let rest_ident = has_rest.then(|| Ident::new("rest", Span::call_site())).into_iter().collect::<Vec<_>>();
 
+                        let keyword_idxs = rest.as_ref().and_then(|rest| match rest {
+                            Rest::Keyword(keywords) => Some((required_len + optional_len..required_len + optional_len + keywords.len()).collect::<Vec<_>>()),
+                            Rest::List(_) => None,
+                        }).into_iter().collect::<Vec<_>>();
                         let keyword_static_idents = rest.as_ref().and_then(|rest| match rest {
                             Rest::Keyword(keywords) => Some((0..keywords.len()).map(|i| format!("KEYWORD_{i}")).map(|i| Ident::new(&i, Span::call_site())).collect::<Vec<_>>()),
                             Rest::List(_) => None,
@@ -86,6 +93,10 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 
                         let guile = guile.then(|| quote! { guile, });
 
+                        let rest_idx = rest.as_ref().and_then(|rest| match rest {
+                            Rest::Keyword(_) => None,
+                            Rest::List(_) => Some(optional_len + required_len),
+                        }).into_iter().collect::<Vec<_>>();
                         let rest_list = rest.as_ref().and_then(|rest| match rest {
                             Rest::Keyword(_) => None,
                             Rest::List(_) => Some(quote! { rest }),
@@ -115,14 +126,14 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                         let guile = unsafe { ::gargoyle::Guile::new_unchecked_ref() };
                                         let ret = #ident(
                                             #guile
-                                            #(::gargoyle::scm::TryFromScm::try_from_scm(::gargoyle::scm::Scm::from_ptr(#required_idents2, guile), guile).unwrap(),)*
+                                            #(::gargoyle::scm::TryFromScm::from_scm_or_throw(::gargoyle::scm::Scm::from_ptr(#required_idents2, guile), #guile_ident, #required_idxs, guile),)*
                                             #(if unsafe { ::gargoyle::sys::SCM_UNBNDP(#optional_idents2) != 0 } {
                                                 None
                                             } else {
-                                                Some(::gargoyle::scm::TryFromScm::try_from_scm(::gargoyle::scm::Scm::from_ptr(#optional_idents2, guile), guile).unwrap())
+                                                Some(::gargoyle::scm::TryFromScm::from_scm_or_throw(::gargoyle::scm::Scm::from_ptr(#optional_idents2, guile), #guile_ident, #optional_idxs, guile))
                                             },)*
-                                            #(#(::gargoyle::scm::TryFromScm::try_from_scm(::gargoyle::scm::Scm::from_ptr(#keyword_idents2, guile), guile).unwrap(),)*)*
-                                            #(<::gargoyle::collections::list::List<_> as ::gargoyle::scm::TryFromScm>::try_from_scm(::gargoyle::scm::Scm::from_ptr(#rest_list, guile), guile).unwrap())*
+                                            #(#(::gargoyle::scm::TryFromScm::from_scm_or_throw(::gargoyle::scm::Scm::from_ptr(#keyword_idents2, guile), #guile_ident, #keyword_idxs, guile),)*)*
+                                            #(<::gargoyle::collections::list::List<_> as ::gargoyle::scm::TryFromScm>::from_scm_or_throw(::gargoyle::scm::Scm::from_ptr(#rest_list, guile), #guile_ident, #rest_idx, guile))*
                                         );
                                         ::gargoyle::scm::ToScm::to_scm(ret, guile).as_ptr()
                                     }

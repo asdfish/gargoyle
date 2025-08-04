@@ -18,7 +18,50 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use std::ffi::{CStr, c_void};
+use {
+    crate::{
+        Guile,
+        reference::ReprScm,
+        scm::{Scm, ToScm, TryFromScm},
+        string::String,
+        symbol::Symbol,
+        sys::{
+            scm_c_define_gsubr, scm_c_make_gsubr, scm_procedure_p, scm_set_procedure_property_x,
+            scm_unused_struct,
+        },
+        utils::scm_predicate,
+    },
+    std::{
+        borrow::Cow,
+        ffi::{CStr, c_void},
+        sync::{
+            LazyLock,
+            atomic::{self, AtomicPtr},
+        },
+    },
+};
+
+#[repr(transparent)]
+pub struct Proc<'gm>(Scm<'gm>);
+unsafe impl ReprScm for Proc<'_> {}
+impl<'gm> TryFromScm<'gm> for Proc<'gm> {
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"procedure")
+    }
+
+    fn predicate(scm: &Scm<'gm>, _: &'gm Guile) -> bool {
+        scm_predicate(unsafe { scm_procedure_p(scm.as_ptr()) })
+    }
+
+    unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile) -> Self {
+        Self(scm)
+    }
+}
+impl<'gm> ToScm<'gm> for Proc<'gm> {
+    fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
+        self.0
+    }
+}
 
 /// # Safety
 ///
@@ -32,6 +75,54 @@ pub unsafe trait GuileFn {
 
     const DOC: Option<&'static str>;
     const NAME: &'static CStr;
+
+    fn make_fn<'gm>(guile: &'gm Guile) -> Proc<'gm> {
+        Proc(Scm::from_ptr(
+            unsafe {
+                scm_c_make_gsubr(
+                    Self::NAME.as_ptr(),
+                    Self::REQUIRED.try_into().unwrap(),
+                    Self::OPTIONAL.try_into().unwrap(),
+                    Self::REST.into(),
+                    Self::ADDR,
+                )
+            },
+            guile,
+        ))
+    }
+
+    fn define_fn<'gm>(guile: &'gm Guile) -> Proc<'gm> {
+        Proc(Scm::from_ptr(
+            unsafe {
+                scm_c_define_gsubr(
+                    Self::NAME.as_ptr(),
+                    Self::REQUIRED.try_into().unwrap(),
+                    Self::OPTIONAL.try_into().unwrap(),
+                    Self::REST.into(),
+                    Self::ADDR,
+                )
+            },
+            guile,
+        ))
+    }
+
+    /// Add documentation and potentially other attributes to a function.
+    fn make_rich(proc: &mut Proc) {
+        if let Some(docs) = Self::DOC {
+            static DOCUMENTATION: LazyLock<AtomicPtr<scm_unused_struct>> = LazyLock::new(|| {
+                let guile = unsafe { Guile::new_unchecked_ref() };
+                Symbol::from_str("documentation", guile).ptr.into()
+            });
+            let guile = unsafe { Guile::new_unchecked_ref() };
+            unsafe {
+                scm_set_procedure_property_x(
+                    proc.0.as_ptr(),
+                    DOCUMENTATION.load(atomic::Ordering::SeqCst),
+                    String::from_str(docs, guile).scm.as_ptr(),
+                );
+            }
+        }
+    }
 }
 
 /// Create a struct and implement [GuileFn] for it.
