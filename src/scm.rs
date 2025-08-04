@@ -22,7 +22,10 @@ use {
     crate::{
         Guile,
         reference::ReprScm,
-        sys::{SCM, SCM_UNBNDP, scm_equal_p, scm_is_false, scm_is_true, scm_null_p},
+        sys::{
+            SCM, SCM_UNBNDP, scm_equal_p, scm_is_false, scm_is_true, scm_null_p,
+            scm_wrong_type_arg_msg,
+        },
         utils::{c_predicate, scm_predicate},
     },
     std::{borrow::Cow, ffi::CStr, marker::PhantomData},
@@ -42,6 +45,23 @@ pub trait TryFromScm<'gm> {
         } else {
             Err(scm)
         }
+    }
+
+    fn from_scm_or_throw(scm: Scm<'gm>, proc: &CStr, idx: usize, guile: &'gm Guile) -> Self
+    where
+        Self: Sized,
+    {
+        Self::try_from_scm(scm, guile).unwrap_or_else(|scm| {
+            unsafe {
+                scm_wrong_type_arg_msg(
+                    proc.as_ptr(),
+                    idx.try_into().unwrap(),
+                    scm.as_ptr(),
+                    Self::type_name().as_ref().as_ptr(),
+                );
+            }
+            unreachable!()
+        })
     }
 
     /// Create [Self] without type checking.
