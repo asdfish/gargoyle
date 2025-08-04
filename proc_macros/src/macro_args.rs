@@ -37,9 +37,6 @@ mod keywords {
     custom_keyword!(doc);
 
     custom_keyword!(r#false);
-
-    custom_keyword!(allow_other_keys);
-    custom_keyword!(allow_non_keyword_arguments);
 }
 
 enum Key {
