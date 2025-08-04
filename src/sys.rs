@@ -475,6 +475,7 @@ unsafe extern "C" {
         _: *mut c_void,
     ) -> SCM;
 
+    pub fn scm_eval_string(_: SCM) -> SCM;
     pub fn scm_c_eval_string(_: *const c_char) -> SCM;
     pub fn scm_c_primitive_load(_: *const c_char) -> SCM;
 
