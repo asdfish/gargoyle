@@ -21,7 +21,7 @@
 use {
     convert_case::{Case, Casing},
     proc_macro2::Span,
-    std::{cell::LazyCell, ffi::CString, ops::ControlFlow},
+    std::{cell::LazyCell, ffi::CString},
     syn::{
         Attribute, Expr, ExprLit, Ident, ItemFn, Lit, LitCStr, LitStr, Meta, MetaNameValue,
         Signature, Token,
@@ -127,8 +127,7 @@ impl Config {
             ..
         }: &ItemFn,
     ) -> Self {
-        let (ControlFlow::Break((guile_ident, struct_ident, doc))
-        | ControlFlow::Continue((guile_ident, struct_ident, doc))) = args.0.into_iter().try_fold(
+        let (guile_ident, struct_ident, doc) = args.0.into_iter().fold(
             (
                 None,
                 None,
@@ -158,17 +157,12 @@ impl Config {
                 .filter(|docs| !docs.is_empty()),
             ),
             |mut accum, arg| {
-                if accum.0.is_none() && accum.1.is_none() {
-                    ControlFlow::Break(accum)
-                } else {
-                    match arg {
-                        Arg::GuileIdent(ident) => accum.0 = Some(ident),
-                        Arg::StructIdent(ident) => accum.1 = Some(ident),
-                        Arg::Doc(doc) => accum.2 = doc,
-                    }
-
-                    ControlFlow::Continue(accum)
+                match arg {
+                    Arg::GuileIdent(ident) => accum.0 = Some(ident),
+                    Arg::StructIdent(ident) => accum.1 = Some(ident),
+                    Arg::Doc(doc) => accum.2 = doc,
                 }
+                accum
             },
         );
 

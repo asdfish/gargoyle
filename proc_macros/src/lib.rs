@@ -70,10 +70,6 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                         let optional_idents2 = optional_idents.clone();
                         let rest_ident = has_rest.then(|| Ident::new("rest", Span::call_site())).into_iter().collect::<Vec<_>>();
 
-                        let keyword_types = rest.as_ref().and_then(|rest| match rest {
-                            Rest::Keyword(keywords) => Some(keywords.iter().map(|(_, ty)| ty).collect::<Vec<_>>()),
-                            Rest::List(_) => None,
-                        }).into_iter().collect::<Vec<_>>();
                         let keyword_static_idents = rest.as_ref().and_then(|rest| match rest {
                             Rest::Keyword(keywords) => Some((0..keywords.len()).map(|i| format!("KEYWORD_{i}")).map(|i| Ident::new(&i, Span::call_site())).collect::<Vec<_>>()),
                             Rest::List(_) => None,
@@ -94,6 +90,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                             Rest::Keyword(_) => None,
                             Rest::List(_) => Some(quote! { rest }),
                         }).into_iter().collect::<Vec<_>>();
+
                         quote! {
                             #vis struct #struct_ident;
                             unsafe impl ::gargoyle::subr::GuileFn for #struct_ident {
@@ -118,13 +115,13 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                         let guile = unsafe { ::gargoyle::Guile::new_unchecked_ref() };
                                         let ret = #ident(
                                             #guile
-                                            #(<#required as ::gargoyle::scm::TryFromScm>::try_from_scm(::gargoyle::scm::Scm::from_ptr(#required_idents2, guile), guile).unwrap(),)*
+                                            #(::gargoyle::scm::TryFromScm::try_from_scm(::gargoyle::scm::Scm::from_ptr(#required_idents2, guile), guile).unwrap(),)*
                                             #(if unsafe { ::gargoyle::sys::SCM_UNBNDP(#optional_idents2) != 0 } {
                                                 None
                                             } else {
                                                 Some(::gargoyle::scm::TryFromScm::try_from_scm(::gargoyle::scm::Scm::from_ptr(#optional_idents2, guile), guile).unwrap())
                                             },)*
-                                            #(#(<#keyword_types as ::gargoyle::scm::TryFromScm>::try_from_scm(::gargoyle::scm::Scm::from_ptr(#keyword_idents2, guile), guile).unwrap(),)*)*
+                                            #(#(::gargoyle::scm::TryFromScm::try_from_scm(::gargoyle::scm::Scm::from_ptr(#keyword_idents2, guile), guile).unwrap(),)*)*
                                             #(<::gargoyle::collections::list::List<_> as ::gargoyle::scm::TryFromScm>::try_from_scm(::gargoyle::scm::Scm::from_ptr(#rest_list, guile), guile).unwrap())*
                                         );
                                         ::gargoyle::scm::ToScm::to_scm(ret, guile).as_ptr()
