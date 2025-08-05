@@ -127,6 +127,11 @@ pub unsafe trait GuileFn {
 
 /// Create a struct and implement [GuileFn] for it.
 ///
+/// The generated binding function assumes that the [SCM][crate::sys::SCM] pointers do not alias, and is owned by this function.
+/// As such there is no checking since checking for uniqueness and aliasing is impossible for rust to do in scheme, which is why functions like [crate::string::String::eval] are unsafe.
+///
+/// To make functions safe to use in unsafe scheme code, you should use immutable data.
+///
 /// # Arguments
 ///
 /// Arguments are passed with the syntax `#[guile_fn($KEY = $VAL)]` where KEY is the argument being set and VAL is the argument value.
