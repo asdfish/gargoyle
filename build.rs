@@ -26,7 +26,7 @@ use std::{
     process::Command,
 };
 
-const PKG_CONFIG_ARGS: [&str; 3] = ["--cflags", "--libs", "guile-3.0"];
+const PKG_CONFIG_ARGS: &[&str] = &["--cflags", "--libs", "--shared", "guile-3.0"];
 
 pub fn pkg_config_guile() -> Result<Vec<u8>, PkgConfigError> {
     Command::new("pkg-config")
