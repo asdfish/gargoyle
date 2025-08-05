@@ -26,6 +26,7 @@ use std::{
     process::Command,
 };
 
+// must be dynamically linked for lgpl
 const PKG_CONFIG_ARGS: &[&str] = &["--cflags", "--libs", "--shared", "guile-3.0"];
 
 pub fn pkg_config_guile() -> Result<Vec<u8>, PkgConfigError> {
