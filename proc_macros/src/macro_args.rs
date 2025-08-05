@@ -23,9 +23,10 @@ use {
     proc_macro2::Span,
     std::{cell::LazyCell, ffi::CString},
     syn::{
-        Attribute, Expr, ExprLit, Ident, ItemFn, Lit, LitCStr, LitStr, Meta, MetaNameValue,
+        Attribute, Expr, ExprLit, Ident, ItemFn, Lit, LitCStr, LitStr, Meta, MetaNameValue, Path,
         Signature, Token,
         parse::{Parse, ParseStream},
+        parse_quote,
         punctuated::Punctuated,
     },
 };
@@ -35,6 +36,7 @@ mod keywords {
     custom_keyword!(guile_ident);
     custom_keyword!(struct_ident);
     custom_keyword!(doc);
+    custom_keyword!(gargoyle_root);
 
     custom_keyword!(r#false);
 }
@@ -43,6 +45,7 @@ enum Key {
     GuileIdent,
     StructIdent,
     Doc,
+    GargoyleRoot,
 }
 impl Parse for Key {
     fn parse(input: ParseStream) -> Result<Self, syn::Error> {
@@ -57,6 +60,10 @@ impl Parse for Key {
                 .map(|_| Self::StructIdent)
         } else if lookahead.peek(keywords::doc) {
             input.parse::<keywords::doc>().map(|_| Self::Doc)
+        } else if lookahead.peek(keywords::gargoyle_root) {
+            input
+                .parse::<keywords::gargoyle_root>()
+                .map(|_| Self::GargoyleRoot)
         } else {
             Err(lookahead.error())
         }
@@ -67,6 +74,7 @@ enum Arg {
     GuileIdent(CString),
     StructIdent(Ident),
     Doc(Option<String>),
+    GargoyleRoot(Path),
 }
 impl Parse for Arg {
     fn parse(input: ParseStream) -> Result<Self, syn::Error> {
@@ -99,6 +107,9 @@ impl Parse for Arg {
                     Err(lookahead.error())
                 }
             }),
+            Key::GargoyleRoot => <Token![=]>::parse(input)
+                .and_then(|_| <Path as Parse>::parse(input))
+                .map(Self::GargoyleRoot),
         })
     }
 }
@@ -114,6 +125,7 @@ pub struct Config {
     pub guile_ident: CString,
     pub struct_ident: Ident,
     pub doc: Option<String>,
+    pub gargoyle_root: Path,
 }
 impl Config {
     pub fn new(
@@ -124,7 +136,7 @@ impl Config {
             ..
         }: &ItemFn,
     ) -> Self {
-        let (guile_ident, struct_ident, doc) = args.0.into_iter().fold(
+        let (guile_ident, struct_ident, doc, gargoyle_root) = args.0.into_iter().fold(
             (
                 None,
                 None,
@@ -152,12 +164,14 @@ impl Config {
                         .to_string(),
                 )
                 .filter(|docs| !docs.is_empty()),
+                None,
             ),
             |mut accum, arg| {
                 match arg {
                     Arg::GuileIdent(ident) => accum.0 = Some(ident),
                     Arg::StructIdent(ident) => accum.1 = Some(ident),
                     Arg::Doc(doc) => accum.2 = doc,
+                    Arg::GargoyleRoot(root) => accum.3 = Some(root),
                 }
                 accum
             },
@@ -170,6 +184,7 @@ impl Config {
             struct_ident: struct_ident
                 .unwrap_or_else(|| Ident::new(&ident.to_case(Case::Pascal), Span::call_site())),
             doc,
+            gargoyle_root: gargoyle_root.unwrap_or(parse_quote! { ::gargoyle }),
         }
     }
 }

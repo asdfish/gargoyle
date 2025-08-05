@@ -127,8 +127,7 @@ pub unsafe trait GuileFn {
 
 /// Create a struct and implement [GuileFn] for it.
 ///
-/// The generated binding function assumes that the [SCM][crate::sys::SCM] pointers do not alias, and is owned by this function.
-/// As such there is no checking since checking for uniqueness and aliasing is impossible for rust to do in scheme, which is why functions like [crate::string::String::eval] are unsafe.
+/// The function requires everything to be behind references since the arguments can be aliased. It does assume that the object is not being mutated in other threads but that would need to be unsafe anyways.
 ///
 /// To make functions safe to use in unsafe scheme code, you should use immutable data.
 ///
@@ -141,6 +140,7 @@ pub unsafe trait GuileFn {
 /// | `doc` | The string used in [GuileFn::DOC]. If unset, default to the function's doc comments. | [String literal][str] or [false]. [false] will set [GuileFn::DOC] to [None] |
 /// | `guile_ident` | The identifier used in [GuileFn::NAME]. Defaults to the name of the function but in kebab case | [c string literal][CStr] |
 /// | `struct_ident` | The identifier used to implement [GuileFn]. Defaults to the name of the function but in pascal case | identfier |
+/// | `gargoyle_root` | The path to the `gargoyle` crate. This is useful if you renamed the crate. | path |
 ///
 /// # Examples
 ///
@@ -148,8 +148,8 @@ pub unsafe trait GuileFn {
 /// # use gargoyle::{string::String, subr::{guile_fn, GuileFn}, with_guile};
 /// #[guile_fn]
 /// /// Add 2 numbers.
-/// fn add(l: i32, r: i32) -> i32 {
-///     l + r
+/// fn add(l: &i32, r: &i32) -> i32 {
+///     *l + *r
 /// }
 /// assert_eq!(Add::REQUIRED, 2);
 /// assert_eq!(Add::OPTIONAL, 0);
@@ -166,8 +166,8 @@ pub unsafe trait GuileFn {
 /// ```
 /// # use gargoyle::{subr::guile_fn, subr::GuileFn};
 /// #[guile_fn(guile_ident = c"is-even?", struct_ident = EvenPredicate)]
-/// fn is_even(i: i32) -> bool {
-///     i % 2 == 0
+/// fn is_even(i: &i32) -> bool {
+///     *i % 2 == 0
 /// }
 /// assert_eq!(EvenPredicate::REQUIRED, 1);
 /// assert_eq!(EvenPredicate::OPTIONAL, 0);
@@ -177,10 +177,10 @@ pub unsafe trait GuileFn {
 /// ```
 ///
 /// ```
-/// # use gargoyle::{collections::list::List, string::String, subr::{GuileFn, guile_fn}, with_guile};
+/// # use gargoyle::{collections::list::List, reference::Ref, string::String, subr::{GuileFn, guile_fn}, with_guile};
 /// #[guile_fn]
-/// fn sum(init: i32, #[rest] r: List<i32>) -> i32 {
-///     r.into_iter().fold(init, |accum, r| accum + r)
+/// fn sum(init: &i32, #[rest] r: &List<i32>) -> i32 {
+///     r.iter().map(Ref::into_inner).fold(*init, |accum, r| accum + r)
 /// }
 /// assert_eq!(Sum::REQUIRED, 1);
 /// assert_eq!(Sum::OPTIONAL, 0);
@@ -197,7 +197,7 @@ pub unsafe trait GuileFn {
 /// ```
 /// # use gargoyle::{Guile, collections::list::List, string::String, subr::{GuileFn, guile_fn}};
 /// #[guile_fn]
-/// fn length_string<'a>(#[guile] guile: &'a Guile, lst: List<'a, i32>) -> String<'a> {
+/// fn length_string<'a>(#[guile] guile: &'a Guile, lst: &List<'a, i32>) -> String<'a> {
 ///     String::from_str(&lst.iter().count().to_string(), guile)
 /// }
 /// assert_eq!(LengthString::REQUIRED, 1);
@@ -210,11 +210,11 @@ pub unsafe trait GuileFn {
 /// ```
 /// # use gargoyle::{collections::list::List, string::String, subr::{GuileFn, guile_fn}, with_guile};
 /// #[guile_fn]
-/// fn sub(l: i32, #[optional] r: Option<i32>) -> i32 {
+/// fn sub(l: &i32, #[optional] r: Option<&i32>) -> i32 {
 ///     if let Some(r) = r {
-///         l - r
+///         *l - *r
 ///     } else {
-///         -l
+///         -*l
 ///     }
 /// }
 /// assert_eq!(Sub::REQUIRED, 1);
@@ -233,8 +233,8 @@ pub unsafe trait GuileFn {
 /// ```
 /// # use gargoyle::{collections::list::List, string::String, subr::{GuileFn, guile_fn}, with_guile};
 /// #[guile_fn]
-/// fn area(#[keyword] width: Option<i32>, height: Option<i32>) -> i32 {
-///     width.and_then(|width| height.map(|height| width * height)).unwrap_or_default()
+/// fn area(#[keyword] width: Option<&i32>, height: Option<&i32>) -> i32 {
+///     width.and_then(|width| height.map(|height| *width * *height)).unwrap_or_default()
 /// }
 /// assert_eq!(Area::REQUIRED, 0);
 /// assert_eq!(Area::OPTIONAL, 0);
@@ -242,10 +242,10 @@ pub unsafe trait GuileFn {
 /// assert_eq!(Area::NAME, c"area");
 /// assert_eq!(Area::DOC, None);
 /// # #[cfg(not(miri))]
-/// with_guile(|_guile| {
-///     // Area::define_fn(guile);
-///     // assert_eq!(unsafe { String::from_str("(area #:width 10 #:height 10)", guile).eval::<i32>() }, Ok(100));
-///     // assert_eq!(unsafe { String::from_str("(area #:width 10)", guile).eval::<i32>() }, Ok(0));
+/// with_guile(|guile| {
+///     Area::define_fn(guile);
+///     assert_eq!(unsafe { String::from_str("(area #:width 10 #:height 10)", guile).eval::<i32>() }, Ok(100));
+///     assert_eq!(unsafe { String::from_str("(area #:width 10)", guile).eval::<i32>() }, Ok(0));
 /// }).unwrap();
 /// ```
 pub use proc_macros::guile_fn;
