@@ -127,9 +127,7 @@ pub unsafe trait GuileFn {
 
 /// Create a struct and implement [GuileFn] for it.
 ///
-/// The function requires everything to be behind references since the arguments can be aliased. It does assume that the object is not being mutated in other threads but that would need to be unsafe anyways.
-///
-/// To make functions safe to use in unsafe scheme code, you should use immutable data.
+/// The function requires everything to be behind references.
 ///
 /// # Arguments
 ///
