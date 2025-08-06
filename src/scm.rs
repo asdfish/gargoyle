@@ -78,6 +78,26 @@ pub trait ToScm<'gm> {
     where
         Self: Sized;
 }
+/// Derive [ToScm].
+///
+/// # Examples
+///
+/// ```
+/// # use gargoyle::{foreign_object::ForeignObject, scm::ToScm, subr::guile_fn};
+/// #[derive(Clone, Copy, ForeignObject, ToScm)]
+/// struct Coordinate {
+///     x: i32,
+///     y: i32,
+/// }
+/// #[guile_fn]
+/// fn make_coordinate(#[keyword] x: Option<&i32>, y: Option<&i32>) -> Coordinate {
+///     Coordinate {
+///         x: x.copied().unwrap_or_default(),
+///         y: y.copied().unwrap_or_default(),
+///     }
+/// }
+/// ```
+pub use proc_macros::ToScm;
 
 #[derive(Debug)]
 #[repr(transparent)]

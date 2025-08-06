@@ -24,6 +24,7 @@
 
 pub mod alloc;
 pub mod collections;
+pub mod foreign_object;
 mod guile_mode;
 pub mod num;
 mod primitive;

@@ -19,9 +19,14 @@
 // THE SOFTWARE.
 
 use {
+    crate::{Guile, sys::scm_gc_malloc},
     allocator_api2::alloc::{AllocError, Allocator, Layout},
     std::{ffi::c_void, ptr::NonNull},
 };
+
+/// Re-export for [crate::scm::ToScm] proc macro.
+#[doc(hidden)]
+pub use allocator_api2;
 
 unsafe extern "C" {
     pub fn malloc(_: usize) -> *mut c_void;
@@ -42,6 +47,27 @@ unsafe impl Allocator for CAllocator {
     }
     unsafe fn deallocate(&self, ptr: NonNull<u8>, _: Layout) {
         unsafe { free(ptr.as_ptr().cast()) }
+    }
+}
+
+/// Allocator that uses the guile garbage collector.
+#[doc(hidden)]
+pub struct GcAllocator<'gm> {
+    _guile: &'gm Guile,
+}
+unsafe impl Allocator for GcAllocator<'_> {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        let size = layout.size();
+
+        NonNull::new(unsafe { scm_gc_malloc(size, c"unknown".as_ptr()) }.cast::<u8>())
+            .map(|ptr| NonNull::slice_from_raw_parts(ptr, size))
+            .ok_or(AllocError)
+    }
+    unsafe fn deallocate(&self, _: NonNull<u8>, _: Layout) {}
+}
+impl<'gm> From<&'gm Guile> for GcAllocator<'gm> {
+    fn from(guile: &'gm Guile) -> Self {
+        Self { _guile: guile }
     }
 }
 

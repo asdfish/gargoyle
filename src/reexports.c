@@ -36,6 +36,10 @@ int gargoyle_reexports_scm_is_true(SCM b) {
 int gargoyle_reexports_scm_is_false(SCM b) {
   return scm_is_false(b);
 }
+
+int GARGOYLE_REEXPORTS_SCM_IS_A_P(SCM val, SCM ty) {
+  return SCM_IS_A_P(val, ty);
+}
 int GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM scm) {
   return SCM_UNBNDP(scm);
 }
