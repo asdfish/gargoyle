@@ -75,6 +75,7 @@ impl<'gm> Dynwind<'gm> {
     /// struct MustDrop;
     /// impl Drop for MustDrop {
     ///     fn drop(&mut self) {
+    ///         assert!(!DROPPED.load(atomic::Ordering::Acquire));
     ///         DROPPED.store(true, atomic::Ordering::Release);
     ///     }
     /// }

@@ -37,6 +37,13 @@ int gargoyle_reexports_scm_is_false(SCM b) {
   return scm_is_false(b);
 }
 
+int GARGOYLE_REEXPORTS_SCM_HOOK_ARITY(SCM hook) {
+  return SCM_HOOK_ARITY(hook);
+}
+
+int GARGOYLE_REEXPORTS_SCM_HOOKP(SCM hook) {
+  return SCM_HOOKP(hook);
+}
 int GARGOYLE_REEXPORTS_SCM_IS_A_P(SCM val, SCM ty) {
   return SCM_IS_A_P(val, ty);
 }
