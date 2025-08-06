@@ -26,11 +26,13 @@ use {
             char_set::CharSet,
             vector::Vector,
         },
+        hook::Hook,
         reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
+        subr::Proc,
         sys::{
-            SCM, SCM_EOL, scm_car, scm_cdr, scm_char_set_to_list, scm_cons, scm_list_p,
-            scm_vector_to_list,
+            SCM, SCM_EOL, scm_car, scm_cdr, scm_char_set_to_list, scm_cons, scm_hook_to_list,
+            scm_list_p, scm_vector_to_list,
         },
         utils::{CowCStrExt, scm_predicate},
     },
@@ -151,6 +153,14 @@ impl<'gm> From<CharSet<'gm>> for List<'gm, char> {
     fn from(chrs: CharSet<'gm>) -> Self {
         List {
             scm: unsafe { Scm::from_ptr_unchecked(scm_char_set_to_list(chrs.0.as_ptr())) },
+            _marker: PhantomData,
+        }
+    }
+}
+impl<'gm, const ARITY: usize> From<Hook<'gm, ARITY>> for List<'gm, Proc<'gm>> {
+    fn from(hook: Hook<'gm, ARITY>) -> Self {
+        Self {
+            scm: unsafe { Scm::from_ptr_unchecked(scm_hook_to_list(hook.0.as_ptr())) },
             _marker: PhantomData,
         }
     }

@@ -35,7 +35,7 @@ use {
 };
 
 #[repr(transparent)]
-pub struct Hook<'gm, const ARITY: usize>(Scm<'gm>);
+pub struct Hook<'gm, const ARITY: usize>(pub(crate) Scm<'gm>);
 impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     pub fn new(guile: &'gm Guile) -> Self {
         Self(Scm::from_ptr(

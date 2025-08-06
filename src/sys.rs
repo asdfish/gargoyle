@@ -130,6 +130,7 @@ unsafe extern "C" {
     pub fn scm_add_hook_x(_hook: SCM, _proc: SCM, _append_p: SCM) -> SCM;
     pub fn scm_reset_hook_x(_hook: SCM) -> SCM;
     pub fn scm_c_run_hook(_hook: SCM, _args: SCM) -> SCM;
+    pub fn scm_hook_to_list(_hook: SCM) -> SCM;
 
     pub fn scm_from_utf8_stringn(_: *const c_char, _: usize) -> SCM;
     pub fn scm_to_utf8_stringn(_: SCM, _: *mut usize) -> *mut c_char;
