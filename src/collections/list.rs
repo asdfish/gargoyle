@@ -378,12 +378,16 @@ mod tests {
     #[test]
     fn list_into_iter() {
         with_guile(|guile| {
+            let mut list = List::from_iter('a'..='c', guile);
             assert_eq!(
-                List::from_iter('a'..='c', guile)
-                    .into_iter()
-                    .collect::<Vec<_>>(),
+                list.iter().map(Ref::into_inner).collect::<Vec<_>>(),
                 ['c', 'b', 'a'],
             );
+            assert_eq!(
+                list.iter_mut().map(RefMut::into_inner).collect::<Vec<_>>(),
+                ['c', 'b', 'a'],
+            );
+            assert_eq!(list.into_iter().collect::<Vec<_>>(), ['c', 'b', 'a'],);
         })
         .unwrap();
     }
