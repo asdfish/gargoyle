@@ -351,8 +351,8 @@ pub fn to_scm(input: TokenStream) -> TokenStream {
                             {
                                 fn to_scm(self, guile: &'gm #gargoyle_root::Guile) -> #gargoyle_root::scm::Scm<'gm> {
                                     // we don't need to care about panicking or dynwind since the pointer is garbage collected
-                                    let ptr = #gargoyle_root::alloc::allocator_api2::boxed::Box::into_raw(
-                                        #gargoyle_root::alloc::allocator_api2::boxed::Box::new_in(self, #gargoyle_root::alloc::GcAllocator::from(guile))
+                                    let ptr = #gargoyle_root::reexports::allocator_api2::boxed::Box::into_raw(
+                                        #gargoyle_root::reexports::allocator_api2::boxed::Box::new_in(self, #gargoyle_root::alloc::GcAllocator::from(guile))
                                     );
                                     #gargoyle_root::scm::Scm::from_ptr(unsafe { #gargoyle_root::sys::scm_make_foreign_object_1(<Self as #gargoyle_root::foreign_object::ForeignObject>::get_or_create_type(), ptr.cast()) }, guile)
                                 }

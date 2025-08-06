@@ -24,10 +24,6 @@ use {
     std::{ffi::c_void, ptr::NonNull},
 };
 
-/// Re-export for [crate::scm::ToScm] proc macro.
-#[doc(hidden)]
-pub use allocator_api2;
-
 unsafe extern "C" {
     pub fn malloc(_: usize) -> *mut c_void;
     pub fn free(_: *mut c_void);

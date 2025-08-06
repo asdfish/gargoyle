@@ -23,7 +23,7 @@ use {
         Guile,
         reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
-        sys::{SCM, scm_car, scm_cdr, scm_cons, scm_is_pair, scm_set_car_x, scm_set_cdr_x},
+        sys::{scm_car, scm_cdr, scm_cons, scm_is_pair, scm_set_car_x, scm_set_cdr_x},
         utils::{CowCStrExt, c_predicate},
     },
     std::{
@@ -35,8 +35,8 @@ use {
 
 #[repr(transparent)]
 pub struct Pair<'gm, L, R> {
-    scm: SCM,
-    _marker: PhantomData<&'gm (L, R)>,
+    scm: Scm<'gm>,
+    _marker: PhantomData<(L, R)>,
 }
 impl<'gm, L, R> Pair<'gm, L, R>
 where
@@ -46,23 +46,27 @@ where
     pub fn into_tuple(self) -> (L, R) {
         let guile = unsafe { Guile::new_unchecked_ref() };
         (
-            unsafe { L::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm), guile), guile) },
-            unsafe { R::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm), guile), guile) },
+            unsafe {
+                L::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm.as_ptr()), guile), guile)
+            },
+            unsafe {
+                R::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm.as_ptr()), guile), guile)
+            },
         )
     }
 }
 impl<'gm, L, R> Pair<'gm, L, R> {
     pub fn as_car<'a>(&'a self) -> Ref<'a, 'gm, L> {
-        unsafe { Ref::new_unchecked(scm_car(self.scm)) }
+        unsafe { Ref::new_unchecked(scm_car(self.scm.as_ptr())) }
     }
     pub fn as_cdr<'a>(&'a self) -> Ref<'a, 'gm, R> {
-        unsafe { Ref::new_unchecked(scm_cdr(self.scm)) }
+        unsafe { Ref::new_unchecked(scm_cdr(self.scm.as_ptr())) }
     }
     pub fn as_mut_car<'a>(&'a mut self) -> RefMut<'a, 'gm, L> {
-        unsafe { RefMut::new_unchecked(scm_car(self.scm)) }
+        unsafe { RefMut::new_unchecked(scm_car(self.scm.as_ptr())) }
     }
     pub fn as_mut_cdr<'a>(&'a mut self) -> RefMut<'a, 'gm, R> {
-        unsafe { RefMut::new_unchecked(scm_cdr(self.scm)) }
+        unsafe { RefMut::new_unchecked(scm_cdr(self.scm.as_ptr())) }
     }
 }
 impl<'gm, L, R> Pair<'gm, L, R>
@@ -74,7 +78,7 @@ where
         let car = car.to_scm(guile);
         let cdr = cdr.to_scm(guile);
         Pair {
-            scm: unsafe { scm_cons(car.as_ptr(), cdr.as_ptr()) },
+            scm: Scm::from_ptr(unsafe { scm_cons(car.as_ptr(), cdr.as_ptr()) }, guile),
             _marker: PhantomData,
         }
     }
@@ -87,20 +91,20 @@ where
     pub fn set_car(&mut self, l: L) {
         let guile = unsafe { Guile::new_unchecked_ref() };
         unsafe {
-            scm_set_car_x(self.scm, l.to_scm(guile).as_ptr());
+            scm_set_car_x(self.scm.as_ptr(), l.to_scm(guile).as_ptr());
         }
     }
     pub fn set_cdr(&mut self, r: R) {
         let guile = unsafe { Guile::new_unchecked_ref() };
         unsafe {
-            scm_set_cdr_x(self.scm, r.to_scm(guile).as_ptr());
+            scm_set_cdr_x(self.scm.as_ptr(), r.to_scm(guile).as_ptr());
         }
     }
 }
 unsafe impl<L, R> ReprScm for Pair<'_, L, R> {}
 impl<'gm, L, R> ToScm<'gm> for Pair<'gm, L, R> {
-    fn to_scm(self, guile: &'gm Guile) -> Scm<'gm> {
-        Scm::from_ptr(self.scm, guile)
+    fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
+        self.scm
     }
 }
 impl<'gm, L, R> TryFromScm<'gm> for Pair<'gm, L, R>
@@ -128,7 +132,7 @@ where
 
     unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile) -> Self {
         Self {
-            scm: scm.as_ptr(),
+            scm,
             _marker: PhantomData,
         }
     }
