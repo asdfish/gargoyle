@@ -73,6 +73,8 @@ pub trait TryFromScm<'gm> {
     where
         Self: Sized;
 }
+pub use proc_macros::TryFromScm;
+
 pub trait ToScm<'gm> {
     fn to_scm(self, _: &'gm Guile) -> Scm<'gm>
     where
@@ -83,8 +85,9 @@ pub trait ToScm<'gm> {
 /// # Examples
 ///
 /// ```
-/// # use gargoyle::{foreign_object::ForeignObject, scm::ToScm, subr::guile_fn};
-/// #[derive(Clone, Copy, ForeignObject, ToScm)]
+/// # use gargoyle::{foreign_object::ForeignObject, scm::{ToScm, TryFromScm}, string::String, subr::{guile_fn, GuileFn}, with_guile};
+/// # use std::sync::atomic::{self, AtomicBool};
+/// #[derive(Clone, Copy, Debug, ForeignObject, PartialEq, ToScm, TryFromScm)]
 /// struct Coordinate {
 ///     x: i32,
 ///     y: i32,
@@ -96,6 +99,21 @@ pub trait ToScm<'gm> {
 ///         y: y.copied().unwrap_or_default(),
 ///     }
 /// }
+///
+/// static CALLED: AtomicBool = AtomicBool::new(false);
+/// #[guile_fn]
+/// fn must_call(_: &Coordinate) -> bool {
+///     CALLED.swap(true, atomic::Ordering::Release)
+/// }
+/// # #[cfg(not(miri))] {
+/// with_guile(|guile| {
+///     MakeCoordinate::define_fn(guile);
+///     MustCall::define_fn(guile);
+///     assert_eq!(unsafe { String::from_str("(must-call (make-coordinate #:x 10 #:y 20))", guile).eval::<bool>() }, Ok(false));
+///     assert_eq!(unsafe { String::from_str("(make-coordinate #:x 10)", guile).eval::<Coordinate>() }, Ok(Coordinate { x: 10, y: 0 }));
+/// }).unwrap();
+/// assert_eq!(CALLED.load(atomic::Ordering::Acquire), true);
+/// # }
 /// ```
 pub use proc_macros::ToScm;
 

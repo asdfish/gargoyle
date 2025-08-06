@@ -118,6 +118,7 @@ unsafe extern "C" {
         _finalizer: Option<unsafe extern "C" fn(_: SCM)>,
     ) -> SCM;
     pub fn scm_make_foreign_object_1(_type: SCM, _val0: SCM) -> SCM;
+    pub fn scm_foreign_object_ref(_obj: SCM, _n: usize) -> *mut c_void;
 
     pub fn scm_gc_malloc(_size: usize, _what: *const c_char) -> *mut c_void;
 
