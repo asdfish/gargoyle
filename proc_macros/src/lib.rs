@@ -345,15 +345,6 @@ pub fn to_scm(input: TokenStream) -> TokenStream {
                         let generics = add_lifetime(gm.clone(), generics);
                         let (impl_generics, _, where_clause) = generics.split_for_impl();
 
-                        let where_clause = where_clause.cloned()
-                            .map(|mut clause| {
-                                clause.predicates.push(parse_quote! { Self: #gargoyle_root::foreign_object::ForeignObject });
-                                clause
-                            })
-                            .unwrap_or_else(|| parse_quote! {
-                                where
-                                    Self: #gargoyle_root::foreign_object::ForeignObject,
-                            });
                         quote! {
                             impl #impl_generics #gargoyle_root::scm::ToScm<#gm> for #ident #ty_generics
                             #where_clause
@@ -399,15 +390,6 @@ pub fn try_from_scm(input: TokenStream) -> TokenStream {
 
                         let generics = add_lifetime(gm.clone(), generics);
                         let (impl_generics, _, where_clause) = generics.split_for_impl();
-                        let where_clause = where_clause.cloned()
-                            .map(|mut clause| {
-                                clause.predicates.push(parse_quote! { Self: #gargoyle_root::foreign_object::ForeignObject });
-                                clause
-                            })
-                            .unwrap_or_else(|| parse_quote! {
-                                where
-                                    Self: #gargoyle_root::foreign_object::ForeignObject,
-                            });
 
                         quote! {
                             impl #impl_generics #gargoyle_root::scm::TryFromScm<#gm> for #ident #ty_generics
