@@ -340,7 +340,12 @@ impl<'gm> ToScm<'gm> for Null<'gm> {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::with_guile};
+    use {
+        super::*,
+        crate::{alloc::CAllocator, string::String, with_guile},
+        allocator_api2::vec,
+        std::collections::HashSet,
+    };
 
     #[cfg_attr(miri, ignore)]
     #[test]
@@ -349,7 +354,22 @@ mod tests {
             assert_eq!(
                 List::from_iter([1, 2, 3], guile),
                 List::from_iter([1, 2, 3], guile)
-            )
+            );
+
+            assert_eq!(List::from(Hook::<0>::new(guile)).iter().count(), 0);
+            assert_eq!(
+                List::from(ByteVector::from(vec![in CAllocator; 1; 4]))
+                    .into_iter()
+                    .collect::<Vec<_>>(),
+                [1; 4]
+            );
+            const TEXT: &str = "thequickbrownfoxjumpsoverthelazydog";
+            assert_eq!(
+                List::from(CharSet::from(String::from_str(TEXT, guile)))
+                    .into_iter()
+                    .collect::<HashSet<_>>(),
+                HashSet::from_iter(TEXT.chars())
+            );
         })
         .unwrap();
     }
@@ -361,8 +381,8 @@ mod tests {
             assert_eq!(
                 List::from_iter('a'..='c', guile)
                     .into_iter()
-                    .collect::<String>(),
-                "cba"
+                    .collect::<Vec<_>>(),
+                ['c', 'b', 'a'],
             );
         })
         .unwrap();
