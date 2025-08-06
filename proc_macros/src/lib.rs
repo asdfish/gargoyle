@@ -32,9 +32,9 @@ use {
     quote::quote,
     std::{borrow::Cow, ffi::CString, iter},
     syn::{
-        Attribute, DeriveInput, Expr, ExprLit, ExprPath, FnArg, GenericParam, Ident, ItemFn,
-        Lifetime, LifetimeParam, Lit, LitCStr, MetaNameValue, PatType, Path, Receiver, Signature,
-        parse_quote, spanned::Spanned,
+        Attribute, DeriveInput, Expr, ExprLit, ExprPath, FnArg, GenericParam, Generics, Ident,
+        ItemFn, Lifetime, LifetimeParam, Lit, LitCStr, MetaNameValue, PatType, Path, Receiver,
+        Signature, parse_quote, spanned::Spanned,
     },
 };
 
@@ -307,6 +307,20 @@ pub fn foreign_object(input: TokenStream) -> TokenStream {
         .into()
 }
 
+fn add_lifetime(lt: Lifetime, mut generics: Generics) -> Generics {
+    if !generics.params.iter().any(|param| {
+        matches!(param, GenericParam::Lifetime(LifetimeParam {
+                lifetime: Lifetime { ident, .. }, ..
+            }) if *ident == lt.ident)
+    }) {
+        generics.params = iter::once(GenericParam::Lifetime(LifetimeParam::new(lt)))
+            .chain(generics.params.clone())
+            .collect();
+    }
+
+    generics
+}
+
 #[proc_macro_derive(ToScm, attributes(gargoyle_root, guile_mode_lt))]
 pub fn to_scm(input: TokenStream) -> TokenStream {
     syn::parse::<DeriveInput>(input)
@@ -314,7 +328,7 @@ pub fn to_scm(input: TokenStream) -> TokenStream {
             |DeriveInput {
                  attrs,
                  ident,
-                 mut generics,
+                 generics,
                  ..
              }| {
                 gargoyle_root(&attrs)
@@ -324,25 +338,11 @@ pub fn to_scm(input: TokenStream) -> TokenStream {
                                   ident: ident.into_owned(),
                               })
                               .map(|gm| (gargoyle_root, gm)))
-                    .map(|(gargoyle_root, ref mut gm)| {
+                    .map(|(gargoyle_root, gm)| {
                         let (_, ty_generics, _) = generics.split_for_impl();
                         let ty_generics = quote! { #ty_generics };
 
-                        if !generics
-                            .params
-                            .iter()
-                            .any(|param| {
-                                matches!(param, GenericParam::Lifetime(LifetimeParam {
-                                    lifetime: Lifetime { ident, .. }, ..
-                                }) if *ident == gm.ident)
-                            })
-                        {
-                            generics.params =
-                                iter::once(GenericParam::Lifetime(LifetimeParam::new(gm.clone())))
-                                .chain(generics.params)
-                                .collect();
-                        }
-
+                        let generics = add_lifetime(gm.clone(), generics);
                         let (impl_generics, _, where_clause) = generics.split_for_impl();
 
                         let where_clause = where_clause.cloned()
@@ -381,7 +381,7 @@ pub fn try_from_scm(input: TokenStream) -> TokenStream {
             |DeriveInput {
                  attrs,
                  ident,
-                 mut generics,
+                 generics,
                  ..
              }| {
                 gargoyle_root(&attrs)
@@ -393,23 +393,11 @@ pub fn try_from_scm(input: TokenStream) -> TokenStream {
                             })
                             .map(|gm| (gargoyle_root, gm))
                     })
-                    .map(|(gargoyle_root, ref mut gm)| {
+                    .map(|(gargoyle_root, gm)| {
                         let (_, ty_generics, _) = generics.split_for_impl();
                         let ty_generics = quote! { #ty_generics };
-                        if !generics
-                            .params
-                            .iter()
-                            .any(|param| {
-                                matches!(param, GenericParam::Lifetime(LifetimeParam {
-                                    lifetime: Lifetime { ident, .. }, ..
-                                }) if *ident == gm.ident)
-                            })
-                        {
-                            generics.params =
-                                iter::once(GenericParam::Lifetime(LifetimeParam::new(gm.clone())))
-                                .chain(generics.params)
-                                .collect();
-                        }
+
+                        let generics = add_lifetime(gm.clone(), generics);
                         let (impl_generics, _, where_clause) = generics.split_for_impl();
                         let where_clause = where_clause.cloned()
                             .map(|mut clause| {
