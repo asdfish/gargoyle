@@ -44,7 +44,7 @@ impl Display for PkgConfigError {
         write!(f, "failed to execute `pkg-config")
             .and_then(|_| {
                 PKG_CONFIG_ARGS
-                    .into_iter()
+                    .iter()
                     .try_for_each(|arg| write!(f, " {arg}"))
             })
             .and_then(|_| write!(f, "`: {}", self.0))

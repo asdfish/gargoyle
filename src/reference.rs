@@ -46,6 +46,13 @@ pub unsafe trait ReprScm {
     {
         unsafe { mem::transmute_copy(&scm) }
     }
+
+    fn to_ptr(self) -> SCM
+    where
+        Self: Sized,
+    {
+        unsafe { mem::transmute_copy(&self) }
+    }
 }
 
 #[repr(transparent)]

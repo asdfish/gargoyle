@@ -99,6 +99,7 @@ unsafe extern "C" {
     pub static GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE: c_int;
     pub static GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY: c_int;
 
+    pub fn GARGOYLE_REEXPORTS_SCM_IS_A_P(_val: SCM, _ty: SCM) -> c_int;
     pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> c_int;
 
     pub fn scm_with_guile(
@@ -110,6 +111,15 @@ unsafe extern "C" {
         _data: *mut c_void,
     ) -> *mut c_void;
     pub fn scm_shell(_argc: c_int, _argv: *const *const c_char);
+
+    pub fn scm_make_foreign_object_type(
+        _name: SCM,
+        _slots: SCM,
+        _finalizer: Option<unsafe extern "C" fn(_: SCM)>,
+    ) -> SCM;
+    pub fn scm_make_foreign_object_1(_type: SCM, _val0: SCM) -> SCM;
+
+    pub fn scm_gc_malloc(_size: usize, _what: *const c_char) -> *mut c_void;
 
     pub fn scm_from_utf8_stringn(_: *const c_char, _: usize) -> SCM;
     pub fn scm_to_utf8_stringn(_: SCM, _: *mut usize) -> *mut c_char;
@@ -513,6 +523,7 @@ pub use GARGOYLE_REEXPORTS_SCM_BOOL_T as SCM_BOOL_T;
 pub use GARGOYLE_REEXPORTS_SCM_EOL as SCM_EOL;
 pub use GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE as SCM_F_DYNWIND_REWINDABLE;
 pub use GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY as SCM_F_WIND_EXPLICITLY;
+pub use GARGOYLE_REEXPORTS_SCM_IS_A_P as SCM_IS_A_P;
 pub use GARGOYLE_REEXPORTS_SCM_UNBNDP as SCM_UNBNDP;
 pub use GARGOYLE_REEXPORTS_SCM_UNDEFINED as SCM_UNDEFINED;
 pub use gargoyle_reexports_scm_from_intptr_t as scm_from_intptr_t;

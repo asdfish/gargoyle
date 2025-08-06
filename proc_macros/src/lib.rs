@@ -26,10 +26,16 @@ use {
         fn_args::{FnArgs, Rest},
         macro_args::Config,
     },
+    convert_case::{Case, Casing},
     proc_macro::TokenStream,
     proc_macro2::Span,
     quote::quote,
-    syn::{FnArg, Ident, ItemFn, PatType, Receiver, Signature},
+    std::{borrow::Cow, iter},
+    syn::{
+        Attribute, DeriveInput, Expr, ExprPath, FnArg, GenericParam, Ident, ItemFn, Lifetime,
+        LifetimeParam, MetaNameValue, PatType, Path, Receiver, Signature, parse_quote,
+        spanned::Spanned,
+    },
 };
 
 #[proc_macro_attribute]
@@ -173,6 +179,183 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                 })
                 .map(|tokens| quote! { #tokens #input })
         })
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+fn get_last_attr<'a, C, I, F, T>(
+    attrs: &'a C,
+    ident: &str,
+    mut filter: F,
+    default: T,
+) -> Result<Cow<'a, T>, syn::Error>
+where
+    &'a C: IntoIterator<Item = &'a Attribute, IntoIter = I>,
+    I: DoubleEndedIterator + Iterator<Item = &'a Attribute>,
+    F: FnMut(&'a Expr) -> Result<&'a T, syn::Error>,
+    T: Clone,
+{
+    attrs
+        .into_iter()
+        .filter_map(|attr| {
+            attr.path().is_ident(ident).then(|| {
+                attr.meta
+                    .require_name_value()
+                    .and_then(|MetaNameValue { value, .. }| filter(value))
+                    .map(Cow::Borrowed)
+            })
+        })
+        .next_back()
+        .unwrap_or(Ok(Cow::Owned(default)))
+}
+fn gargoyle_root<'a, C, I>(attrs: &'a C) -> Result<Cow<'a, Path>, syn::Error>
+where
+    &'a C: IntoIterator<Item = &'a Attribute, IntoIter = I>,
+    I: DoubleEndedIterator + Iterator<Item = &'a Attribute>,
+{
+    get_last_attr(
+        attrs,
+        "gargoyle_root",
+        |expr| match expr {
+            Expr::Path(ExprPath { path, .. }) => Ok(path),
+            expr => Err(syn::Error::new(
+                expr.span(),
+                "expected path: `gargoyle_root = ::foo`",
+            )),
+        },
+        parse_quote! { ::gargoyle },
+    )
+}
+fn guile_mode_lt<'a, C, I>(attrs: &'a C) -> Result<Cow<'a, Ident>, syn::Error>
+where
+    &'a C: IntoIterator<Item = &'a Attribute, IntoIter = I>,
+    I: DoubleEndedIterator + Iterator<Item = &'a Attribute>,
+{
+    get_last_attr(
+        &attrs,
+        "guile_mode_lt",
+        |expr| {
+            match expr {
+                Expr::Path(ExprPath { path, .. }) => path.get_ident(),
+                _ => None,
+            }
+            .ok_or_else(|| {
+                syn::Error::new(expr.span(), "expected identifier: `guile_mode_lt = foo`")
+            })
+        },
+        parse_quote! { gm },
+    )
+}
+
+#[proc_macro_derive(ForeignObject, attributes(gargoyle_root))]
+pub fn foreign_object(input: TokenStream) -> TokenStream {
+    syn::parse::<DeriveInput>(input)
+        .and_then(
+            |DeriveInput {
+                 attrs,
+                 ident,
+                 generics,
+                 ..
+             }| {
+                gargoyle_root(&attrs)
+                    .map(|gargoyle_root| {
+                        let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+                        let guile_ident = ident.to_string().to_case(Case::Kebab);
+                        quote! {
+                            impl #impl_generics #gargoyle_root::foreign_object::ForeignObject for #ident #ty_generics
+                            #where_clause
+                            {
+                                unsafe fn get_or_create_type() -> #gargoyle_root::sys::SCM {
+                                    static OBJECT_TYPE: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#gargoyle_root::sys::scm_unused_struct>>
+                                        = ::std::sync::LazyLock::new(|| {
+                                            let guile = unsafe { #gargoyle_root::Guile::new_unchecked_ref() };
+                                            let name = #gargoyle_root::symbol::Symbol::from_str(#guile_ident, guile);
+                                            unsafe {
+                                                #gargoyle_root::sys::scm_make_foreign_object_type(
+                                                    #gargoyle_root::reference::ReprScm::to_ptr(name),
+                                                    #gargoyle_root::foreign_object::slots(),
+                                                    ::std::option::Option::None,
+                                                )
+                                            }.into()
+                                        });
+
+                                    OBJECT_TYPE.load(::std::sync::atomic::Ordering::Acquire)
+                                }
+                            }
+                        }
+                    })
+            },
+        )
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+#[proc_macro_derive(ToScm, attributes(gargoyle_root, guile_mode_lt))]
+pub fn to_scm(input: TokenStream) -> TokenStream {
+    syn::parse::<DeriveInput>(input)
+        .and_then(
+            |DeriveInput {
+                 attrs,
+                 ident,
+                 mut generics,
+                 ..
+             }| {
+                gargoyle_root(&attrs)
+                    .and_then(|gargoyle_root| guile_mode_lt(&attrs)
+                              .map(|ident| Lifetime {
+                                  apostrophe: Span::call_site(),
+                                  ident: ident.into_owned(),
+                              })
+                              .map(|gm| (gargoyle_root, gm)))
+                    .map(|(gargoyle_root, ref mut gm)| {
+                        let (_, ty_generics, _) = generics.split_for_impl();
+                        let ty_generics = quote! { #ty_generics };
+
+                        if generics
+                            .params
+                            .iter()
+                            .filter(|param| {
+                                matches!(param, GenericParam::Lifetime(LifetimeParam {
+                                    lifetime: Lifetime { ident, .. }, ..
+                                }) if *ident == gm.ident)
+                            })
+                            .next()
+                            .is_none()
+                        {
+                            generics.params =
+                                iter::once(GenericParam::Lifetime(LifetimeParam::new(gm.clone())))
+                                .chain(generics.params.into_iter())
+                                .collect();
+                        }
+
+                        let (impl_generics, _, where_clause) = generics.split_for_impl();
+
+                        let where_clause = where_clause.cloned()
+                            .map(|mut clause| {
+                                clause.predicates.push(parse_quote! { Self: #gargoyle_root::foreign_object::ForeignObject });
+                                clause
+                            })
+                            .unwrap_or_else(|| parse_quote! {
+                                where
+                                    Self: #gargoyle_root::foreign_object::ForeignObject,
+                            });
+                        // let guile_ident = ident.to_string().to_case(Case::Kebab);
+                        quote! {
+                            impl #impl_generics #gargoyle_root::scm::ToScm<#gm> for #ident #ty_generics
+                            #where_clause
+                            {
+                                fn to_scm(self, guile: &'gm #gargoyle_root::Guile) -> #gargoyle_root::scm::Scm<'gm> {
+                                    // we don't need to care about panicking or dynwind since the pointer is garbage collected
+                                    let ptr = #gargoyle_root::alloc::allocator_api2::boxed::Box::into_raw(
+                                        #gargoyle_root::alloc::allocator_api2::boxed::Box::new_in(self, #gargoyle_root::alloc::GcAllocator::from(guile))
+                                    );
+                                    #gargoyle_root::scm::Scm::from_ptr(unsafe { #gargoyle_root::sys::scm_make_foreign_object_1(<Self as #gargoyle_root::foreign_object::ForeignObject>::get_or_create_type(), ptr.cast()) }, guile)
+                                }
+                            }
+                        }
+                    })
+            },
+        )
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
