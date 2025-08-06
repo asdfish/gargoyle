@@ -29,12 +29,15 @@ mod guile_mode;
 pub mod num;
 mod primitive;
 pub mod rand;
+#[doc(hidden)]
+pub mod reexports;
 pub mod reference;
 pub mod scm;
 pub mod string;
 pub mod subr;
 pub mod symbol;
 pub mod sys;
+mod tuple;
 mod utils;
 
 use std::ptr::NonNull;

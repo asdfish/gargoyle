@@ -42,6 +42,36 @@ use {
     },
 };
 
+/// Create a list in the order provided.
+///
+/// The first argument is a [Guile] reference and the rest would be the items of the list.
+///
+/// # Examples
+///
+/// ```
+/// # use gargoyle::{list, with_guile, collections::list::List, string::String};
+/// # #[cfg(not(miri))]
+/// with_guile(|guile| {
+///    assert_eq!(unsafe { String::from_str("'(1 2 3)", guile).eval::<List<i32>>() }, Ok(list!(guile, 1, 2, 3)));
+/// }).unwrap();
+/// ```
+#[macro_export]
+macro_rules! list {
+    ($guile:expr, $($i:expr),+ $(,)?) => {
+        {
+            let guile: &$crate::Guile = $guile;
+            unsafe {
+                <$crate::collections::list::List<_> as $crate::reference::ReprScm>::from_ptr(
+                    $crate::sys::scm_list_n(
+                        $($crate::scm::ToScm::to_scm($i, guile).as_ptr(),)+
+                            $crate::sys::SCM_UNDEFINED,
+                    )
+                )
+            }
+        }
+    };
+}
+
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct List<'gm, T> {
@@ -270,6 +300,26 @@ impl<'a, 'gm, T> Iterator for IterMut<'a, 'gm, T> {
 
             Some(unsafe { RefMut::new_unchecked(car) })
         }
+    }
+}
+
+#[repr(transparent)]
+pub struct Null<'gm>(Scm<'gm>);
+unsafe impl ReprScm for Null<'_> {}
+impl<'gm> TryFromScm<'gm> for Null<'gm> {
+    fn type_name() -> Cow<'static, CStr> {
+        Cow::Borrowed(c"null")
+    }
+    fn predicate(scm: &Scm<'gm>, _: &'gm Guile) -> bool {
+        scm.is_eol()
+    }
+    unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile) -> Self {
+        Self(scm)
+    }
+}
+impl<'gm> ToScm<'gm> for Null<'gm> {
+    fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
+        self.0
     }
 }
 

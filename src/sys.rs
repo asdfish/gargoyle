@@ -413,7 +413,7 @@ unsafe extern "C" {
     pub fn scm_set_cdr_x(_pair: SCM, _value: SCM) -> SCM;
     pub fn scm_cons(_x: SCM, _y: SCM) -> SCM;
     pub fn scm_length(_lst: SCM) -> SCM;
-
+    pub fn scm_list_n(...) -> SCM;
     pub fn scm_list_p(_x: SCM) -> SCM;
     pub fn scm_null_p(_x: SCM) -> SCM;
 

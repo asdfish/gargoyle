@@ -96,6 +96,17 @@ impl<'gm, T> Ref<'_, 'gm, T> {
         T::try_from_scm(ptr, guile).unwrap()
     }
 }
+impl<'a, 'gm, T> Ref<'a, 'gm, T> {
+    pub fn from_ref(scm: &'a Scm<'gm>) -> Self
+    where
+        T: ReprScm,
+    {
+        Self {
+            ptr: scm.ptr,
+            _marker: PhantomData,
+        }
+    }
+}
 impl<T> Deref for Ref<'_, '_, T>
 where
     T: ReprScm,
