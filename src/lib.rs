@@ -24,6 +24,8 @@
 
 pub mod alloc;
 pub mod collections;
+pub mod dynwind;
+mod error;
 pub mod foreign_object;
 mod guile_mode;
 pub mod num;
