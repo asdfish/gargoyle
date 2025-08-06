@@ -26,9 +26,12 @@ use {
         symbol::Symbol,
         sys::{SCM, scm_unused_struct},
     },
-    std::sync::{
-        LazyLock,
-        atomic::{self, AtomicPtr},
+    std::{
+        ffi::CStr,
+        sync::{
+            LazyLock,
+            atomic::{self, AtomicPtr},
+        },
     },
 };
 
@@ -53,6 +56,8 @@ pub unsafe fn slots() -> SCM {
 }
 
 pub trait ForeignObject: Copy {
+    const TYPE_NAME: &CStr;
+
     /// Create a type tag.
     ///
     /// # Safety

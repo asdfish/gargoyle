@@ -51,7 +51,6 @@ unsafe impl Allocator for CAllocator {
 }
 
 /// Allocator that uses the guile garbage collector.
-#[doc(hidden)]
 pub struct GcAllocator<'gm> {
     _guile: &'gm Guile,
 }
