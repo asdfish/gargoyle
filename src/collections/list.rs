@@ -396,6 +396,11 @@ mod tests {
     #[test]
     fn list_is_empty() {
         with_guile(|guile| {
+            let mut lst = List::new(guile);
+            assert!(lst.is_empty());
+            lst.extend([1]);
+            assert!(!lst.is_empty());
+
             assert!(List::<i32>::new(guile).is_empty());
             assert!(List::<i32>::from_iter([], guile).is_empty());
         })
