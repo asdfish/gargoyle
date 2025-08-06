@@ -55,7 +55,7 @@ pub unsafe fn slots() -> SCM {
     SYMBOL.load(atomic::Ordering::Acquire)
 }
 
-pub trait ForeignObject: Copy {
+pub trait ForeignObject: Copy + Send + Sync {
     const TYPE_NAME: &CStr;
 
     /// Create a type tag.
