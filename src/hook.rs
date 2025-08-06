@@ -21,78 +21,68 @@
 use {
     crate::{
         Guile,
+        collections::list::List,
         reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
-        sys::{SCM_HOOK_ARITY, SCM_HOOKP, scm_hook_empty_p, scm_make_hook},
+        subr::Proc,
+        sys::{
+            SCM_BOOL_F, SCM_HOOK_ARITY, SCM_HOOKP, scm_add_hook_x, scm_c_run_hook,
+            scm_hook_empty_p, scm_make_hook, scm_reset_hook_x,
+        },
         utils::{c_predicate, scm_predicate},
     },
-    std::{borrow::Cow, ffi::CStr, marker::PhantomData},
+    std::{borrow::Cow, ffi::CStr},
 };
 
-trait Tuple<'gm>: ToScm<'gm> + TryFromScm<'gm> {
-    const ARITY: usize;
-}
-macro_rules! impl_tuple_for {
-    () => {
-        impl<'gm> $crate::hook::Tuple<'gm> for ()
-        {
-            const ARITY: usize = 0;
-        }
-    };
-    ($car:ident $(, $($cdr:ident),+ $(,)?)?) => {
-        impl<'gm, $car $(, $($cdr),+)?> $crate::hook::Tuple<'gm> for ($car, $($($cdr),+)?)
-        where
-            $car: ToScm<'gm> + TryFromScm<'gm>,
-        $($($cdr: ToScm<'gm> + TryFromScm<'gm>),+)?
-        {
-            const ARITY: usize = { 1 $($(+ { const $cdr: usize = 1; $cdr })+)? };
-        }
-
-        impl_tuple_for!($($($cdr),+)?);
-    }
-}
-impl_tuple_for!(A, B, C, D, E, F, G, H, I, J, K, L);
-
 #[repr(transparent)]
-pub struct Hook<'gm, Args>
-where
-    Args: Tuple<'gm>,
-{
-    scm: Scm<'gm>,
-    _marker: PhantomData<Args>,
-}
-impl<'gm, Args> Hook<'gm, Args>
-where
-    Args: Tuple<'gm>,
-{
+pub struct Hook<'gm, const ARITY: usize>(Scm<'gm>);
+impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     pub fn new(guile: &'gm Guile) -> Self {
-        Self {
-            scm: Scm::from_ptr(
-                unsafe { scm_make_hook(Args::ARITY.to_scm(guile).as_ptr()) },
-                guile,
-            ),
-            _marker: PhantomData,
-        }
+        Self(Scm::from_ptr(
+            unsafe { scm_make_hook(ARITY.to_scm(guile).as_ptr()) },
+            guile,
+        ))
     }
 
     pub fn is_empty(&self) -> bool {
-        scm_predicate(unsafe { scm_hook_empty_p(self.scm.as_ptr()) })
+        scm_predicate(unsafe { scm_hook_empty_p(self.0.as_ptr()) })
+    }
+
+    pub fn clear(&mut self) {
+        unsafe {
+            scm_reset_hook_x(self.0.as_ptr());
+        }
+    }
+
+    pub fn push(&mut self, proc: Proc<'gm>) {
+        unsafe {
+            let guile = Guile::new_unchecked_ref();
+            scm_add_hook_x(self.0.as_ptr(), proc.to_scm(guile).as_ptr(), SCM_BOOL_F);
+        }
+    }
+
+    pub fn run(&self, args: [Scm<'gm>; ARITY]) {
+        unsafe {
+            // SAFETY: having [self] is proof of being in guile mode
+            let guile = Guile::new_unchecked_ref();
+            // SAFETY: args must have the same length as the hook arity and this cannot be constructed called without being a hook
+            scm_c_run_hook(
+                self.0.as_ptr(),
+                List::from_iter(args.into_iter().rev(), guile)
+                    .to_scm(guile)
+                    .as_ptr(),
+            );
+        }
     }
 }
-unsafe impl<'gm, Args> ReprScm for Hook<'gm, Args> where Args: Tuple<'gm> {}
-impl<'gm, Args> ToScm<'gm> for Hook<'gm, Args>
-where
-    Args: Tuple<'gm>,
-{
+unsafe impl<'gm, const ARITY: usize> ReprScm for Hook<'gm, ARITY> {}
+impl<'gm, const ARITY: usize> ToScm<'gm> for Hook<'gm, ARITY> {
     fn to_scm(self, _: &'gm Guile) -> Scm<'gm> {
-        self.scm
+        self.0
     }
 }
 
-impl<'gm, Args> TryFromScm<'gm> for Hook<'gm, Args>
-where
-    Args: Tuple<'gm>,
-{
+impl<'gm, const ARITY: usize> TryFromScm<'gm> for Hook<'gm, ARITY> {
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"hook")
     }
@@ -100,28 +90,50 @@ where
     fn predicate(scm: &Scm<'gm>, _: &'gm Guile) -> bool {
         c_predicate(unsafe { SCM_HOOKP(scm.as_ptr()) })
             && usize::try_from(unsafe { SCM_HOOK_ARITY(scm.as_ptr()) })
-                .map(|arity| arity == Args::ARITY)
+                .map(|arity| arity == ARITY)
                 .unwrap_or_default()
     }
 
     unsafe fn from_scm_unchecked(scm: Scm<'gm>, _: &'gm Guile) -> Self {
-        Self {
-            scm,
-            _marker: PhantomData,
-        }
+        Self(scm)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use {super::*, crate::with_guile};
+    use {
+        super::*,
+        crate::{
+            subr::{GuileFn, guile_fn},
+            with_guile,
+        },
+        std::sync::atomic::{self, AtomicBool},
+    };
 
     #[cfg_attr(miri, ignore)]
     #[test]
     fn hook_is_empty() {
+        #[guile_fn(gargoyle_root = crate)]
+        fn noop() {}
+
+        static CALLED: AtomicBool = AtomicBool::new(false);
+        #[guile_fn(gargoyle_root = crate)]
+        fn must_call() {
+            CALLED.store(true, atomic::Ordering::Release);
+        }
+
         with_guile(|guile| {
-            let hook = Hook::<()>::new(guile);
+            let mut hook = Hook::<0>::new(guile);
             assert!(hook.is_empty());
+
+            hook.push(Noop::make_fn(guile));
+            assert!(!hook.is_empty());
+            hook.clear();
+            assert!(hook.is_empty());
+
+            hook.push(MustCall::make_fn(guile));
+            hook.run([]);
+            assert!(CALLED.load(atomic::Ordering::Acquire));
         })
         .unwrap();
     }
