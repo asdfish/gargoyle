@@ -36,7 +36,10 @@ extern const int GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY;
 extern int gargoyle_reexports_scm_is_true(SCM);
 extern int gargoyle_reexports_scm_is_false(SCM);
 
+extern int GARGOYLE_REEXPORTS_SCM_HOOK_ARITY(SCM);
+
 extern int GARGOYLE_REEXPORTS_SCM_IS_A_P(SCM, SCM);
+extern int GARGOYLE_REEXPORTS_SCM_HOOKP(SCM);
 extern int GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM);
 
 extern uintptr_t gargoyle_reexports_scm_to_uintptr_t(SCM);

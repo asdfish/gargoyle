@@ -52,7 +52,24 @@ macro_rules! cons_ty {
     };
 }
 macro_rules! impl_tuple {
-    () => {};
+    () => {
+        impl<'gm> $crate::scm::ToScm<'gm> for () {
+            fn to_scm(self, guile: &'gm $crate::Guile) -> Scm<'gm> {
+                $crate::collections::list::Null::new(guile).to_scm(guile)
+            }
+        }
+        impl<'gm> $crate::scm::TryFromScm<'gm> for () {
+            fn type_name() -> ::std::borrow::Cow<'static, ::std::ffi::CStr> {
+                $crate::collections::list::Null::type_name()
+            }
+
+            fn predicate(scm: &$crate::scm::Scm<'gm>, guile: &'gm $crate::Guile) -> bool {
+                $crate::collections::list::Null::predicate(scm, guile)
+            }
+
+            unsafe fn from_scm_unchecked(_: $crate::scm::Scm<'gm>, _: &'gm $crate::Guile) -> Self {}
+        }
+    };
     ($car:ident $(, $($cdr:ident),+ $(,)?)?) => {
         impl<'gm, $car, $($($cdr),*)?> $crate::scm::ToScm<'gm> for ($car, $( $($cdr),+)?)
         where

@@ -28,6 +28,7 @@ pub mod dynwind;
 mod error;
 pub mod foreign_object;
 mod guile_mode;
+pub mod hook;
 pub mod num;
 mod primitive;
 pub mod rand;
@@ -39,7 +40,6 @@ pub mod string;
 pub mod subr;
 pub mod symbol;
 pub mod sys;
-mod tuple;
 mod utils;
 
 use std::ptr::NonNull;

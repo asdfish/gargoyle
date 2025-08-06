@@ -305,6 +305,11 @@ impl<'a, 'gm, T> Iterator for IterMut<'a, 'gm, T> {
 
 #[repr(transparent)]
 pub struct Null<'gm>(Scm<'gm>);
+impl<'gm> Null<'gm> {
+    pub fn new(guile: &'gm Guile) -> Self {
+        Self(Scm::from_ptr(unsafe { SCM_EOL }, guile))
+    }
+}
 unsafe impl ReprScm for Null<'_> {}
 impl<'gm> TryFromScm<'gm> for Null<'gm> {
     fn type_name() -> Cow<'static, CStr> {

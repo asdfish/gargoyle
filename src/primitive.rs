@@ -20,3 +20,4 @@
 
 mod bool;
 mod char;
+mod tuple;
