@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// FIXME: for some reason running this test with the usual test harness makes it hang, probably something to do with multithreading.
+
 //! Implementation of traits for tuples
 //!
 //! # Examples
