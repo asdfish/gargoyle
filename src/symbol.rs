@@ -57,7 +57,6 @@ impl<'gm> Symbol<'gm> {
     ///     assert_eq!(Symbol::from_str("", guile).len(), 0);
     /// }).unwrap();
     /// ```
-    /// ```
     pub fn from_str(symbol: &str, _: &'gm Guile) -> Self {
         if symbol.is_empty() {
             // segfault with length 0
