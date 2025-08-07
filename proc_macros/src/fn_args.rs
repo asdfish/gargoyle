@@ -146,7 +146,13 @@ impl TryFrom<ItemFn> for FnArgs {
                                     .or_else(|| {
                                         attrs.iter().find_map(|attr| {
                                             if attr.path().is_ident("keyword")
-                                                && let Attribute {
+                                            {
+                                                Some(attr)
+                                            } else {
+                                                None
+                                            }
+                                            .and_then(|attr| match attr {
+                                                Attribute {
                                                     meta:
                                                     Meta::NameValue(MetaNameValue {
                                                         value:
@@ -156,12 +162,9 @@ impl TryFrom<ItemFn> for FnArgs {
                                                         ..
                                                     }),
                                                     ..
-                                                } = attr
-                                            {
-                                                Some(val.value())
-                                            } else {
-                                                None
-                                            }
+                                                } => Some(val.value()),
+                                                _ => None,
+                                            })
                                         })
                                     })
                                     .ok_or_else(|| syn::Error::new(pat.span(), "Unable to create a keyword for this argument. Either bind the pattern to an identifier or use `#[keyword = \"keyword\"]` to set the keyword identifier."))
