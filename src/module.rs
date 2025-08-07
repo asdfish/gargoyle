@@ -27,7 +27,8 @@ use {
         symbol::Symbol,
         sys::{
             SCM_MODULEP, scm_current_module, scm_defined_p, scm_maybe_resolve_module,
-            scm_module_define, scm_module_lookup, scm_resolve_module, scm_variable_ref,
+            scm_module_define, scm_module_export, scm_module_lookup, scm_module_public_interface,
+            scm_resolve_module, scm_variable_ref,
         },
         utils::{c_predicate, scm_predicate},
     },
@@ -42,6 +43,12 @@ impl<'gm> Module<'gm> {
     /// Get the current module.
     pub fn current(guile: &'gm Guile) -> Self {
         Self(Scm::from_ptr(unsafe { scm_current_module() }, guile))
+    }
+
+    pub fn export(&mut self, symbols: &List<'gm, Symbol<'gm>>) {
+        unsafe {
+            scm_module_export(self.0.as_ptr(), symbols.scm.as_ptr());
+        }
     }
 
     /// Get a module or create it if it doesn't exist.
@@ -137,6 +144,7 @@ impl<'gm> Module<'gm> {
     /// with_guile(|guile| {
     ///     let module = Module::resolve(&list!(guile, Symbol::from_str("ice-9", guile), Symbol::from_str("eval-string", guile))).unwrap();
     ///     module.read::<Proc>(Symbol::from_str("eval-string", guile)).unwrap().unwrap();
+    ///     assert!(module.read::<Proc>(Symbol::from_str("non-existant-function", guile)).is_none());
     ///     assert!(module.read::<Symbol>(Symbol::from_str("eval-string", guile)).unwrap().is_err());
     /// }).unwrap();
     /// ```
@@ -155,6 +163,34 @@ impl<'gm> Module<'gm> {
             );
             unsafe { Ref::from_ptr(scm.ptr) }
         })
+    }
+
+    /// Get the public interface of the current module.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{list, with_guile, module::Module, subr::Proc, symbol::Symbol};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut module = Module::get_or_create(&list!(guile, Symbol::from_str("qux", guile)));
+    ///     let public_variable = Symbol::from_str("public-variable", guile);
+    ///     module.define(public_variable, ());
+    ///     module.define(Symbol::from_str("private-variable", guile), ());
+    ///     module.export(&list!(guile, pv));
+    /// }).unwrap();
+    /// ```
+    pub fn public_interface(&self) -> Self {
+        let guile = unsafe { Guile::new_unchecked_ref() };
+
+        Self::try_from_scm(
+            Scm::from_ptr(
+                unsafe { scm_module_public_interface(self.0.as_ptr()) },
+                guile,
+            ),
+            guile,
+        )
+        .expect("`scm_module_public_interface` should return a module")
     }
 }
 impl<'gm> TryFromScm<'gm> for Module<'gm> {

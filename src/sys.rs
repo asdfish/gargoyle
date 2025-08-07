@@ -141,6 +141,8 @@ unsafe extern "C" {
     pub fn scm_resolve_module(_name: SCM) -> SCM;
     pub fn scm_current_module() -> SCM;
     pub fn scm_maybe_resolve_module(_name: SCM) -> SCM;
+    pub fn scm_module_export(_module: SCM, _symbol_list: SCM) -> SCM;
+    pub fn scm_module_public_interface(_module: SCM) -> SCM;
 
     pub fn scm_variable_ref(_var: SCM) -> SCM;
 
