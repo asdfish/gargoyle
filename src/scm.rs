@@ -85,7 +85,7 @@ pub trait ToScm<'gm> {
 /// # Examples
 ///
 /// ```
-/// # use gargoyle::{foreign_object::ForeignObject, scm::{ToScm, TryFromScm}, string::String, subr::{guile_fn, GuileFn}, with_guile};
+/// # use gargoyle::{foreign_object::ForeignObject, module::Module, scm::{ToScm, TryFromScm}, string::String, subr::{guile_fn, GuileFn}, symbol::Symbol, with_guile};
 /// # use std::sync::atomic::{self, AtomicBool};
 /// #[derive(Clone, Copy, Debug, ForeignObject, PartialEq, ToScm, TryFromScm)]
 /// struct Coordinate {
@@ -107,8 +107,9 @@ pub trait ToScm<'gm> {
 /// }
 /// # #[cfg(not(miri))] {
 /// with_guile(|guile| {
-///     MakeCoordinate::define_fn(guile);
-///     MustCall::define_fn(guile);
+///     let mut module = Module::current(guile);
+///     module.define(Symbol::from_str("must-call", guile), MustCall::create(guile));
+///     module.define(Symbol::from_str("make-coordinate", guile), MakeCoordinate::create(guile));
 ///     assert_eq!(unsafe { String::from_str("(must-call (make-coordinate #:x 10 #:y 20))", guile).eval::<bool>() }, Ok(false));
 ///     assert_eq!(unsafe { String::from_str("(make-coordinate #:x 10)", guile).eval::<Coordinate>() }, Ok(Coordinate { x: 10, y: 0 }));
 /// }).unwrap();

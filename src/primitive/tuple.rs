@@ -24,15 +24,15 @@
 //!
 //! # Examples
 //! ```
-//! # use gargoyle::{subr::{GuileFn, guile_fn}, string::String, with_guile};
-//! #[guile_fn(guile_ident = c"sum-u8-i32")]
+//! # use gargoyle::{module::Module, string::String, subr::{GuileFn, guile_fn}, symbol::Symbol, with_guile};
+//! #[guile_fn]
 //! fn sum_u8_i32((l, r): &(u8, i32)) -> i32 {
 //!     i32::from(*l) + *r
 //! }
 //!
 //! # #[cfg(not(miri))]
 //! with_guile(|guile| {
-//!     SumU8I32::define_fn(guile);
+//!     Module::current(guile).define(Symbol::from_str("sum-u8-i32", guile), SumU8I32::create(guile));
 //!     assert_eq!(
 //!         unsafe { String::from_str("(sum-u8-i32 '(10 -10))", guile).eval::<i32>() },
 //!         Ok(0)

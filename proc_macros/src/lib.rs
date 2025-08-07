@@ -63,7 +63,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                             ..
                         } = input;
 
-                        let doc = doc.map(|doc| quote! { Some(#doc) }).unwrap_or_else(|| quote! { None });
+                        let _doc = doc.map(|doc| quote! { Some(#doc) }).unwrap_or_else(|| quote! { None });
 
                         let required_len = required.len();
                         let optional_len = optional.len();
@@ -110,8 +110,8 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 
                         quote! {
                             #vis struct #struct_ident;
-                            unsafe impl #gargoyle_root::subr::GuileFn for #struct_ident {
-                                const ADDR: *mut ::std::ffi::c_void = {
+                            impl #gargoyle_root::subr::GuileFn for #struct_ident {
+                                fn create<'gm>(guile: &'gm #gargoyle_root::Guile) -> #gargoyle_root::subr::Proc<'gm> {
                                     unsafe extern "C" fn driver(
                                         #(#required_idents: #gargoyle_root::sys::SCM,)*
                                         #(#optional_idents: #gargoyle_root::sys::SCM,)*
@@ -144,15 +144,11 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                         #gargoyle_root::scm::ToScm::to_scm(ret, guile).as_ptr()
                                     }
 
-                                    driver as *mut ::std::ffi::c_void
-                                };
-
-                                const REQUIRED: ::std::primitive::usize = #required_len;
-                                const OPTIONAL: ::std::primitive::usize = #optional_len;
-                                const REST: ::std::primitive::bool = #has_rest;
-
-                                const DOC: ::std::option::Option<&'static ::std::primitive::str> = #doc;
-                                const NAME: &'static ::std::ffi::CStr = #guile_ident;
+                                    <#gargoyle_root::subr::Proc as #gargoyle_root::scm::TryFromScm>::try_from_scm(#gargoyle_root::scm::Scm::from_ptr(
+                                        unsafe { #gargoyle_root::sys::scm_c_make_gsubr(#guile_ident.as_ptr(), #required_len.try_into().unwrap(), #optional_len.try_into().unwrap(), #has_rest as ::std::ffi::c_int, driver as *mut ::std::ffi::c_void) },
+                                        guile,
+                                    ), guile).expect("`scm_c_make_gsubr` should always return a procedure")
+                                }
                             }
                         }
                     },

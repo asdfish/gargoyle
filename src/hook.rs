@@ -126,12 +126,12 @@ mod tests {
             let mut hook = Hook::<0>::new(guile);
             assert!(hook.is_empty());
 
-            hook.push(Noop::make_fn(guile));
+            hook.push(Noop::create(guile));
             assert!(!hook.is_empty());
             hook.clear();
             assert!(hook.is_empty());
 
-            hook.push(MustCall::make_fn(guile));
+            hook.push(MustCall::create(guile));
             hook.run([]);
             assert!(CALLED.load(atomic::Ordering::Acquire));
         })
