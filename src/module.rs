@@ -45,12 +45,6 @@ impl<'gm> Module<'gm> {
         Self(Scm::from_ptr(unsafe { scm_current_module() }, guile))
     }
 
-    pub fn export(&mut self, symbols: &List<'gm, Symbol<'gm>>) {
-        unsafe {
-            scm_module_export(self.0.as_ptr(), symbols.scm.as_ptr());
-        }
-    }
-
     /// Get a module or create it if it doesn't exist.
     ///
     /// # Examples
@@ -165,7 +159,7 @@ impl<'gm> Module<'gm> {
         })
     }
 
-    /// Get the public interface of the current module.
+    /// Get the public interface of module if it exists.
     ///
     /// # Examples
     ///
@@ -173,14 +167,14 @@ impl<'gm> Module<'gm> {
     /// # use gargoyle::{list, with_guile, module::Module, subr::Proc, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
-    ///     let mut module = Module::get_or_create(&list!(guile, Symbol::from_str("qux", guile)));
-    ///     let public_variable = Symbol::from_str("public-variable", guile);
-    ///     module.define(public_variable, ());
-    ///     module.define(Symbol::from_str("private-variable", guile), ());
-    ///     module.export(&list!(guile, pv));
+    ///     assert!(
+    ///         Module::get_or_create(&list!(guile, Symbol::from_str("asdfkljasdflksajfs", guile)))
+    ///             .public_interface()
+    ///             .is_none()
+    ///     );
     /// }).unwrap();
     /// ```
-    pub fn public_interface(&self) -> Self {
+    pub fn public_interface(&self) -> Option<Self> {
         let guile = unsafe { Guile::new_unchecked_ref() };
 
         Self::try_from_scm(
@@ -190,7 +184,7 @@ impl<'gm> Module<'gm> {
             ),
             guile,
         )
-        .expect("`scm_module_public_interface` should return a module")
+        .ok()
     }
 }
 impl<'gm> TryFromScm<'gm> for Module<'gm> {
