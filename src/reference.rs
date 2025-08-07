@@ -98,7 +98,7 @@ impl<'a, 'gm, T> Ref<'a, 'gm, T> {
         let guile = unsafe { Guile::new_unchecked_ref() };
         if T::predicate(&Scm::from_ptr(ptr, guile), guile) {
             Ok(Self {
-                ptr: ptr,
+                ptr,
                 _marker: PhantomData,
             })
         } else {
