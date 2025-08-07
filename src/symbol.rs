@@ -52,6 +52,7 @@ impl<'gm> Symbol<'gm> {
     ///
     /// ```
     /// # use gargoyle::{with_guile, symbol::Symbol};
+    /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Symbol::from_str("foo", guile).len(), 3);
     ///     assert_eq!(Symbol::from_str("", guile).len(), 0);
