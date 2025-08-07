@@ -65,8 +65,7 @@ pub trait GuileFn {
 ///
 /// | name | description | type |
 /// | - | - | - |
-/// | `doc` | The string used in [GuileFn::DOC]. If unset, default to the function's doc comments. | [String literal][str] or [false]. [false] will set [GuileFn::DOC] to [None] |
-/// | `guile_ident` | The identifier used in [GuileFn::NAME]. Defaults to the name of the function but in kebab case | [c string literal][CStr] |
+/// | `guile_ident` | Identifier of the function used in metadata. Defaults to the name of the function but in kebab case | [c string literal][CStr] |
 /// | `struct_ident` | The identifier used to implement [GuileFn]. Defaults to the name of the function but in pascal case | identfier |
 /// | `gargoyle_root` | The path to the `gargoyle` crate. This is useful if you renamed the crate. | path |
 ///
