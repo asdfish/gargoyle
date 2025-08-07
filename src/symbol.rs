@@ -56,6 +56,12 @@ impl<'gm> Symbol<'gm> {
         }
     }
 
+    // symbols cannot be empty
+    #[expect(clippy::len_without_is_empty)]
+    pub fn len(&self) -> usize {
+        unsafe { scm_c_symbol_length(self.ptr) }
+    }
+
     pub fn new_interned(string: &String<'gm>) -> Self {
         Self {
             ptr: unsafe { scm_make_symbol(string.scm.as_ptr()) },
@@ -65,13 +71,6 @@ impl<'gm> Symbol<'gm> {
 
     pub fn is_interned(&self) -> bool {
         scm_predicate(unsafe { scm_symbol_interned_p(self.ptr) })
-    }
-
-    pub fn len(&self) -> usize {
-        unsafe { scm_c_symbol_length(self.ptr) }
-    }
-    pub fn is_empty(&self) -> bool {
-        self.len() != 0
     }
 }
 unsafe impl ReprScm for Symbol<'_> {}

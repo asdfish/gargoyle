@@ -27,8 +27,8 @@ use {
         symbol::Symbol,
         sys::{
             SCM_MODULEP, scm_current_module, scm_defined_p, scm_maybe_resolve_module,
-            scm_module_define, scm_module_export, scm_module_lookup, scm_module_public_interface,
-            scm_resolve_module, scm_variable_ref,
+            scm_module_define, scm_module_lookup, scm_module_public_interface, scm_resolve_module,
+            scm_variable_ref,
         },
         utils::{c_predicate, scm_predicate},
     },
