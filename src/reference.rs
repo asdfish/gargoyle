@@ -55,6 +55,7 @@ pub unsafe trait ReprScm {
     }
 }
 
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct Ref<'a, 'gm, T> {
     ptr: SCM,
@@ -67,16 +68,6 @@ impl<'gm, T> Clone for Ref<'_, 'gm, T> {
 }
 impl<'gm, T> Copy for Ref<'_, 'gm, T> {}
 impl<'gm, T> Ref<'_, 'gm, T> {
-    pub fn new(ptr: SCM) -> Self
-    where
-        T: ReprScm,
-    {
-        Self {
-            ptr,
-            _marker: PhantomData,
-        }
-    }
-
     /// # Safety
     ///
     /// `ptr` must be able to safely converted to `T` through [TryFromScm::from_scm_unchecked], where the inner type operates on the [SCM].
@@ -87,7 +78,7 @@ impl<'gm, T> Ref<'_, 'gm, T> {
         }
     }
 
-    pub fn into_inner(self) -> T
+    pub fn copied(self) -> T
     where
         T: Copy + TryFromScm<'gm>,
     {
@@ -97,13 +88,24 @@ impl<'gm, T> Ref<'_, 'gm, T> {
     }
 }
 impl<'a, 'gm, T> Ref<'a, 'gm, T> {
-    pub fn from_ref(scm: &'a Scm<'gm>) -> Self
+    /// # Safety
+    ///
+    /// The lifetime `'a` must be the lifetime of the pointer
+    pub(crate) unsafe fn from_ptr(ptr: SCM) -> Result<Self, Ref<'a, 'gm, Scm<'gm>>>
     where
-        T: ReprScm,
+        T: TryFromScm<'gm>,
     {
-        Self {
-            ptr: scm.ptr,
-            _marker: PhantomData,
+        let guile = unsafe { Guile::new_unchecked_ref() };
+        if T::predicate(&Scm::from_ptr(ptr, guile), guile) {
+            Ok(Self {
+                ptr: ptr,
+                _marker: PhantomData,
+            })
+        } else {
+            Err(Ref {
+                ptr,
+                _marker: PhantomData,
+            })
         }
     }
 }
@@ -133,7 +135,7 @@ impl<'gm, T> RefMut<'_, 'gm, T> {
     where
         T: Copy + TryFromScm<'gm>,
     {
-        self.0.into_inner()
+        self.0.copied()
     }
 }
 impl<T> Deref for RefMut<'_, '_, T>

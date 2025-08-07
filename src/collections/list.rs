@@ -380,7 +380,7 @@ mod tests {
         with_guile(|guile| {
             let mut list = List::from_iter('a'..='c', guile);
             assert_eq!(
-                list.iter().map(Ref::into_inner).collect::<Vec<_>>(),
+                list.iter().map(Ref::copied).collect::<Vec<_>>(),
                 ['c', 'b', 'a'],
             );
             assert_eq!(

@@ -29,6 +29,7 @@ mod error;
 pub mod foreign_object;
 mod guile_mode;
 pub mod hook;
+pub mod module;
 pub mod num;
 mod primitive;
 pub mod rand;

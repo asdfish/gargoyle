@@ -412,8 +412,8 @@ mod tests {
             let vec = Vector::from(List::from_iter([3, 2, 1], guile));
             assert_eq!(
                 vec.iter()
-                    .map(Ref::into_inner)
-                    .zip(vec.iter().map(Ref::into_inner))
+                    .map(Ref::copied)
+                    .zip(vec.iter().map(Ref::copied))
                     .collect::<Vec<_>>(),
                 [(1, 1), (2, 2), (3, 3)]
             );
