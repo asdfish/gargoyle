@@ -25,15 +25,15 @@ use {
         scm::{Scm, ToScm, TryFromScm},
         string::String,
         sys::{
-            SCM, scm_c_symbol_length, scm_from_utf8_symboln, scm_make_symbol, scm_string_to_symbol,
-            scm_symbol_interned_p, scm_symbol_p,
+            SCM, scm_c_symbol_length, scm_from_utf8_symbol, scm_from_utf8_symboln, scm_make_symbol,
+            scm_string_to_symbol, scm_symbol_interned_p, scm_symbol_p,
         },
         utils::scm_predicate,
     },
     std::{borrow::Cow, ffi::CStr, marker::PhantomData},
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Symbol<'gm> {
     pub(crate) ptr: SCM,
@@ -48,18 +48,39 @@ impl<'gm> From<String<'gm>> for Symbol<'gm> {
     }
 }
 impl<'gm> Symbol<'gm> {
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{with_guile, symbol::Symbol};
+    /// with_guile(|guile| {
+    ///     assert_eq!(Symbol::from_str("foo", guile).len(), 3);
+    ///     assert_eq!(Symbol::from_str("", guile).len(), 0);
+    /// }).unwrap();
+    /// ```
+    /// ```
     pub fn from_str(symbol: &str, _: &'gm Guile) -> Self {
-        Self {
-            // SAFETY: `str` is always utf8 and the second argument guarantees we are in guile mode.
-            ptr: unsafe { scm_from_utf8_symboln(symbol.as_bytes().as_ptr().cast(), symbol.len()) },
-            _marker: PhantomData,
+        if symbol.is_empty() {
+            // segfault with length 0
+            Self {
+                ptr: unsafe { scm_from_utf8_symbol(c"".as_ptr().cast()) },
+                _marker: PhantomData,
+            }
+        } else {
+            Self {
+                // SAFETY: `str` is always utf8 and the second argument guarantees we are in guile mode.
+                ptr: unsafe {
+                    scm_from_utf8_symboln(symbol.as_bytes().as_ptr().cast(), symbol.len())
+                },
+                _marker: PhantomData,
+            }
         }
     }
 
-    // symbols cannot be empty
-    #[expect(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         unsafe { scm_c_symbol_length(self.ptr) }
+    }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn new_interned(string: &String<'gm>) -> Self {

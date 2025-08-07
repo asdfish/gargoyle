@@ -182,6 +182,7 @@ unsafe extern "C" {
     pub fn scm_to_char_set(_x: SCM) -> SCM;
 
     pub fn scm_symbol_p(_obj: SCM) -> SCM;
+    pub fn scm_from_utf8_symbol(_str: *const c_char) -> SCM;
     pub fn scm_from_utf8_symboln(_str: *const c_char, _len: usize) -> SCM;
     pub fn scm_string_to_symbol(_string: SCM) -> SCM;
     pub fn scm_c_symbol_length(_sym: SCM) -> usize;
