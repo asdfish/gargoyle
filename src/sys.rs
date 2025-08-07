@@ -102,6 +102,7 @@ unsafe extern "C" {
     pub fn GARGOYLE_REEXPORTS_SCM_HOOK_ARITY(_hook: SCM) -> c_int;
 
     pub fn GARGOYLE_REEXPORTS_SCM_HOOKP(_hook: SCM) -> c_int;
+    pub fn GARGOYLE_REEXPORTS_SCM_MODULEP(_obj: SCM) -> c_int;
     pub fn GARGOYLE_REEXPORTS_SCM_IS_A_P(_val: SCM, _ty: SCM) -> c_int;
     pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> c_int;
 
@@ -131,6 +132,17 @@ unsafe extern "C" {
     pub fn scm_reset_hook_x(_hook: SCM) -> SCM;
     pub fn scm_c_run_hook(_hook: SCM, _args: SCM) -> SCM;
     pub fn scm_hook_to_list(_hook: SCM) -> SCM;
+
+    pub fn scm_defined_p(_sym: SCM, _module: SCM) -> SCM;
+    pub fn scm_define(_sym: SCM, _value: SCM) -> SCM;
+    pub fn scm_module_define(_module: SCM, _sym: SCM, _value: SCM) -> SCM;
+    pub fn scm_lookup(_name: SCM) -> SCM;
+    pub fn scm_module_lookup(_module: SCM, _name: SCM) -> SCM;
+    pub fn scm_resolve_module(_name: SCM) -> SCM;
+    pub fn scm_current_module() -> SCM;
+    pub fn scm_maybe_resolve_module(_name: SCM) -> SCM;
+
+    pub fn scm_variable_ref(_var: SCM) -> SCM;
 
     pub fn scm_from_utf8_stringn(_: *const c_char, _: usize) -> SCM;
     pub fn scm_to_utf8_stringn(_: SCM, _: *mut usize) -> *mut c_char;
@@ -537,6 +549,7 @@ pub use GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY as SCM_F_WIND_EXPLICITLY;
 pub use GARGOYLE_REEXPORTS_SCM_HOOK_ARITY as SCM_HOOK_ARITY;
 pub use GARGOYLE_REEXPORTS_SCM_HOOKP as SCM_HOOKP;
 pub use GARGOYLE_REEXPORTS_SCM_IS_A_P as SCM_IS_A_P;
+pub use GARGOYLE_REEXPORTS_SCM_MODULEP as SCM_MODULEP;
 pub use GARGOYLE_REEXPORTS_SCM_UNBNDP as SCM_UNBNDP;
 pub use GARGOYLE_REEXPORTS_SCM_UNDEFINED as SCM_UNDEFINED;
 pub use gargoyle_reexports_scm_from_intptr_t as scm_from_intptr_t;

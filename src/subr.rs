@@ -178,7 +178,7 @@ pub unsafe trait GuileFn {
 /// # use gargoyle::{collections::list::List, reference::Ref, string::String, subr::{GuileFn, guile_fn}, with_guile};
 /// #[guile_fn]
 /// fn sum(init: &i32, #[rest] r: &List<i32>) -> i32 {
-///     r.iter().map(Ref::into_inner).fold(*init, |accum, r| accum + r)
+///     r.iter().map(Ref::copied).fold(*init, |accum, r| accum + r)
 /// }
 /// assert_eq!(Sum::REQUIRED, 1);
 /// assert_eq!(Sum::OPTIONAL, 0);

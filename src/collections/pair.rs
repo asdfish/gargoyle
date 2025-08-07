@@ -147,15 +147,15 @@ mod tests {
     fn pair_construction() {
         with_guile(|guile| {
             let mut pair = Pair::new(1, 2, guile);
-            assert_eq!(pair.as_car().into_inner(), 1);
-            assert_eq!(pair.as_cdr().into_inner(), 2);
+            assert_eq!(pair.as_car().copied(), 1);
+            assert_eq!(pair.as_cdr().copied(), 2);
 
             pair.set_car(2);
-            assert_eq!(pair.as_car().into_inner(), 2);
+            assert_eq!(pair.as_car().copied(), 2);
 
             let mut pair = Pair::new(1, Pair::new(2, 3, guile), guile);
             pair.as_mut_cdr().set_car(3);
-            assert_eq!(pair.as_cdr().as_car().into_inner(), 3);
+            assert_eq!(pair.as_cdr().as_car().copied(), 3);
         })
         .unwrap();
     }

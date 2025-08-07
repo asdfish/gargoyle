@@ -44,6 +44,9 @@ int GARGOYLE_REEXPORTS_SCM_HOOK_ARITY(SCM hook) {
 int GARGOYLE_REEXPORTS_SCM_HOOKP(SCM hook) {
   return SCM_HOOKP(hook);
 }
+int GARGOYLE_REEXPORTS_SCM_MODULEP(SCM obj) {
+  return SCM_MODULEP(obj);
+}
 int GARGOYLE_REEXPORTS_SCM_IS_A_P(SCM val, SCM ty) {
   return SCM_IS_A_P(val, ty);
 }
