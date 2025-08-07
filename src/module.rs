@@ -137,6 +137,7 @@ impl<'gm> Module<'gm> {
     /// with_guile(|guile| {
     ///     let module = Module::resolve(&list!(guile, Symbol::from_str("ice-9", guile), Symbol::from_str("eval-string", guile))).unwrap();
     ///     module.read::<Proc>(Symbol::from_str("eval-string", guile)).unwrap().unwrap();
+    ///     assert!(module.read::<Symbol>(Symbol::from_str("eval-string", guile)).unwrap().is_err());
     /// }).unwrap();
     /// ```
     pub fn read<'module, T>(
@@ -154,11 +155,6 @@ impl<'gm> Module<'gm> {
             );
             unsafe { Ref::from_ptr(scm.ptr) }
         })
-    }
-}
-impl<'gm> From<ModulePath<'gm>> for Module<'gm> {
-    fn from(path: ModulePath<'gm>) -> Self {
-        Self::get_or_create(&path)
     }
 }
 impl<'gm> TryFromScm<'gm> for Module<'gm> {
