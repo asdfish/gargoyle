@@ -143,9 +143,13 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                         );
                                         #gargoyle_root::scm::ToScm::to_scm(ret, guile).as_ptr()
                                     }
+                                    static PROC: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#gargoyle_root::sys::scm_unused_struct>> = ::std::sync::LazyLock::new(|| {
+                                        unsafe { #gargoyle_root::sys::scm_c_make_gsubr(#guile_ident.as_ptr(), #required_len.try_into().unwrap(), #optional_len.try_into().unwrap(), #has_rest as ::std::ffi::c_int, driver as *mut ::std::ffi::c_void) }
+                                        .into()
+                                    });
 
                                     <#gargoyle_root::subr::Proc as #gargoyle_root::scm::TryFromScm>::try_from_scm(#gargoyle_root::scm::Scm::from_ptr(
-                                        unsafe { #gargoyle_root::sys::scm_c_make_gsubr(#guile_ident.as_ptr(), #required_len.try_into().unwrap(), #optional_len.try_into().unwrap(), #has_rest as ::std::ffi::c_int, driver as *mut ::std::ffi::c_void) },
+                                        PROC.load(::std::sync::atomic::Ordering::Acquire),
                                         guile,
                                     ), guile).expect("`scm_c_make_gsubr` should always return a procedure")
                                 }
