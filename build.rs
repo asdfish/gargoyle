@@ -85,12 +85,10 @@ cargo:rerun-if-changed=src/reexports.c\n",
                     .and_then(|_| stdout.write_all(link_lib))
                     .and_then(|_| stdout.write_all(b"\n"))
             } else {
+                build.flag_if_supported(unsafe { OsStr::from_encoded_bytes_unchecked(arg) });
                 Ok(())
             }
-            .map(|_| {
-                build.flag_if_supported(unsafe { OsStr::from_encoded_bytes_unchecked(arg) });
-                build
-            })
+            .map(|_| build)
         })
         .and_then(|build| stdout.flush().map(|_| drop(stdout)).map(|_| build))
         .unwrap_or_else(die)
