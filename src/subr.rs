@@ -77,7 +77,7 @@ pub struct Proc<'gm>(Scm<'gm>);
 impl<'gm> Proc<'gm> {
     /// # Safety
     ///
-    /// Ensure the function doesn't do anything unsafe like dereferencing null pointers or something.
+    /// Ensure the function doesn't do anything unsafe like dereferencing null pointers or something since theses can do anything that guile can.
     ///
     /// # Examples
     ///
