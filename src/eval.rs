@@ -38,11 +38,7 @@ impl Guile {
     ///     assert_eq!(Module::current(guile).read::<i32>(Symbol::from_str("my-var", guile)).unwrap().unwrap().copied(), 69);
     /// }).unwrap();
     /// ```
-    pub unsafe fn load_path<'gm>(
-        &'gm self,
-        // must be mutable since it gets passed through `%load-hook`
-        path: String<'gm>,
-    ) {
+    pub unsafe fn load_path<'gm>(&'gm self, path: String<'gm>) {
         unsafe {
             scm_primitive_load(path.scm.as_ptr());
         }
