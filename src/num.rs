@@ -18,9 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Scheme's numerical tower.
+
 use {
     crate::{
         Guile,
+        reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
         sys::{
             scm_c_imag_part, scm_c_make_rectangular, scm_c_real_part, scm_from_double, scm_is_real,
@@ -35,13 +38,6 @@ use {
 ///
 /// All implementors must be able to be used functions like [scm_sum][crate::sys::scm_sum].
 pub(crate) unsafe trait Num<'gm>: Copy + ToScm<'gm> + TryFromScm<'gm> {}
-
-pub(crate) trait UInt<'gm>: Num<'gm> {}
-impl UInt<'_> for u8 {}
-impl UInt<'_> for u16 {}
-impl UInt<'_> for u32 {}
-impl UInt<'_> for u64 {}
-impl UInt<'_> for usize {}
 
 macro_rules! impl_scm_traits_for_int {
     ($ty:ty, $ty_name:literal,
@@ -206,6 +202,7 @@ macro_rules! impl_ops_for_num {
 macro_rules! define_num {
     ($ident:ident, $type_name:literal, $predicate:path) => {
         // Numbers can be aliased since you cannot mutate them.
+        #[doc = concat!("guile ", $type_name, " numbers")]
         #[derive(Clone, Copy)]
         pub struct $ident<'gm> {
             scm: $crate::sys::SCM,
@@ -300,14 +297,47 @@ impl From<Rational<'_>> for f64 {
 }
 define_num!(Complex, "complex", crate::sys::scm_is_complex);
 impl Complex<'_> {
+    /// Get the real part of a number.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{num::Complex, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert_eq!(Complex::new(10.0, 0.0, guile).real_part(), 10.0);
+    /// }).unwrap();
+    /// ```
     pub fn real_part(&self) -> f64 {
         unsafe { scm_c_real_part(self.scm) }
     }
+    /// Get the imaginary part of a number.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{num::Complex, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert_eq!(Complex::new(10.0, 0.0, guile).imag_part(), 0.0);
+    /// }).unwrap();
+    /// ```
     pub fn imag_part(&self) -> f64 {
         unsafe { scm_c_imag_part(self.scm) }
     }
 }
 impl<'gm> Complex<'gm> {
+    /// Create a complex number.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{num::Complex, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let complex = Complex::new(10.0, 0.0, guile);
+    /// }).unwrap();
+    /// ```
     pub fn new(real: f64, imag: f64, _: &'gm Guile) -> Self {
         Self {
             scm: unsafe { scm_c_make_rectangular(real, imag) },
@@ -327,7 +357,8 @@ mod tests {
             let complex = Complex::new(10.0, 30.0, &guile);
             assert_eq!(complex.real_part(), 10.0);
             assert_eq!(complex.imag_part(), 30.0);
-        });
+        })
+        .unwrap();
     }
 
     #[cfg_attr(miri, ignore)]
@@ -383,6 +414,7 @@ mod tests {
                 Ok(20.0)
             );
             assert_eq!(snd.real_part(), 10.0);
-        });
+        })
+        .unwrap();
     }
 }

@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! References to data in collections.
+
 use {
     crate::{
         Guile,
@@ -40,6 +42,17 @@ pub unsafe trait ReprScm {
     /// # Safety
     ///
     /// You must check the type of the scm.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{reference::ReprScm, sys::SCM};
+    /// # use std::ptr;
+    /// #[repr(transparent)]
+    /// struct Scm(SCM);
+    /// unsafe impl ReprScm for Scm {}
+    /// let scm = unsafe { Scm::from_ptr(ptr::dangling_mut()) };
+    /// ```
     unsafe fn from_ptr(scm: SCM) -> Self
     where
         Self: Sized,
@@ -47,14 +60,27 @@ pub unsafe trait ReprScm {
         unsafe { mem::transmute_copy(&scm) }
     }
 
-    fn to_ptr(self) -> SCM
+    /// Get the pointer out of something.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{reference::ReprScm, sys::SCM};
+    /// # use std::ptr;
+    /// #[repr(transparent)]
+    /// struct Scm(SCM);
+    /// unsafe impl ReprScm for Scm {}
+    /// let ptr = Scm(ptr::dangling_mut()).as_ptr();
+    /// ```
+    fn as_ptr(&self) -> SCM
     where
         Self: Sized,
     {
-        unsafe { mem::transmute_copy(&self) }
+        unsafe { mem::transmute_copy::<Self, SCM>(self) }
     }
 }
 
+/// Reference created with a [Scm].
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct Ref<'a, 'gm, T> {
@@ -78,6 +104,16 @@ impl<'gm, T> Ref<'_, 'gm, T> {
         }
     }
 
+    /// Copy the data from the reference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// with_guile(|guile| {
+    ///     assert_eq!(Pair::new(0, 1, guile).as_car().copied(), 0);
+    /// }).unwrap();
+    /// ```
     pub fn copied(self) -> T
     where
         T: Copy + TryFromScm<'gm>,
@@ -120,6 +156,7 @@ where
     }
 }
 
+/// Mutable reference created with a [Scm].
 #[repr(transparent)]
 pub struct RefMut<'a, 'gm, T>(Ref<'a, 'gm, T>);
 impl<'gm, T> RefMut<'_, 'gm, T> {
@@ -131,7 +168,8 @@ impl<'gm, T> RefMut<'_, 'gm, T> {
         Self(unsafe { Ref::new_unchecked(ptr) })
     }
 
-    pub fn into_inner(self) -> T
+    /// See [Ref::copied]
+    pub fn copied(self) -> T
     where
         T: Copy + TryFromScm<'gm>,
     {

@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Implementations of [Allocator].
+
 use {
     crate::{Guile, sys::scm_gc_malloc},
     allocator_api2::alloc::{AllocError, Allocator, Layout},
@@ -25,11 +27,11 @@ use {
 };
 
 unsafe extern "C" {
-    pub fn malloc(_: usize) -> *mut c_void;
-    pub fn free(_: *mut c_void);
+    fn malloc(_: usize) -> *mut c_void;
+    fn free(_: *mut c_void);
 }
 
-/// Allocator that uses [malloc] and [free].
+/// Allocator that uses `malloc` and `free`.
 pub struct CAllocator;
 
 unsafe impl Allocator for CAllocator {

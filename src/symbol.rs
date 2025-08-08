@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Scheme symbols
+
 use {
     crate::{
         Guile,
@@ -33,6 +35,7 @@ use {
     std::{borrow::Cow, ffi::CStr, marker::PhantomData},
 };
 
+/// Hashed strings
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Symbol<'gm> {
@@ -48,14 +51,16 @@ impl<'gm> From<String<'gm>> for Symbol<'gm> {
     }
 }
 impl<'gm> Symbol<'gm> {
+    /// Create a symbol from a string.
+    ///
     /// # Examples
     ///
     /// ```
     /// # use gargoyle::{with_guile, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
-    ///     assert_eq!(Symbol::from_str("foo", guile).len(), 3);
-    ///     assert_eq!(Symbol::from_str("", guile).len(), 0);
+    ///     let foo = Symbol::from_str("foo", guile);
+    ///     let symbol = Symbol::from_str("", guile);
     /// }).unwrap();
     /// ```
     pub fn from_str(symbol: &str, _: &'gm Guile) -> Self {
@@ -76,20 +81,67 @@ impl<'gm> Symbol<'gm> {
         }
     }
 
+    /// Get the length of a symbol.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{with_guile, symbol::Symbol};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert_eq!(Symbol::from_str("foo", guile).len(), 3);
+    ///     assert_eq!(Symbol::from_str("", guile).len(), 0);
+    /// }).unwrap();
+    /// ```
     pub fn len(&self) -> usize {
         unsafe { scm_c_symbol_length(self.ptr) }
     }
+    /// Check if the symbol is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{with_guile, symbol::Symbol};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert!(!Symbol::from_str("foo", guile).is_empty());
+    ///     assert!(Symbol::from_str("", guile).is_empty());
+    /// }).unwrap();
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    pub fn new_interned(string: &String<'gm>) -> Self {
+    /// Create an uninterned symbol.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{with_guile, string::String, symbol::Symbol};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert!(!Symbol::new_uninterned(&String::from_str("foo", guile)).is_interned());
+    /// }).unwrap();
+    /// ```
+    pub fn new_uninterned(string: &String<'gm>) -> Self {
         Self {
             ptr: unsafe { scm_make_symbol(string.scm.as_ptr()) },
             _marker: PhantomData,
         }
     }
 
+    /// Create check if a symbol is interned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{with_guile, string::String, symbol::Symbol};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert!(!Symbol::new_uninterned(&String::from_str("foo", guile)).is_interned());
+    ///     assert!(Symbol::from_str("foo", guile).is_interned());
+    /// }).unwrap();
+    /// ```
     pub fn is_interned(&self) -> bool {
         scm_predicate(unsafe { scm_symbol_interned_p(self.ptr) })
     }

@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Guile functions.
+
 use {
     crate::{
         Guile,
@@ -72,6 +74,7 @@ macro_rules! impl_tuple_ext_for {
 }
 impl_tuple_ext_for!(A, B, C, D, E, F, G, H, I, J, K, L);
 
+/// Scheme functions.
 #[repr(transparent)]
 pub struct Proc<'gm>(Scm<'gm>);
 impl<'gm> Proc<'gm> {
@@ -126,7 +129,9 @@ impl<'gm> ToScm<'gm> for Proc<'gm> {
     }
 }
 
+/// Trait implemented by [guile_fn]
 pub trait GuileFn {
+    /// Create the procedure.
     fn create<'gm>(_: &'gm Guile) -> Proc<'gm>;
 }
 

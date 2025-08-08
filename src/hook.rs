@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Utilities for handling lists of procedures.
+
 use {
     crate::{
         Guile,
@@ -34,9 +36,38 @@ use {
     std::{borrow::Cow, ffi::CStr},
 };
 
+/// Procedure lists.
+///
+/// # Examples
+///
+/// ```
+/// # use gargoyle::{hook::Hook, module::Module, symbol::Symbol, with_guile};
+/// # fn run_user_config() {}
+/// # #[cfg(not(miri))]
+/// with_guile(|guile| {
+///     let init_hook = Hook::<0>::new(guile);
+///     let mut module = Module::current(guile);
+///     let init_hook = module.define(Symbol::from_str("init-hook", guile), init_hook);
+///
+///     run_user_config();
+///
+///     init_hook.run(());
+/// }).unwrap();
+/// ```
 #[repr(transparent)]
 pub struct Hook<'gm, const ARITY: usize>(pub(crate) Scm<'gm>);
 impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
+    /// Create a new hook.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{hook::Hook, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let hook = Hook::<0>::new(guile);
+    /// }).unwrap();
+    /// ```
     pub fn new(guile: &'gm Guile) -> Self {
         Self(Scm::from_ptr(
             unsafe { scm_make_hook(ARITY.to_scm(guile).as_ptr()) },
@@ -44,16 +75,64 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
         ))
     }
 
+    /// Check if a hook is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
+    /// #[guile_fn]
+    /// fn foo() {}
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut hook = Hook::<0>::new(guile);
+    ///     assert!(hook.is_empty());
+    ///     hook.push(Foo::create(guile));
+    ///     assert!(!hook.is_empty());
+    /// }).unwrap();
+    /// ```
     pub fn is_empty(&self) -> bool {
-        scm_predicate(unsafe { scm_hook_empty_p(self.0.as_ptr()) })
+        scm_predicate(unsafe { scm_hook_empty_p(self.as_ptr()) })
     }
 
+    /// Clear all procedures.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
+    /// #[guile_fn]
+    /// fn foo() {}
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut hook = Hook::<0>::new(guile);
+    ///     hook.push(Foo::create(guile));
+    ///     assert!(!hook.is_empty());
+    ///     hook.clear();
+    ///     assert!(hook.is_empty());
+    /// }).unwrap();
+    /// ```
     pub fn clear(&mut self) {
         unsafe {
-            scm_reset_hook_x(self.0.as_ptr());
+            scm_reset_hook_x(self.as_ptr());
         }
     }
 
+    /// Add a procedures to the hook.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
+    /// #[guile_fn]
+    /// fn foo() {}
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut hook = Hook::<0>::new(guile);
+    ///     hook.push(Foo::create(guile));
+    ///     assert!(!hook.is_empty());
+    /// }).unwrap();
+    /// ```
     pub fn push(&mut self, proc: Proc<'gm>) {
         unsafe {
             let guile = Guile::new_unchecked_ref();
@@ -61,6 +140,25 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
         }
     }
 
+    /// Execute the procedures.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
+    /// # use std::sync::atomic::{self, AtomicBool};
+    /// static HOOK_RAN: AtomicBool = AtomicBool::new(false);
+    /// #[guile_fn]
+    /// fn proc() {
+    ///     HOOK_RAN.store(true, atomic::Ordering::Release);
+    /// }
+    /// with_guile(|guile| {
+    ///     let mut hook = Hook::new(guile);
+    ///     hook.push(Proc::create(guile));
+    ///     hook.run(());
+    /// }).unwrap();
+    /// assert!(HOOK_RAN.load(atomic::Ordering::Acquire));
+    /// ```
     pub fn run<T>(&self, args: T)
     where
         T: TupleExt<'gm, ARITY>,

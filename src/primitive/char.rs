@@ -21,6 +21,7 @@
 use {
     crate::{
         Guile,
+        reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
         sys::{scm_char_p, scm_char_to_integer, scm_integer_to_char},
         utils::scm_predicate,

@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Memory backed vectors.
+
 use {
     crate::{
         Guile,
@@ -39,6 +41,7 @@ use {
     },
 };
 
+/// Vector backed by a contiguous block of memory.
 #[repr(transparent)]
 pub struct Vector<'gm, T> {
     pub(crate) scm: Scm<'gm>,
@@ -54,6 +57,20 @@ impl<'gm, T> From<List<'gm, T>> for Vector<'gm, T> {
     }
 }
 impl<'gm, T> Vector<'gm, T> {
+    /// Create a vector of copied items.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::vector::Vector, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert_eq!(
+    ///         Vector::new(10, 10, guile).into_iter().collect::<Vec<_>>(),
+    ///         [10; 10],
+    ///     );
+    /// }).unwrap();
+    /// ```
     pub fn new(of: T, n: usize, guile: &'gm Guile) -> Self
     where
         T: Copy + ToScm<'gm>,
@@ -66,6 +83,20 @@ impl<'gm, T> Vector<'gm, T> {
         }
     }
 
+    /// Get an immutable iterator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::vector::Vector, reference::Ref, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     Vector::new(true, 10, guile)
+    ///         .iter()
+    ///         .map(Ref::copied)
+    ///         .for_each(|i| assert!(i));
+    /// }).unwrap();
+    /// ```
     pub fn iter<'a>(&'a self) -> Iter<'a, 'gm, T>
     where
         T: TryFromScm<'gm>,
@@ -91,7 +122,24 @@ impl<'gm, T> Vector<'gm, T> {
         }
     }
 
-    pub fn iter_mut<'a>(&'a self) -> IterMut<'a, 'gm, T>
+    /// Get a mutable iterator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::{list::List, pair::Pair, vector::Vector}, reference::Ref, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut vec = Vector::from(List::from_iter([(); 10].map(|_| Pair::new(false, (), guile)), guile));
+    ///     vec
+    ///         .iter_mut()
+    ///         .for_each(|mut pair| pair.set_car(true));
+    ///     vec
+    ///         .into_iter()
+    ///         .for_each(|i| assert!(i.as_car().copied()));
+    /// }).unwrap();
+    /// ```
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, 'gm, T>
     where
         T: TryFromScm<'gm>,
     {
@@ -195,6 +243,7 @@ where
     }
 }
 
+/// Iterator for [Vector::into_iter].
 pub struct IntoIter<'gm, T>
 where
     T: TryFromScm<'gm>,
@@ -259,6 +308,7 @@ where
     }
 }
 
+/// Iterator for [Vector::iter].
 pub struct Iter<'a, 'gm, T>
 where
     T: TryFromScm<'gm>,
@@ -320,6 +370,8 @@ where
         (len, Some(len))
     }
 }
+
+/// Iterator for [Vector::iter_mut].
 pub struct IterMut<'a, 'gm, T>
 where
     T: TryFromScm<'gm>,
@@ -409,16 +461,20 @@ mod tests {
     #[test]
     fn vector_iter() {
         with_guile(|guile| {
-            let vec = Vector::from(List::from_iter([3, 2, 1], guile));
+            let mut vec = Vector::from(List::from_iter([3, 2, 1], guile));
+            {
+                let _iter = vec.iter();
+                let _iter = vec.iter();
+                assert_eq!(
+                    vec.iter()
+                        .map(Ref::copied)
+                        .zip(vec.iter().map(Ref::copied))
+                        .collect::<Vec<_>>(),
+                    [(1, 1), (2, 2), (3, 3)]
+                );
+            }
             assert_eq!(
-                vec.iter()
-                    .map(Ref::copied)
-                    .zip(vec.iter().map(Ref::copied))
-                    .collect::<Vec<_>>(),
-                [(1, 1), (2, 2), (3, 3)]
-            );
-            assert_eq!(
-                vec.iter_mut().map(RefMut::into_inner).collect::<Vec<_>>(),
+                vec.iter_mut().map(RefMut::copied).collect::<Vec<_>>(),
                 [1, 2, 3]
             );
 

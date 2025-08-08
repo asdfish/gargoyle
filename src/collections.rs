@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Guile collection types.
+
 pub mod byte_vector;
 pub mod char_set;
 pub mod hash_map;

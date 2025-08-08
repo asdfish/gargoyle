@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Cons list.
+
 use {
     crate::{
         Guile,
@@ -39,7 +41,7 @@ use {
     std::{
         borrow::Cow,
         ffi::{CStr, CString},
-        iter::{self, FusedIterator},
+        iter::FusedIterator,
         marker::PhantomData,
     },
 };
@@ -59,15 +61,15 @@ use {
 /// ```
 #[macro_export]
 macro_rules! list {
-    ($guile:expr, $($i:expr),+ $(,)?) => {
+    ($guile:expr, $($i:expr),* $(,)?) => {
         {
             let guile: &$crate::Guile = $guile;
             #[allow(unused_unsafe)]
             unsafe {
                 <$crate::collections::list::List<_> as $crate::reference::ReprScm>::from_ptr(
                     $crate::sys::scm_list_n(
-                        $($crate::scm::ToScm::to_scm($i, guile).as_ptr(),)+
-                            $crate::sys::SCM_UNDEFINED,
+                        $(<$crate::scm::Scm as $crate::reference::ReprScm>::as_ptr(&$crate::scm::ToScm::to_scm($i, guile)),)*
+                        $crate::sys::SCM_UNDEFINED,
                     )
                 )
             }
@@ -75,6 +77,7 @@ macro_rules! list {
     };
 }
 
+/// Cons list of type `T`
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct List<'gm, T> {
@@ -83,6 +86,7 @@ pub struct List<'gm, T> {
 }
 unsafe impl<'gm, T> ReprScm for List<'gm, T> {}
 impl<'gm, T> List<'gm, T> {
+    /// Create an empty list.
     pub fn new(guile: &'gm Guile) -> Self {
         Self {
             scm: Scm::from_ptr(unsafe { SCM_EOL }, guile),
@@ -96,47 +100,97 @@ impl<'gm, T> List<'gm, T> {
         I: IntoIterator<Item = T>,
         T: ToScm<'gm>,
     {
-        let mut list = Self::new(guile);
-        list.extend(iter);
-        list
+        iter.into_iter()
+            .fold(Self::new(guile), |accum, item| accum.push_front(item))
     }
-    pub fn push_front(&mut self, item: T)
+    /// Add an element to the front of the list.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::list::List, reference::Ref, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let list = List::new(guile);
+    ///     assert!(list.is_empty());
+    ///     let list = list.push_front(1);
+    ///     assert_eq!(list.iter().next().map(Ref::copied), Some(1));
+    ///     assert!(!list.is_empty());
+    /// });
+    /// ```
+    pub fn push_front(self, item: T) -> List<'gm, T>
     where
         T: ToScm<'gm>,
     {
-        self.extend(iter::once(item));
+        let guile = unsafe { Guile::new_unchecked_ref() };
+        List {
+            scm: Scm::from_ptr(
+                unsafe { scm_cons(item.to_scm(guile).as_ptr(), self.scm.as_ptr()) },
+                guile,
+            ),
+            _marker: PhantomData,
+        }
     }
 
+    /// Check if a list is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::list::List, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let lst = List::new(guile);
+    ///     assert!(lst.is_empty());
+    ///     let lst = lst.push_front(0);
+    ///     assert!(!lst.is_empty());
+    ///
+    ///     assert!(List::<i32>::new(guile).is_empty());
+    ///     assert!(List::<i32>::from_iter([], guile).is_empty());
+    /// })
+    /// .unwrap();
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.scm.is_eol()
     }
 
+    /// Get an immutable iterator over all elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{list, reference::Ref, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let list = list!(guile, 1, 2, 3);
+    ///     assert_eq!(list.iter().map(Ref::copied).collect::<Vec<i32>>(), [1, 2, 3]);
+    /// }).unwrap();
+    /// ```
     pub fn iter<'a>(&'a self) -> Iter<'a, 'gm, T> {
         Iter {
             car: self.scm.as_ptr(),
             _marker: PhantomData,
         }
     }
+
+    /// Get a mutable iterator over all elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{list, collections::{hash_map::HashMap, list::List}, reference::Ref, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut list: List<HashMap<i32, ()>> = list!(guile, HashMap::<i32, ()>::with_capacity(1, guile));
+    ///     list.iter_mut().for_each(|mut hm| hm.insert(0, ()));
+    ///     list.into_iter().for_each(|hm| assert!(hm.get(0).is_some()));
+    /// }).unwrap();
+    /// ```
     pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, 'gm, T> {
         IterMut {
             car: self.scm.as_ptr(),
             _marker: PhantomData,
         }
-    }
-}
-impl<'gm, T> Extend<T> for List<'gm, T>
-where
-    T: ToScm<'gm>,
-{
-    fn extend<I>(&mut self, iter: I)
-    where
-        I: IntoIterator<Item = T>,
-    {
-        let guile = unsafe { Guile::new_unchecked_ref() };
-        let pair = iter.into_iter().fold(self.scm.as_ptr(), |cdr, car| unsafe {
-            scm_cons(car.to_scm(guile).as_ptr(), cdr)
-        });
-        self.scm = unsafe { Scm::from_ptr_unchecked(pair) };
     }
 }
 impl<'gm, T> From<ByteVector<'gm, T>> for List<'gm, T>
@@ -210,7 +264,7 @@ where
 }
 impl<T> PartialEq for List<'_, T> {
     fn eq(&self, r: &Self) -> bool {
-        self.scm.is_equal(&r.scm)
+        self.scm == r.scm
     }
 }
 impl<'gm, T> ToScm<'gm> for List<'gm, T> {
@@ -244,6 +298,7 @@ where
     }
 }
 
+/// Iterator for [List::into_iter].
 pub struct IntoIter<'gm, T>(List<'gm, T>);
 impl<'gm, T> From<IntoIter<'gm, T>> for List<'gm, T> {
     fn from(IntoIter(lst): IntoIter<'gm, T>) -> List<'gm, T> {
@@ -272,6 +327,7 @@ where
     }
 }
 
+/// Iterator for [List::iter].
 #[derive(Clone, Copy)]
 pub struct Iter<'a, 'gm, T> {
     car: SCM,
@@ -293,7 +349,7 @@ impl<'a, 'gm, T> Iterator for Iter<'a, 'gm, T> {
     }
 }
 
-#[derive(Clone, Copy)]
+/// Iterator for [List::iter_mut].
 pub struct IterMut<'a, 'gm, T> {
     car: SCM,
     _marker: PhantomData<&'a &'gm T>,
@@ -314,9 +370,11 @@ impl<'a, 'gm, T> Iterator for IterMut<'a, 'gm, T> {
     }
 }
 
+/// Type that only contains an empty list.
 #[repr(transparent)]
 pub struct Null<'gm>(Scm<'gm>);
 impl<'gm> Null<'gm> {
+    /// Create a empty list.
     pub fn new(guile: &'gm Guile) -> Self {
         Self(Scm::from_ptr(unsafe { SCM_EOL }, guile))
     }
@@ -385,25 +443,10 @@ mod tests {
                 ['c', 'b', 'a'],
             );
             assert_eq!(
-                list.iter_mut().map(RefMut::into_inner).collect::<Vec<_>>(),
+                list.iter_mut().map(RefMut::copied).collect::<Vec<_>>(),
                 ['c', 'b', 'a'],
             );
             assert_eq!(list.into_iter().collect::<Vec<_>>(), ['c', 'b', 'a'],);
-        })
-        .unwrap();
-    }
-
-    #[cfg_attr(miri, ignore)]
-    #[test]
-    fn list_is_empty() {
-        with_guile(|guile| {
-            let mut lst = List::new(guile);
-            assert!(lst.is_empty());
-            lst.extend([1]);
-            assert!(!lst.is_empty());
-
-            assert!(List::<i32>::new(guile).is_empty());
-            assert!(List::<i32>::from_iter([], guile).is_empty());
         })
         .unwrap();
     }

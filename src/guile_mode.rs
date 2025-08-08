@@ -123,6 +123,24 @@ where
     }
 }
 
+/// Run a closure with access to guile mode functions.
+///
+/// This returns [None] when the function returns non locally.
+///
+/// # Examples
+///
+/// ```
+/// # use gargoyle::{collections::list::List, symbol::Symbol, with_guile};
+/// # #[cfg(not(miri))] {
+/// with_guile(|guile| {
+///     let _sym = Symbol::from_str("foo", guile);
+/// }).unwrap();
+/// assert_eq!(with_guile(|guile| {
+///     guile.throw(Symbol::from_str("foo", guile), List::<i32>::new(guile));
+/// }), None);
+/// # }
+/// ```
+#[must_use]
 pub fn with_guile<F, O>(f: F) -> Option<O>
 where
     F: for<'a> FnOnce(&'a mut Guile) -> O,
@@ -155,6 +173,19 @@ where
     }
 }
 impl Guile {
+    /// Exit guile mode to run a closure.
+    ///
+    /// In old guile versions, if you go a long time without calling a guile function, it will block garbage collection.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::with_guile;
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     guile.block_on(|| (0..100).for_each(|i| println!("{i}")));
+    /// }).unwrap();
+    /// ```
     pub fn block_on<F, O>(&mut self, f: F) -> O
     where
         F: FnOnce() -> O,

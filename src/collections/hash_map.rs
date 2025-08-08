@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Hash map for guile data..
+
 use {
     crate::{
         Guile,
@@ -37,7 +39,7 @@ use {
     },
 };
 
-pub trait ScmPartialEq {
+trait ScmPartialEq {
     /// Add `val` to `key` to `table` and return `val`. If it already exists, it would be overwritten.
     const SET: unsafe extern "C" fn(_table: SCM, _key: SCM, _val: SCM) -> SCM;
     /// Remove `key` from `table` and return its pair.
@@ -48,6 +50,7 @@ pub trait ScmPartialEq {
     const CREATE_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM, _init: SCM) -> SCM;
 }
 
+/// Hash map vtable that uses the `eq?` family.
 pub struct Eq;
 impl ScmPartialEq for Eq {
     const SET: unsafe extern "C" fn(_table: SCM, _key: SCM, _val: SCM) -> SCM =
@@ -60,6 +63,7 @@ impl ScmPartialEq for Eq {
         crate::sys::scm_hashq_create_handle_x;
 }
 
+/// Hash map vtable that uses the `eqv?` family.
 pub struct Eqv;
 impl ScmPartialEq for Eqv {
     const SET: unsafe extern "C" fn(_table: SCM, _key: SCM, _val: SCM) -> SCM =
@@ -72,6 +76,7 @@ impl ScmPartialEq for Eqv {
         crate::sys::scm_hashv_create_handle_x;
 }
 
+/// Hash map vtable that uses the `equal?` family.
 pub struct Equal;
 impl ScmPartialEq for Equal {
     const SET: unsafe extern "C" fn(_table: SCM, _key: SCM, _val: SCM) -> SCM =
@@ -84,24 +89,27 @@ impl ScmPartialEq for Equal {
         crate::sys::scm_hash_create_handle_x;
 }
 
+/// Hash map usable in scheme.
 #[repr(transparent)]
-pub struct HashMap<'gm, K, V, E = Equal>
+pub struct HashMapInner<'gm, K, V, E>
 where
     E: ScmPartialEq,
 {
     scm: Scm<'gm>,
     _marker: PhantomData<(K, V, E)>,
 }
-impl<'gm, K, V, E> HashMap<'gm, K, V, E>
+impl<'gm, K, V, E> HashMapInner<'gm, K, V, E>
 where
     E: ScmPartialEq,
 {
+    /// Create an empty hash map.
     pub fn new(guile: &'gm Guile) -> Self {
         Self {
             scm: Scm::from_ptr(unsafe { scm_make_hash_table(SCM_UNDEFINED) }, guile),
             _marker: PhantomData,
         }
     }
+    /// Create a hash map with a specified capacity.
     pub fn with_capacity(cap: usize, guile: &'gm Guile) -> Self {
         Self {
             scm: Scm::from_ptr(
@@ -112,6 +120,20 @@ where
         }
     }
 
+    /// Get the key from the hash table.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::hash_map::HashMap, reference::Ref, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut hm = HashMap::with_capacity(1, guile);
+    ///     assert!(hm.get(0).is_none());
+    ///     hm.insert(0, true);
+    ///     assert_eq!(hm.get(0).map(Ref::copied), Some(true));
+    /// }).unwrap();
+    /// ```
     pub fn get<'a>(&'a self, key: K) -> Option<Ref<'a, 'gm, V>>
     where
         K: TryFromScm<'gm> + ToScm<'gm> + 'gm,
@@ -125,6 +147,21 @@ where
             None
         }
     }
+    /// Get the key from the hash table.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::{hash_map::HashMap, pair::Pair}, reference::Ref, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut hm = HashMap::with_capacity(1, guile);
+    ///     assert!(hm.get(0).is_none());
+    ///     hm.insert(0, Pair::new(2, 2, guile));
+    ///     hm.get_mut(0).unwrap().set_car(1);
+    ///     assert_eq!(hm.get(0).unwrap().as_car().copied(), 1);
+    /// }).unwrap();
+    /// ```
     pub fn get_mut<'a>(&'a mut self, key: K) -> Option<RefMut<'a, 'gm, V>>
     where
         K: TryFromScm<'gm> + ToScm<'gm> + 'gm,
@@ -138,6 +175,18 @@ where
             None
         }
     }
+
+    /// Insert a key value pair into the hash map.
+    ///
+    /// ```
+    /// # use gargoyle::{collections::hash_map::HashMap, reference::Ref, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut hm = HashMap::with_capacity(1, guile);
+    ///     hm.insert(0, true);
+    ///     assert!(hm.get(0).is_some());
+    /// }).unwrap();
+    /// ```
     pub fn insert(&mut self, key: K, val: V)
     where
         K: ToScm<'gm>,
@@ -152,7 +201,21 @@ where
             );
         }
     }
-    pub fn remove(&mut self, key: K) -> Option<V>
+    /// Remove a key value pair from the hash map.
+    ///
+    /// ```
+    /// # use gargoyle::{collections::hash_map::HashMap, reference::Ref, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut hm = HashMap::with_capacity(1, guile);
+    ///     assert!(hm.get(0).is_none());
+    ///     hm.insert(0, true);
+    ///     assert!(hm.get(0).is_some());
+    ///     hm.remove(0);
+    ///     assert!(hm.get(0).is_none());
+    /// }).unwrap();
+    /// ```
+    pub fn remove(&mut self, key: K) -> Option<Pair<'gm, K, V>>
     where
         K: ToScm<'gm> + TryFromScm<'gm> + 'gm,
         V: TryFromScm<'gm> + 'gm,
@@ -165,13 +228,11 @@ where
             ),
             guile,
         )
-        .map(Pair::into_tuple)
-        .map(|(_, r)| r)
         .ok()
     }
 }
-unsafe impl<K, V, E> ReprScm for HashMap<'_, K, V, E> where E: ScmPartialEq {}
-impl<'gm, K, V, E> ToScm<'gm> for HashMap<'gm, K, V, E>
+unsafe impl<K, V, E> ReprScm for HashMapInner<'_, K, V, E> where E: ScmPartialEq {}
+impl<'gm, K, V, E> ToScm<'gm> for HashMapInner<'gm, K, V, E>
 where
     E: ScmPartialEq,
 {
@@ -179,7 +240,7 @@ where
         self.scm
     }
 }
-impl<'gm, K, V, E> TryFromScm<'gm> for HashMap<'gm, K, V, E>
+impl<'gm, K, V, E> TryFromScm<'gm> for HashMapInner<'gm, K, V, E>
 where
     K: TryFromScm<'gm>,
     V: TryFromScm<'gm>,
@@ -221,6 +282,13 @@ where
         }
     }
 }
+
+/// Hash map that uses `equal?` for comparison
+pub type HashMap<'gm, K, V> = HashMapInner<'gm, K, V, Equal>;
+/// Hash map that uses `eq?` for comparison
+pub type HashMapQ<'gm, K, V> = HashMapInner<'gm, K, V, Eq>;
+/// Hash map that uses `eqv?` for comparison
+pub type HashMapV<'gm, K, V> = HashMapInner<'gm, K, V, Eqv>;
 
 extern "C" fn hash_map_fold_callback<'gm, K, V>(key: SCM, val: SCM, accum: SCM) -> SCM
 where

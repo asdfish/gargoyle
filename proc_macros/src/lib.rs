@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#![expect(missing_docs)]
+
 mod fn_args;
 mod macro_args;
 
@@ -127,7 +129,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                         });
                                         let mut #keyword_idents = unsafe { #gargoyle_root::sys::SCM_UNDEFINED };)*
                                         unsafe { #gargoyle_root::sys::scm_c_bind_keyword_arguments(
-                                            #guile_ident.as_ptr(), #rest_ident, 0,
+                                            #guile_ident.as_ptr().cast(), #rest_ident, 0,
                                             #(#keyword_static_idents.load(::std::sync::atomic::Ordering::SeqCst), &raw mut #keyword_idents,)*
                                             #gargoyle_root::sys::SCM_UNDEFINED,
                                         ); }
@@ -141,10 +143,10 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                             #(#(#keyword_idents.as_deref(),)*)*
                                             #(&#rest_enabled_ident)*
                                         );
-                                        #gargoyle_root::scm::ToScm::to_scm(ret, guile).as_ptr()
+                                        #gargoyle_root::reference::ReprScm::as_ptr(&#gargoyle_root::scm::ToScm::to_scm(ret, guile))
                                     }
                                     static PROC: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#gargoyle_root::sys::scm_unused_struct>> = ::std::sync::LazyLock::new(|| {
-                                        unsafe { #gargoyle_root::sys::scm_c_make_gsubr(#guile_ident.as_ptr(), #required_len.try_into().unwrap(), #optional_len.try_into().unwrap(), #has_rest as ::std::ffi::c_int, driver as *mut ::std::ffi::c_void) }
+                                        unsafe { #gargoyle_root::sys::scm_c_make_gsubr(#guile_ident.as_ptr().cast(), #required_len.try_into().unwrap(), #optional_len.try_into().unwrap(), #has_rest as ::std::ffi::c_int, driver as *mut ::std::ffi::c_void) }
                                         .into()
                                     });
 
@@ -246,7 +248,7 @@ where
     )
 }
 
-#[proc_macro_derive(ForeignObject, attributes(gargoyle_root, ty_name))]
+#[proc_macro_derive(ForeignObject, attributes(gargoyle_root))]
 pub fn foreign_object(input: TokenStream) -> TokenStream {
     syn::parse::<DeriveInput>(input)
         .and_then(
@@ -258,30 +260,13 @@ pub fn foreign_object(input: TokenStream) -> TokenStream {
              }| {
                 let ty_name_str = ident.to_string().to_case(Case::Kebab);
                 gargoyle_root(&attrs)
-                    .and_then(|gargoyle_root| {
-                        get_last_attr(
-                            &attrs,
-                            "ty_name",
-                            |expr| {
-                                match expr {
-                                    Expr::Lit(ExprLit { lit: Lit::CStr(lit), .. }) => Ok(lit),
-                                    expr => Err(syn::Error::new(expr.span(), "expected literal c string: `ty_name = c\"foo\"`")),
-                                }
-                            },
-                            LitCStr::new(&CString::new(ty_name_str).expect("rust identifiers cannot have null characters which would make this unreachable"), Span::call_site()),
-                        )
-                            .map(|ty_name| (gargoyle_root, ty_name))
-                    })
-                    .map(|(gargoyle_root, ty_name_cstr)| {
+                    .map(|gargoyle_root| {
                         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-                        let ty_name_str = ty_name_cstr.value();
-                        let ty_name_str = ty_name_str.to_string_lossy();
 
                         quote! {
                             impl #impl_generics #gargoyle_root::foreign_object::ForeignObject for #ident #ty_generics
                             #where_clause
                             {
-                                const TYPE_NAME: &::std::ffi::CStr = #ty_name_cstr;
                                 unsafe fn get_or_create_type() -> #gargoyle_root::sys::SCM {
                                     static OBJECT_TYPE: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#gargoyle_root::sys::scm_unused_struct>>
                                         = ::std::sync::LazyLock::new(|| {
@@ -289,7 +274,7 @@ pub fn foreign_object(input: TokenStream) -> TokenStream {
                                             let name = #gargoyle_root::symbol::Symbol::from_str(#ty_name_str, guile);
                                             unsafe {
                                                 #gargoyle_root::sys::scm_make_foreign_object_type(
-                                                    #gargoyle_root::reference::ReprScm::to_ptr(name),
+                                                    #gargoyle_root::reference::ReprScm::as_ptr(&name),
                                                     #gargoyle_root::foreign_object::slots(),
                                                     ::std::option::Option::None,
                                                 )
@@ -365,7 +350,7 @@ pub fn to_scm(input: TokenStream) -> TokenStream {
         .into()
 }
 
-#[proc_macro_derive(TryFromScm, attributes(gargoyle_root, guile_mode_lt))]
+#[proc_macro_derive(TryFromScm, attributes(gargoyle_root, guile_mode_lt, ty_name))]
 pub fn try_from_scm(input: TokenStream) -> TokenStream {
     syn::parse::<DeriveInput>(input)
         .and_then(
@@ -384,7 +369,12 @@ pub fn try_from_scm(input: TokenStream) -> TokenStream {
                             })
                             .map(|gm| (gargoyle_root, gm))
                     })
-                    .map(|(gargoyle_root, gm)| {
+                    .and_then(|(root, gm)| get_last_attr(&attrs, "ty_name", |expr| match expr {
+                        Expr::Lit(ExprLit { lit: Lit::CStr(ty_name), .. }) => Ok(ty_name),
+                        expr => Err(syn::Error::new(expr.span(), "expected c string literal: `ty_name = c\"foo\"`"))
+                    }, LitCStr::new(&CString::new(ident.to_string().to_case(Case::Kebab)).unwrap(), Span::call_site()))
+                    .map(|ty_name| (root, gm, ty_name)))
+                    .map(|(gargoyle_root, gm, ty_name)| {
                         let (_, ty_generics, _) = generics.split_for_impl();
                         let ty_generics = quote! { #ty_generics };
 
@@ -396,13 +386,13 @@ pub fn try_from_scm(input: TokenStream) -> TokenStream {
                             #where_clause
                             {
                                 fn type_name() -> ::std::borrow::Cow<'static, ::std::ffi::CStr> {
-                                    ::std::borrow::Cow::Borrowed(<Self as #gargoyle_root::foreign_object::ForeignObject>::TYPE_NAME)
+                                    ::std::borrow::Cow::Borrowed(#ty_name)
                                 }
 
                                 fn predicate(scm: &#gargoyle_root::scm::Scm<#gm>, _: &#gm #gargoyle_root::Guile) -> bool {
                                     let b = unsafe {
                                         #gargoyle_root::sys::SCM_IS_A_P(
-                                            scm.as_ptr(),
+                                            #gargoyle_root::reference::ReprScm::as_ptr(scm),
                                             <Self as #gargoyle_root::foreign_object::ForeignObject>::get_or_create_type(),
                                         )
                                     };
@@ -412,7 +402,7 @@ pub fn try_from_scm(input: TokenStream) -> TokenStream {
                                 unsafe fn from_scm_unchecked(scm: #gargoyle_root::scm::Scm<#gm>, _: &#gm #gargoyle_root::Guile) -> Self {
                                     let ptr = unsafe {
                                         #gargoyle_root::sys::scm_foreign_object_ref(
-                                            scm.as_ptr(),
+                                            #gargoyle_root::reference::ReprScm::as_ptr(&scm),
                                             0,
                                         )
                                     }.cast::<Self>();

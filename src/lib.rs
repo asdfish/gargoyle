@@ -26,7 +26,6 @@ pub mod alloc;
 pub mod catch;
 pub mod collections;
 pub mod dynwind;
-mod error;
 mod eval;
 pub mod foreign_object;
 mod guile_mode;
@@ -48,6 +47,7 @@ use std::ptr::NonNull;
 
 pub use guile_mode::*;
 
+/// Token that proves the current thread is in guile mode.
 #[repr(transparent)]
 pub struct Guile {
     _marker: (),

@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Compact vectors for primitive numbers
+
 // TODO: reuse code from ../vector.rs since these are pretty similar
 
 use {
@@ -287,6 +289,7 @@ impl ByteVectorType for f64 {
         crate::sys::scm_take_f64vector;
 }
 
+/// Vector but using primitive types.
 #[repr(transparent)]
 pub struct ByteVector<'gm, T>
 where
@@ -299,6 +302,20 @@ impl<'gm, T> ByteVector<'gm, T>
 where
     T: ByteVectorType,
 {
+    /// Get an immutable iterator over all elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::byte_vector::ByteVector, list, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert_eq!(
+    ///         ByteVector::<i32>::from(list!(guile, 1, 2, 3)).iter().copied().collect::<Vec<_>>(),
+    ///         [1, 2, 3],
+    ///     );
+    /// }).unwrap();
+    /// ```
     pub fn iter<'a>(&'a self) -> Iter<'a, 'gm, T> {
         let mut handle = Default::default();
         let mut len = 0;
@@ -320,6 +337,19 @@ where
             _marker: PhantomData,
         }
     }
+    /// Get a mutable iterator over all elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::byte_vector::ByteVector, list, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut vec = ByteVector::<i32>::from(list!(guile, 1, 2, 3));
+    ///     vec.iter_mut().for_each(|i| *i += 1);
+    ///     assert_eq!(vec.into_iter().collect::<Vec<_>>(), [2, 3, 4]);
+    /// }).unwrap();
+    /// ```
     pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, 'gm, T> {
         let mut handle = Default::default();
         let mut len = 0;
@@ -446,6 +476,7 @@ where
     }
 }
 
+/// Iterator for [ByteVector::into_iter].
 pub struct IntoIter<'gm, T>
 where
     T: ByteVectorType,
@@ -509,6 +540,7 @@ where
     }
 }
 
+/// Iterator for [ByteVector::iter]
 pub struct Iter<'a, 'gm, T>
 where
     T: ByteVectorType,
@@ -572,6 +604,7 @@ where
     }
 }
 
+/// Iterator for [ByteVector::iter_mut]
 pub struct IterMut<'a, 'gm, T>
 where
     T: ByteVectorType,

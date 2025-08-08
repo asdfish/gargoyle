@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Guile equivalent of `Box<dyn Any>`
+
 use {
     crate::{
         Guile,
@@ -31,11 +33,15 @@ use {
     std::{borrow::Cow, ffi::CStr, marker::PhantomData},
 };
 
+/// Trait for types that can be converted from a [Scm] object.
 pub trait TryFromScm<'gm> {
+    /// The name of the type
     fn type_name() -> Cow<'static, CStr>;
 
+    /// Whether or not the object is this type
     fn predicate(_: &Scm<'gm>, _: &'gm Guile) -> bool;
 
+    /// Try to convert the [Scm] to this type.
     fn try_from_scm(scm: Scm<'gm>, guile: &'gm Guile) -> Result<Self, Scm<'gm>>
     where
         Self: Sized,
@@ -47,6 +53,7 @@ pub trait TryFromScm<'gm> {
         }
     }
 
+    /// Attempt to convert the type or throw an exception.
     fn from_scm_or_throw(scm: Scm<'gm>, proc: &CStr, idx: usize, guile: &'gm Guile) -> Self
     where
         Self: Sized,
@@ -75,7 +82,9 @@ pub trait TryFromScm<'gm> {
 }
 pub use proc_macros::TryFromScm;
 
+/// Trait for types that can be converted to a [Scm] object.
 pub trait ToScm<'gm> {
+    /// Convert this type to a [Scm]
     fn to_scm(self, _: &'gm Guile) -> Scm<'gm>
     where
         Self: Sized;
@@ -118,6 +127,7 @@ pub trait ToScm<'gm> {
 /// ```
 pub use proc_macros::ToScm;
 
+/// Guile equivalent of `Box<dyn Any>`
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct Scm<'gm> {
@@ -125,9 +135,18 @@ pub struct Scm<'gm> {
     _marker: PhantomData<&'gm ()>,
 }
 impl<'gm> Scm<'gm> {
-    pub fn as_ptr(&self) -> SCM {
-        self.ptr
-    }
+    /// Create a [Scm] from a pointer and a lifetime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{scm::Scm, with_guile};
+    /// # use std::ptr;
+    /// with_guile(|guile| {
+    ///     // safe since the `Scm`'s lifetime is bound to the lifetime of `guile`
+    ///     let scm = Scm::from_ptr(ptr::dangling_mut(), guile);
+    /// }).unwrap();
+    /// ```
     pub fn from_ptr(ptr: SCM, _: &'gm Guile) -> Self {
         Self {
             ptr,
@@ -144,18 +163,13 @@ impl<'gm> Scm<'gm> {
         }
     }
 
-    /// Compare equality using `equal?`
-    pub fn is_equal(&self, r: &Self) -> bool {
-        unsafe { Scm::from_ptr_unchecked(scm_equal_p(self.as_ptr(), r.as_ptr())) }.is_true()
-    }
-
-    pub fn is_true(&self) -> bool {
+    pub(crate) fn is_true(&self) -> bool {
         c_predicate(unsafe { scm_is_true(self.as_ptr()) })
     }
-    pub fn is_false(&self) -> bool {
+    pub(crate) fn is_false(&self) -> bool {
         c_predicate(unsafe { scm_is_false(self.as_ptr()) })
     }
-    pub fn is_eol(&self) -> bool {
+    pub(crate) fn is_eol(&self) -> bool {
         scm_predicate(unsafe { scm_null_p(self.as_ptr()) })
     }
 
@@ -170,9 +184,9 @@ impl<'gm> Scm<'gm> {
     }
 }
 impl PartialEq for Scm<'_> {
-    /// See [Self::is_equal].
+    /// Compare equality with `equal?`
     fn eq(&self, r: &Self) -> bool {
-        self.is_equal(r)
+        unsafe { Scm::from_ptr_unchecked(scm_equal_p(self.as_ptr(), r.as_ptr())) }.is_true()
     }
 }
 unsafe impl ReprScm for Scm<'_> {}

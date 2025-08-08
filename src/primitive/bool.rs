@@ -21,6 +21,7 @@
 use {
     crate::{
         Guile,
+        reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
         sys::{SCM_BOOL_F, SCM_BOOL_T, scm_is_bool},
         utils::c_predicate,

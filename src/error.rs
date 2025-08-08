@@ -24,6 +24,7 @@ use {
 };
 
 impl Guile {
+    ///
     pub fn misc_error<'gm, T>(&'gm self, subr: &CStr, msg: &CStr, list: List<'gm, T>) -> !
     where
         T: ToScm<'gm>,

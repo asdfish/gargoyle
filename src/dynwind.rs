@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Ensure calls to drop in case of stack unwinding.
+
 use {
     crate::{
         Guile,
@@ -26,6 +28,7 @@ use {
     std::{ffi::c_void, marker::PhantomData, pin::Pin, ptr},
 };
 
+/// Raii guard for dynamic wind scopes.
 #[repr(transparent)]
 pub struct Dynwind<'gm> {
     _marker: PhantomData<&'gm ()>,
@@ -68,7 +71,7 @@ impl<'gm> Dynwind<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::list::List, dynwind::Dynwind, Guile, with_guile};
+    /// # use gargoyle::{collections::list::List, dynwind::Dynwind, symbol::Symbol, Guile, with_guile};
     /// # use std::{pin::Pin, sync::atomic::{self, AtomicBool}};
     /// # #[cfg(not(miri))] {
     /// static DROPPED: AtomicBool = AtomicBool::new(false);
@@ -97,7 +100,7 @@ impl<'gm> Dynwind<'gm> {
     ///     );
     ///     assert!(DROPPED.load(atomic::Ordering::Acquire));
     /// }
-    /// test_drop(|guile| guile.misc_error(c"unknown", c"intentional error", List::<i32>::new(guile)), true);
+    /// test_drop(|guile| guile.throw(Symbol::from_str("intentional-error", guile), List::<i32>::new(guile)), true);
     /// test_drop(|guile| {}, false);
     /// # }
     /// ```

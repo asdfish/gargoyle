@@ -21,6 +21,7 @@
 use crate::{
     Guile,
     module::Module,
+    reference::ReprScm,
     scm::{Scm, TryFromScm},
     string::String,
     sys::{scm_eval_string, scm_eval_string_in_module, scm_primitive_load},

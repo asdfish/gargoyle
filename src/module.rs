@@ -18,11 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Manipulate modules and the environment.
+
 use {
     crate::{
         Guile,
         collections::list::List,
-        reference::{Ref, ReprScm},
+        reference::{Ref, RefMut, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
         symbol::Symbol,
         sys::{
@@ -35,12 +37,23 @@ use {
     std::{borrow::Cow, ffi::CStr},
 };
 
+/// Module paths like `'(ice-9 sandbox)`
 pub type ModulePath<'gm> = List<'gm, Symbol<'gm>>;
 
+/// Environment containing symbols.
 #[repr(transparent)]
 pub struct Module<'gm>(pub(crate) Scm<'gm>);
 impl<'gm> Module<'gm> {
     /// Get the current module.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{module::Module, with_guile};
+    /// with_guile(|guile| {
+    ///     let module = Module::current(guile);
+    /// }).unwrap();
+    /// ```
     pub fn current(guile: &'gm Guile) -> Self {
         Self(Scm::from_ptr(unsafe { scm_current_module() }, guile))
     }
@@ -117,14 +130,18 @@ impl<'gm> Module<'gm> {
     ///     assert_eq!(module.read::<i32>(sym).unwrap().unwrap().copied(), 10);
     /// }).unwrap();
     /// ```
-    pub fn define<T>(&mut self, sym: Symbol<'gm>, val: T)
+    pub fn define<'a, T>(&mut self, sym: Symbol<'gm>, val: T) -> RefMut<'a, 'gm, T>
     where
         T: ToScm<'gm>,
     {
+        let guile = unsafe { Guile::new_unchecked_ref() };
+        let val = val.to_scm(guile);
+
         unsafe {
             // SAFETY: we are in guile mode
-            let guile = Guile::new_unchecked_ref();
-            scm_module_define(self.0.as_ptr(), sym.ptr, val.to_scm(guile).as_ptr());
+            scm_module_define(self.0.as_ptr(), sym.ptr, val.as_ptr());
+
+            RefMut::new_unchecked(val.as_ptr())
         }
     }
 

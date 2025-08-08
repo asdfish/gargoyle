@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Tuples in guile
+
 use {
     crate::{
         Guile,
@@ -33,6 +35,7 @@ use {
     },
 };
 
+/// Tuples with 2 elements.
 #[repr(transparent)]
 pub struct Pair<'gm, L, R> {
     scm: Scm<'gm>,
@@ -43,11 +46,22 @@ where
     L: TryFromScm<'gm>,
     R: TryFromScm<'gm>,
 {
-    pub fn into_tuple(self) -> (L, R) {
+    /// Convert a pair into a tuple.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert_eq!(Pair::new(1, 2, guile).to_tuple(), (1, 2));
+    /// }).unwrap();
+    /// ```
+    pub fn to_tuple(self) -> (L, R) {
         let guile = unsafe { Guile::new_unchecked_ref() };
         (
             unsafe {
-                L::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm.as_ptr()), guile), guile)
+                L::from_scm_unchecked(Scm::from_ptr(scm_car(self.scm.as_ptr()), guile), guile)
             },
             unsafe {
                 R::from_scm_unchecked(Scm::from_ptr(scm_cdr(self.scm.as_ptr()), guile), guile)
@@ -56,15 +70,65 @@ where
     }
 }
 impl<'gm, L, R> Pair<'gm, L, R> {
+    /// Get a reference to the left of the pair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert_eq!(Pair::new(1, 2, guile).as_car().copied(), 1);
+    /// }).unwrap();
+    /// ```
     pub fn as_car<'a>(&'a self) -> Ref<'a, 'gm, L> {
         unsafe { Ref::new_unchecked(scm_car(self.scm.as_ptr())) }
     }
+    /// Get a reference to the right of the pair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert_eq!(Pair::new(1, 2, guile).as_cdr().copied(), 2);
+    /// }).unwrap();
+    /// ```
     pub fn as_cdr<'a>(&'a self) -> Ref<'a, 'gm, R> {
         unsafe { Ref::new_unchecked(scm_cdr(self.scm.as_ptr())) }
     }
+    /// Get a mutable reference to the left side of the pair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{list, collections::pair::Pair, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut pair = Pair::new(Pair::new(1, 1, guile), 2, guile);
+    ///     assert_eq!(pair.as_car().as_car().copied(), 1);
+    ///     pair.as_mut_car().set_car(0);
+    ///     assert_eq!(pair.as_car().as_car().copied(), 0);
+    /// }).unwrap();
+    /// ```
     pub fn as_mut_car<'a>(&'a mut self) -> RefMut<'a, 'gm, L> {
         unsafe { RefMut::new_unchecked(scm_car(self.scm.as_ptr())) }
     }
+    /// Get a mutable reference to the right side of the pair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{list, collections::pair::Pair, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut pair = Pair::new(0, Pair::new(2, 2, guile), guile);
+    ///     assert_eq!(pair.as_cdr().as_car().copied(), 2);
+    ///     pair.as_mut_cdr().set_car(1);
+    ///     assert_eq!(pair.as_cdr().as_car().copied(), 1);
+    /// }).unwrap();
+    /// ```
     pub fn as_mut_cdr<'a>(&'a mut self) -> RefMut<'a, 'gm, R> {
         unsafe { RefMut::new_unchecked(scm_cdr(self.scm.as_ptr())) }
     }
@@ -74,6 +138,17 @@ where
     L: ToScm<'gm>,
     R: ToScm<'gm>,
 {
+    /// Create a pair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     assert_eq!(Pair::new(true, false, guile).to_tuple(), (true, false));
+    /// }).unwrap();
+    /// ```
     pub fn new(car: L, cdr: R, guile: &'gm Guile) -> Self {
         let car = car.to_scm(guile);
         let cdr = cdr.to_scm(guile);
@@ -88,12 +163,38 @@ where
     L: ToScm<'gm>,
     R: ToScm<'gm>,
 {
+    /// Set the left side of a pair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut pair = Pair::new(true, false, guile);
+    ///     pair.set_car(false);
+    ///     assert_eq!(pair.to_tuple(), (false, false));
+    /// }).unwrap();
+    /// ```
     pub fn set_car(&mut self, l: L) {
         let guile = unsafe { Guile::new_unchecked_ref() };
         unsafe {
             scm_set_car_x(self.scm.as_ptr(), l.to_scm(guile).as_ptr());
         }
     }
+    /// Set the right side of a pair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut pair = Pair::new(true, false, guile);
+    ///     pair.set_cdr(true);
+    ///     assert_eq!(pair.to_tuple(), (true, true));
+    /// }).unwrap();
+    /// ```
     pub fn set_cdr(&mut self, r: R) {
         let guile = unsafe { Guile::new_unchecked_ref() };
         unsafe {

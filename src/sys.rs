@@ -19,6 +19,7 @@
 // THE SOFTWARE.
 
 #![expect(non_camel_case_types)]
+#![expect(missing_docs)]
 
 use std::ffi::{c_char, c_double, c_int, c_void};
 

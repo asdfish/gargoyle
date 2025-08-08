@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Guile strings.
+
 use {
     crate::{
         Guile,
@@ -38,6 +40,7 @@ use {
     string::String as BufString,
 };
 
+/// Guile strings.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct String<'gm> {
@@ -45,6 +48,18 @@ pub struct String<'gm> {
     _marker: PhantomData<&'gm ()>,
 }
 impl<'gm> String<'gm> {
+    /// Create a string from utf8 strings.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{string::String, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let string = String::from_str("", guile);
+    ///     let string = String::from_str("hello world", guile);
+    /// }).unwrap();
+    /// ```
     pub fn from_str(string: &str, guile: &'gm Guile) -> Self {
         String {
             scm: Scm::from_ptr(
@@ -75,9 +90,31 @@ impl<'gm> String<'gm> {
         unsafe { BufString::from_utf8_unchecked(buffer) }
     }
 
+    /// Get the length of a string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{string::String, with_guile};
+    /// with_guile(|guile| {
+    ///     assert_eq!(String::from_str("", guile).len(), 0);
+    ///     assert_eq!(String::from_str("foo", guile).len(), 3);
+    /// }).unwrap();
+    /// ```
     pub fn len(&self) -> usize {
         unsafe { scm_c_string_length(self.scm.as_ptr()) }
     }
+    /// Check if a string is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{string::String, with_guile};
+    /// with_guile(|guile| {
+    ///     assert!(String::from_str("", guile).is_empty());
+    ///     assert!(!String::from_str("foo", guile).is_empty());
+    /// }).unwrap();
+    /// ```
     pub fn is_empty(&self) -> bool {
         scm_predicate(unsafe { scm_string_null_p(self.scm.as_ptr()) })
     }

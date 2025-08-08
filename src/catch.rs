@@ -18,10 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Try catch facilities in rust.
+
 use {
     crate::{
         Guile,
         collections::list::List,
+        reference::ReprScm,
         scm::{Scm, TryFromScm},
         symbol::Symbol,
         sys::{SCM, SCM_BOOL_T, SCM_UNDEFINED, scm_internal_catch, scm_throw},
@@ -29,8 +32,11 @@ use {
     std::ffi::c_void,
 };
 
+/// Tag for the type of error that you would like to catch.
 pub enum Tag<'gm> {
+    /// Catch all symbols.
     All,
+    /// Catch a specfic symbol.
     Symbol(Symbol<'gm>),
 }
 
@@ -78,6 +84,15 @@ where
 }
 
 impl Guile {
+    /// Throw an exception and start unwinding.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{collections::list::List, symbol::Symbol, with_guile};
+    /// # #[cfg(not(miri))]
+    /// assert!(with_guile(|guile| guile.throw(Symbol::from_str("foo", guile), List::<i32>::new(guile))).is_none());
+    /// ```
     pub fn throw<'gm, T>(&'gm self, ty: Symbol<'gm>, args: List<'gm, T>) -> ! {
         unsafe {
             scm_throw(ty.ptr, args.scm.as_ptr());

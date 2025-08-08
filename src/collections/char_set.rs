@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Hash set of characters
+
 use {
     crate::{
         Guile,
@@ -35,10 +37,26 @@ use {
     std::{borrow::Cow, ffi::CStr},
 };
 
+/// Character hash sets.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct CharSet<'gm>(pub(crate) Scm<'gm>);
 impl<'gm> CharSet<'gm> {
+    /// Check if the character set contains a character.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{list, collections::char_set::CharSet, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let abc = CharSet::from(list!(guile, 'a', 'b', 'c'));
+    ///     ('a'..='c')
+    ///         .for_each(|ch| assert!(abc.contains(ch)));
+    ///     ('d'..='z')
+    ///         .for_each(|ch| assert!(!abc.contains(ch)));
+    /// }).unwrap();
+    /// ```
     pub fn contains(&self, ch: char) -> bool {
         let guile = unsafe { Guile::new_unchecked_ref() };
         scm_predicate(unsafe {
@@ -46,6 +64,21 @@ impl<'gm> CharSet<'gm> {
         })
     }
 
+    /// Get an iterator over all characters.
+    ///
+    /// The order by which the characters appear is unspecified.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{list, collections::char_set::CharSet, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut abc = CharSet::from(list!(guile, 'a', 'b', 'c')).iter().collect::<Vec<_>>();
+    ///     abc.sort();
+    ///     assert_eq!(abc, ['a', 'b', 'c']);
+    /// }).unwrap();
+    /// ```
     pub fn iter<'a>(&'a self) -> Iter<'a, 'gm> {
         Iter {
             cursor: unsafe { Scm::from_ptr_unchecked(scm_char_set_cursor(self.0.as_ptr())) },
@@ -96,6 +129,7 @@ impl<'gm> TryFromScm<'gm> for CharSet<'gm> {
     }
 }
 
+/// Iterator created by [CharSet::iter
 pub struct Iter<'a, 'gm> {
     cursor: Scm<'gm>,
     char_set: &'a CharSet<'gm>,
@@ -152,6 +186,7 @@ mod tests {
                 guile,
             ));
             ('a'..='z').for_each(|ch| assert!(set.contains(ch)));
-        });
+        })
+        .unwrap();
     }
 }

@@ -18,20 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+//! Insert custom types into the guile runtime.
+
 use {
     crate::{
         Guile,
         collections::list::List,
+        reference::ReprScm,
         scm::ToScm,
         symbol::Symbol,
         sys::{SCM, scm_unused_struct},
     },
-    std::{
-        ffi::CStr,
-        sync::{
-            LazyLock,
-            atomic::{self, AtomicPtr},
-        },
+    std::sync::{
+        LazyLock,
+        atomic::{self, AtomicPtr},
     },
 };
 
@@ -55,9 +55,8 @@ pub unsafe fn slots() -> SCM {
     SYMBOL.load(atomic::Ordering::Acquire)
 }
 
+/// Custom types that can be used in guile.
 pub trait ForeignObject: Copy + Send + Sync {
-    const TYPE_NAME: &CStr;
-
     /// Create a type tag.
     ///
     /// # Safety
