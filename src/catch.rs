@@ -93,7 +93,7 @@ impl Guile {
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(guile.try_catch(Tag::All, |_| {}, |_, _, _| {}).is_ok());
-    ///     assert!(guile.try_catch(Tag::All, |guile| guile.throw(Symbol::from_str("foo", guile), List::<i32>::new(guile)), |_, _, _| {}).is_err());
+    ///     assert!(guile.try_catch(Tag::Symbol(Symbol::from_str("foo", guile)), |guile| guile.throw(Symbol::from_str("foo", guile), List::<i32>::new(guile)), |_, _, _| {}).is_err());
     /// }).unwrap();
     /// ```
     pub fn try_catch<'gm, B, H, T, E>(&'gm self, tag: Tag<'gm>, body: B, handler: H) -> Result<T, E>
