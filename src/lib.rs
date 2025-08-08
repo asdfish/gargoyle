@@ -23,6 +23,7 @@
 #![expect(private_bounds)]
 
 pub mod alloc;
+pub mod catch;
 pub mod collections;
 pub mod dynwind;
 mod error;

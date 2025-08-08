@@ -542,6 +542,7 @@ unsafe extern "C" {
         _handler: scm_t_catch_handler,
         _handler_data: *mut c_void,
     ) -> SCM;
+    pub fn scm_throw(_key: SCM, _args: SCM);
 }
 
 pub use GARGOYLE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;
