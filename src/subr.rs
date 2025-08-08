@@ -29,7 +29,7 @@ use {
     std::{borrow::Cow, ffi::CStr},
 };
 
-trait TupleExt<'gm, const ARITY: usize> {
+pub(crate) trait TupleExt<'gm, const ARITY: usize> {
     fn to_slice(self, _: &'gm Guile) -> [Scm<'gm>; ARITY];
 }
 macro_rules! impl_tuple_ext_for {

@@ -24,7 +24,7 @@ use {
         collections::list::List,
         reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
-        subr::Proc,
+        subr::{Proc, TupleExt},
         sys::{
             SCM_BOOL_F, SCM_HOOK_ARITY, SCM_HOOKP, scm_add_hook_x, scm_c_run_hook,
             scm_hook_empty_p, scm_make_hook, scm_reset_hook_x,
@@ -61,14 +61,17 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
         }
     }
 
-    pub fn run(&self, args: [Scm<'gm>; ARITY]) {
+    pub fn run<T>(&self, args: T)
+    where
+        T: TupleExt<'gm, ARITY>,
+    {
         unsafe {
             // SAFETY: having [self] is proof of being in guile mode
             let guile = Guile::new_unchecked_ref();
             // SAFETY: args must have the same length as the hook arity and this cannot be constructed called without being a hook
             scm_c_run_hook(
                 self.0.as_ptr(),
-                List::from_iter(args.into_iter().rev(), guile)
+                List::from_iter(args.to_slice(guile).into_iter().rev(), guile)
                     .to_scm(guile)
                     .as_ptr(),
             );
@@ -132,7 +135,7 @@ mod tests {
             assert!(hook.is_empty());
 
             hook.push(MustCall::create(guile));
-            hook.run([]);
+            hook.run(());
             assert!(CALLED.load(atomic::Ordering::Acquire));
         })
         .unwrap();
