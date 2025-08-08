@@ -44,14 +44,14 @@ use {
 /// Vector backed by a contiguous block of memory.
 #[repr(transparent)]
 pub struct Vector<'gm, T> {
-    pub(crate) scm: Scm<'gm>,
+    scm: Scm<'gm>,
     _marker: PhantomData<T>,
 }
 impl<'gm, T> From<List<'gm, T>> for Vector<'gm, T> {
     fn from(list: List<'gm, T>) -> Self {
         let guile = unsafe { Guile::new_unchecked_ref() };
         Self {
-            scm: Scm::from_ptr(unsafe { scm_vector(list.scm.as_ptr()) }, guile),
+            scm: Scm::from_ptr(unsafe { scm_vector(list.as_ptr()) }, guile),
             _marker: PhantomData,
         }
     }

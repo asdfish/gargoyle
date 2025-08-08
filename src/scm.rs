@@ -131,7 +131,7 @@ pub use proc_macros::ToScm;
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct Scm<'gm> {
-    pub(crate) ptr: SCM,
+    ptr: SCM,
     _marker: PhantomData<&'gm ()>,
 }
 impl<'gm> Scm<'gm> {

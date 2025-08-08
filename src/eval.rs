@@ -48,7 +48,7 @@ impl Guile {
     /// ```
     pub unsafe fn load_path<'gm>(&'gm self, path: String<'gm>) {
         unsafe {
-            scm_primitive_load(path.scm.as_ptr());
+            scm_primitive_load(path.as_ptr());
         }
     }
 
@@ -64,7 +64,7 @@ impl Guile {
         T: TryFromScm<'gm>,
     {
         T::try_from_scm(
-            Scm::from_ptr(unsafe { scm_eval_string(str.scm.as_ptr()) }, self),
+            Scm::from_ptr(unsafe { scm_eval_string(str.as_ptr()) }, self),
             self,
         )
     }
@@ -82,7 +82,7 @@ impl Guile {
     {
         T::try_from_scm(
             Scm::from_ptr(
-                unsafe { scm_eval_string_in_module(str.scm.as_ptr(), module.0.as_ptr()) },
+                unsafe { scm_eval_string_in_module(str.as_ptr(), module.as_ptr()) },
                 self,
             ),
             self,

@@ -44,7 +44,7 @@ use {
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct String<'gm> {
-    pub(crate) scm: Scm<'gm>,
+    scm: Scm<'gm>,
     _marker: PhantomData<&'gm ()>,
 }
 impl<'gm> String<'gm> {
@@ -124,7 +124,7 @@ impl<'gm> String<'gm> {
 impl<'gm> From<CharSet<'gm>> for String<'gm> {
     fn from(chrs: CharSet<'gm>) -> String<'gm> {
         String {
-            scm: unsafe { Scm::from_ptr_unchecked(scm_char_set_to_string(chrs.0.as_ptr())) },
+            scm: unsafe { Scm::from_ptr_unchecked(scm_char_set_to_string(chrs.as_ptr())) },
             _marker: PhantomData,
         }
     }
@@ -132,7 +132,7 @@ impl<'gm> From<CharSet<'gm>> for String<'gm> {
 impl<'gm> From<List<'gm, char>> for String<'gm> {
     fn from(list: List<'gm, char>) -> String<'gm> {
         String {
-            scm: unsafe { Scm::from_ptr_unchecked(scm_string(list.scm.as_ptr())) },
+            scm: unsafe { Scm::from_ptr_unchecked(scm_string(list.as_ptr())) },
             _marker: PhantomData,
         }
     }
@@ -140,7 +140,7 @@ impl<'gm> From<List<'gm, char>> for String<'gm> {
 impl<'gm> From<Symbol<'gm>> for String<'gm> {
     fn from(symbol: Symbol<'gm>) -> String<'gm> {
         String {
-            scm: unsafe { Scm::from_ptr_unchecked(scm_symbol_to_string(symbol.ptr)) },
+            scm: unsafe { Scm::from_ptr_unchecked(scm_symbol_to_string(symbol.as_ptr())) },
             _marker: PhantomData,
         }
     }

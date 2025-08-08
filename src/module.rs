@@ -42,7 +42,7 @@ pub type ModulePath<'gm> = List<'gm, Symbol<'gm>>;
 
 /// Environment containing symbols.
 #[repr(transparent)]
-pub struct Module<'gm>(pub(crate) Scm<'gm>);
+pub struct Module<'gm>(Scm<'gm>);
 impl<'gm> Module<'gm> {
     /// Get the current module.
     ///
@@ -72,7 +72,7 @@ impl<'gm> Module<'gm> {
     pub fn get_or_create(path: &ModulePath<'gm>) -> Self {
         let guile = unsafe { Guile::new_unchecked_ref() };
         Self::try_from_scm(
-            Scm::from_ptr(unsafe { scm_resolve_module(path.scm.as_ptr()) }, guile),
+            Scm::from_ptr(unsafe { scm_resolve_module(path.as_ptr()) }, guile),
             guile,
         )
         .expect("`scm_resolve_module` should always return a module")
@@ -92,10 +92,7 @@ impl<'gm> Module<'gm> {
     pub fn resolve(path: &ModulePath<'gm>) -> Option<Self> {
         let guile = unsafe { Guile::new_unchecked_ref() };
         Module::try_from_scm(
-            Scm::from_ptr(
-                unsafe { scm_maybe_resolve_module(path.scm.as_ptr()) },
-                guile,
-            ),
+            Scm::from_ptr(unsafe { scm_maybe_resolve_module(path.as_ptr()) }, guile),
             guile,
         )
         .ok()
@@ -114,7 +111,7 @@ impl<'gm> Module<'gm> {
     /// }).unwrap();
     /// ```
     pub fn is_defined(&'gm self, symbol: Symbol<'gm>) -> bool {
-        scm_predicate(unsafe { scm_defined_p(symbol.ptr, self.0.as_ptr()) })
+        scm_predicate(unsafe { scm_defined_p(symbol.as_ptr(), self.0.as_ptr()) })
     }
 
     /// Define a symbol in a module.
@@ -140,7 +137,7 @@ impl<'gm> Module<'gm> {
 
         unsafe {
             // SAFETY: we are in guile mode
-            scm_module_define(self.0.as_ptr(), sym.ptr, val.as_ptr());
+            scm_module_define(self.0.as_ptr(), sym.as_ptr(), val.as_ptr());
 
             RefMut::new_unchecked(val.as_ptr())
         }
@@ -170,10 +167,10 @@ impl<'gm> Module<'gm> {
         self.is_defined(sym).then(|| {
             let guile = unsafe { Guile::new_unchecked_ref() };
             let scm = Scm::from_ptr(
-                unsafe { scm_variable_ref(scm_module_lookup(self.0.as_ptr(), sym.ptr)) },
+                unsafe { scm_variable_ref(scm_module_lookup(self.0.as_ptr(), sym.as_ptr())) },
                 guile,
             );
-            unsafe { Ref::from_ptr(scm.ptr) }
+            unsafe { Ref::from_ptr(scm.as_ptr()) }
         })
     }
 

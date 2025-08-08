@@ -95,7 +95,7 @@ impl Guile {
     /// ```
     pub fn throw<'gm, T>(&'gm self, ty: Symbol<'gm>, args: List<'gm, T>) -> ! {
         unsafe {
-            scm_throw(ty.ptr, args.scm.as_ptr());
+            scm_throw(ty.as_ptr(), args.as_ptr());
         }
 
         unreachable!()
@@ -128,7 +128,7 @@ impl Guile {
 
         let tag = match tag {
             Tag::All => unsafe { SCM_BOOL_T },
-            Tag::Symbol(symbol) => symbol.ptr,
+            Tag::Symbol(symbol) => symbol.as_ptr(),
         };
         unsafe {
             scm_internal_catch(

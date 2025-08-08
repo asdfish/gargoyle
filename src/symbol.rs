@@ -39,13 +39,13 @@ use {
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Symbol<'gm> {
-    pub(crate) ptr: SCM,
+    ptr: SCM,
     _marker: PhantomData<&'gm ()>,
 }
 impl<'gm> From<String<'gm>> for Symbol<'gm> {
     fn from(string: String<'gm>) -> Self {
         Self {
-            ptr: unsafe { scm_string_to_symbol(string.scm.as_ptr()) },
+            ptr: unsafe { scm_string_to_symbol(string.as_ptr()) },
             _marker: PhantomData,
         }
     }
@@ -125,7 +125,7 @@ impl<'gm> Symbol<'gm> {
     /// ```
     pub fn new_uninterned(string: &String<'gm>) -> Self {
         Self {
-            ptr: unsafe { scm_make_symbol(string.scm.as_ptr()) },
+            ptr: unsafe { scm_make_symbol(string.as_ptr()) },
             _marker: PhantomData,
         }
     }

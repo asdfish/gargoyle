@@ -81,7 +81,7 @@ macro_rules! list {
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct List<'gm, T> {
-    pub(crate) scm: Scm<'gm>,
+    scm: Scm<'gm>,
     _marker: PhantomData<T>,
 }
 unsafe impl<'gm, T> ReprScm for List<'gm, T> {}
@@ -199,7 +199,7 @@ where
 {
     fn from(vector: ByteVector<'gm, T>) -> Self {
         List {
-            scm: unsafe { Scm::from_ptr_unchecked(T::TO_LIST(vector.scm.as_ptr())) },
+            scm: unsafe { Scm::from_ptr_unchecked(T::TO_LIST(vector.as_ptr())) },
             _marker: PhantomData,
         }
     }
@@ -207,7 +207,7 @@ where
 impl<'gm> From<CharSet<'gm>> for List<'gm, char> {
     fn from(chrs: CharSet<'gm>) -> Self {
         List {
-            scm: unsafe { Scm::from_ptr_unchecked(scm_char_set_to_list(chrs.0.as_ptr())) },
+            scm: unsafe { Scm::from_ptr_unchecked(scm_char_set_to_list(chrs.as_ptr())) },
             _marker: PhantomData,
         }
     }
@@ -215,7 +215,7 @@ impl<'gm> From<CharSet<'gm>> for List<'gm, char> {
 impl<'gm, const ARITY: usize> From<Hook<'gm, ARITY>> for List<'gm, Proc<'gm>> {
     fn from(hook: Hook<'gm, ARITY>) -> Self {
         Self {
-            scm: unsafe { Scm::from_ptr_unchecked(scm_hook_to_list(hook.0.as_ptr())) },
+            scm: unsafe { Scm::from_ptr_unchecked(scm_hook_to_list(hook.as_ptr())) },
             _marker: PhantomData,
         }
     }
@@ -224,7 +224,7 @@ impl<'gm, T> From<Vector<'gm, T>> for List<'gm, T> {
     fn from(vector: Vector<'gm, T>) -> Self {
         let guile = unsafe { Guile::new_unchecked_ref() };
         Self {
-            scm: Scm::from_ptr(unsafe { scm_vector_to_list(vector.scm.as_ptr()) }, guile),
+            scm: Scm::from_ptr(unsafe { scm_vector_to_list(vector.as_ptr()) }, guile),
             _marker: PhantomData,
         }
     }

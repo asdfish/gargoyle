@@ -55,7 +55,7 @@ use {
 /// }).unwrap();
 /// ```
 #[repr(transparent)]
-pub struct Hook<'gm, const ARITY: usize>(pub(crate) Scm<'gm>);
+pub struct Hook<'gm, const ARITY: usize>(Scm<'gm>);
 impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     /// Create a new hook.
     ///

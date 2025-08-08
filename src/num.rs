@@ -228,7 +228,7 @@ macro_rules! define_num {
                 _: &'gm $crate::Guile,
             ) -> Self {
                 $ident {
-                    scm: scm.ptr,
+                    scm: scm.as_ptr(),
                     _marker: ::std::marker::PhantomData,
                 }
             }

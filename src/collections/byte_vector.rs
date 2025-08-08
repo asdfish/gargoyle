@@ -295,7 +295,7 @@ pub struct ByteVector<'gm, T>
 where
     T: ByteVectorType,
 {
-    pub(crate) scm: Scm<'gm>,
+    scm: Scm<'gm>,
     _marker: PhantomData<T>,
 }
 impl<'gm, T> ByteVector<'gm, T>
@@ -378,7 +378,7 @@ where
 {
     fn from(list: List<'gm, T>) -> Self {
         Self {
-            scm: unsafe { Scm::from_ptr_unchecked(T::FROM_LIST(list.scm.as_ptr())) },
+            scm: unsafe { Scm::from_ptr_unchecked(T::FROM_LIST(list.as_ptr())) },
             _marker: PhantomData,
         }
     }

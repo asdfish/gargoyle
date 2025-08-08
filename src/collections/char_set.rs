@@ -40,7 +40,7 @@ use {
 /// Character hash sets.
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct CharSet<'gm>(pub(crate) Scm<'gm>);
+pub struct CharSet<'gm>(Scm<'gm>);
 impl<'gm> CharSet<'gm> {
     /// Check if the character set contains a character.
     ///
@@ -97,15 +97,13 @@ impl<'gm> From<char> for CharSet<'gm> {
 }
 impl<'gm> From<List<'gm, char>> for CharSet<'gm> {
     fn from(list: List<'gm, char>) -> Self {
-        Self(unsafe {
-            Scm::from_ptr_unchecked(scm_list_to_char_set(list.scm.as_ptr(), SCM_UNDEFINED))
-        })
+        Self(unsafe { Scm::from_ptr_unchecked(scm_list_to_char_set(list.as_ptr(), SCM_UNDEFINED)) })
     }
 }
 impl<'gm> From<String<'gm>> for CharSet<'gm> {
     fn from(string: String<'gm>) -> Self {
         Self(unsafe {
-            Scm::from_ptr_unchecked(scm_string_to_char_set(string.scm.as_ptr(), SCM_UNDEFINED))
+            Scm::from_ptr_unchecked(scm_string_to_char_set(string.as_ptr(), SCM_UNDEFINED))
         })
     }
 }
