@@ -30,6 +30,7 @@ impl Guile {
     /// # use gargoyle::{module::Module, string::String, symbol::Symbol, with_guile};
     /// # use std::{io::Write as _, str};
     /// # use tempfile::NamedTempFile;
+    /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut file = NamedTempFile::new().unwrap();
     ///     write!(file.as_file_mut(), "(define my-var 69)").unwrap();
