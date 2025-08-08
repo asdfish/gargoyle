@@ -66,12 +66,6 @@ impl Guile {
     pub unsafe fn new_unchecked_ref<'a>() -> &'a Self {
         unsafe { NonNull::<Self>::dangling().as_ref() }
     }
-    /// # Safety
-    ///
-    /// You must be in guile mode or never dereference the returned reference.
-    pub unsafe fn new_unchecked_mut<'a>() -> &'a mut Self {
-        unsafe { NonNull::<Self>::dangling().as_mut() }
-    }
 }
 
 #[cfg(test)]
@@ -82,9 +76,6 @@ mod tests {
     fn new_refs() {
         unsafe {
             Guile::new_unchecked_ref();
-        }
-        unsafe {
-            Guile::new_unchecked_mut();
         }
     }
 }
