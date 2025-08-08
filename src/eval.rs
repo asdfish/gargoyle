@@ -18,26 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use {
-    crate::{
-        Guile,
-        collections::list::List,
-        list,
-        module::Module,
-        reference::ReprScm,
-        scm::{Scm, ToScm, TryFromScm},
-        string::String,
-        subr::Proc,
-        symbol::Symbol,
-        sys::{
-            scm_eval_string, scm_eval_string_in_module, scm_primitive_load, scm_public_ref,
-            scm_unused_struct,
-        },
-    },
-    std::sync::{
-        LazyLock,
-        atomic::{self, AtomicPtr},
-    },
+use crate::{
+    Guile,
+    module::Module,
+    scm::{Scm, TryFromScm},
+    string::String,
+    sys::{scm_eval_string, scm_eval_string_in_module, scm_primitive_load},
 };
 
 impl Guile {
@@ -100,77 +86,5 @@ impl Guile {
             ),
             self,
         )
-    }
-
-    /// Evaluate a string with a limited set of procedures.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use gargoyle::{string::String, with_guile};
-    /// # #[cfg(not(miri))]
-    /// with_guile(|guile| {
-    ///     let expr = String::from_str("(+ 1 2)", guile);
-    ///     assert_eq!(guile.safe_eval(&expr), Ok(3));
-    /// }).unwrap();
-    /// ```
-    pub fn safe_eval<'gm, T>(&'gm self, string: &String<'gm>) -> Result<T, Scm<'gm>>
-    where
-        T: TryFromScm<'gm>,
-    {
-        static SANDBOX: LazyLock<AtomicPtr<scm_unused_struct>> = LazyLock::new(|| {
-            let guile = unsafe { Guile::new_unchecked_ref() };
-
-            let mut make_sandbox_module = Proc::try_from_scm(
-                Scm::from_ptr(
-                    unsafe {
-                        scm_public_ref(
-                            <List<Symbol>>::to_scm(
-                                list!(
-                                    guile,
-                                    Symbol::from_str("ice-9", guile),
-                                    Symbol::from_str("sandbox", guile)
-                                ),
-                                guile,
-                            )
-                            .as_ptr(),
-                            Symbol::from_str("make-sandbox-module", guile).ptr,
-                        )
-                    },
-                    guile,
-                ),
-                guile,
-            )
-            .unwrap();
-            let all_pure_bindings = Scm::from_ptr(
-                unsafe {
-                    scm_public_ref(
-                        <List<Symbol>>::to_scm(
-                            list!(
-                                guile,
-                                Symbol::from_str("ice-9", guile),
-                                Symbol::from_str("sandbox", guile)
-                            ),
-                            guile,
-                        )
-                        .as_ptr(),
-                        Symbol::from_str("all-pure-bindings", guile).ptr,
-                    )
-                },
-                guile,
-            );
-
-            let sandbox: Module =
-                unsafe { make_sandbox_module.call((all_pure_bindings,)) }.unwrap();
-
-            sandbox.0.as_ptr().into()
-        });
-
-        unsafe {
-            self.eval_in(
-                string,
-                &Module::from_ptr(SANDBOX.load(atomic::Ordering::Acquire)),
-            )
-        }
     }
 }
