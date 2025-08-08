@@ -34,7 +34,6 @@ pub mod hook;
 pub mod module;
 pub mod num;
 mod primitive;
-pub mod rand;
 #[doc(hidden)]
 pub mod reexports;
 pub mod reference;
