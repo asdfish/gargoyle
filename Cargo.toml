@@ -19,3 +19,4 @@ proc_macros = { path = "./proc_macros" }
 
 [dev-dependencies]
 itertools = { version = "0.14.0", default-features = false }
+tempfile = { version = "3.20.0", default-features = false }

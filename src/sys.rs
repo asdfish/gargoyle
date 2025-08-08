@@ -515,8 +515,7 @@ unsafe extern "C" {
     pub fn scm_call_n(_proc: SCM, _argv: *mut SCM, _nargs: usize) -> SCM;
 
     pub fn scm_eval_string(_: SCM) -> SCM;
-    pub fn scm_c_eval_string(_: *const c_char) -> SCM;
-    pub fn scm_c_primitive_load(_: *const c_char) -> SCM;
+    pub fn scm_primitive_load(_filename: SCM) -> SCM;
 
     pub fn scm_c_string_length(_: SCM) -> usize;
 
