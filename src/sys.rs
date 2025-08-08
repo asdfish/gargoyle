@@ -144,6 +144,7 @@ unsafe extern "C" {
     pub fn scm_module_export(_module: SCM, _symbol_list: SCM) -> SCM;
     pub fn scm_module_public_interface(_module: SCM) -> SCM;
 
+    pub fn scm_public_ref(_module_name: SCM, _name: SCM) -> SCM;
     pub fn scm_variable_ref(_var: SCM) -> SCM;
 
     pub fn scm_from_utf8_stringn(_: *const c_char, _: usize) -> SCM;
@@ -514,7 +515,8 @@ unsafe extern "C" {
     pub fn scm_set_procedure_property_x(_proc: SCM, _key: SCM, _val: SCM) -> SCM;
     pub fn scm_call_n(_proc: SCM, _argv: *mut SCM, _nargs: usize) -> SCM;
 
-    pub fn scm_eval_string(_: SCM) -> SCM;
+    pub fn scm_eval_string(_string: SCM) -> SCM;
+    pub fn scm_eval_string_in_module(_string: SCM, _module: SCM) -> SCM;
     pub fn scm_primitive_load(_filename: SCM) -> SCM;
 
     pub fn scm_c_string_length(_: SCM) -> usize;

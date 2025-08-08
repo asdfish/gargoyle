@@ -22,7 +22,7 @@ use {
     crate::{
         Guile,
         collections::list::List,
-        reference::Ref,
+        reference::{Ref, ReprScm},
         scm::{Scm, ToScm, TryFromScm},
         symbol::Symbol,
         sys::{
@@ -38,7 +38,7 @@ use {
 pub type ModulePath<'gm> = List<'gm, Symbol<'gm>>;
 
 #[repr(transparent)]
-pub struct Module<'gm>(Scm<'gm>);
+pub struct Module<'gm>(pub(crate) Scm<'gm>);
 impl<'gm> Module<'gm> {
     /// Get the current module.
     pub fn current(guile: &'gm Guile) -> Self {
@@ -187,6 +187,7 @@ impl<'gm> Module<'gm> {
         .ok()
     }
 }
+unsafe impl ReprScm for Module<'_> {}
 impl<'gm> TryFromScm<'gm> for Module<'gm> {
     fn type_name() -> Cow<'static, CStr> {
         Cow::Borrowed(c"module")

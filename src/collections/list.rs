@@ -62,6 +62,7 @@ macro_rules! list {
     ($guile:expr, $($i:expr),+ $(,)?) => {
         {
             let guile: &$crate::Guile = $guile;
+            #[allow(unused_unsafe)]
             unsafe {
                 <$crate::collections::list::List<_> as $crate::reference::ReprScm>::from_ptr(
                     $crate::sys::scm_list_n(
