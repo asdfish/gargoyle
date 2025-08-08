@@ -46,8 +46,8 @@ trait ScmPartialEq {
     const REMOVE: unsafe extern "C" fn(_table: SCM, _key: SCM) -> SCM;
     /// Get a handle from `key` in `table` or `#f` if it doesn't exist.
     const GET_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM) -> SCM;
-    /// Get the handle or insert it.
-    const CREATE_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM, _init: SCM) -> SCM;
+    // /// Get the handle or insert it.
+    // const CREATE_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM, _init: SCM) -> SCM;
 }
 
 /// Hash map vtable that uses the `eq?` family.
@@ -59,8 +59,8 @@ impl ScmPartialEq for Eq {
         crate::sys::scm_hashq_remove_x;
     const GET_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM) -> SCM =
         crate::sys::scm_hashq_get_handle;
-    const CREATE_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM, _init: SCM) -> SCM =
-        crate::sys::scm_hashq_create_handle_x;
+    // const CREATE_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM, _init: SCM) -> SCM =
+    //     crate::sys::scm_hashq_create_handle_x;
 }
 
 /// Hash map vtable that uses the `eqv?` family.
@@ -72,8 +72,8 @@ impl ScmPartialEq for Eqv {
         crate::sys::scm_hashv_remove_x;
     const GET_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM) -> SCM =
         crate::sys::scm_hashv_get_handle;
-    const CREATE_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM, _init: SCM) -> SCM =
-        crate::sys::scm_hashv_create_handle_x;
+    // const CREATE_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM, _init: SCM) -> SCM =
+    //     crate::sys::scm_hashv_create_handle_x;
 }
 
 /// Hash map vtable that uses the `equal?` family.
@@ -85,8 +85,8 @@ impl ScmPartialEq for Equal {
         crate::sys::scm_hash_remove_x;
     const GET_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM) -> SCM =
         crate::sys::scm_hash_get_handle;
-    const CREATE_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM, _init: SCM) -> SCM =
-        crate::sys::scm_hash_create_handle_x;
+    // const CREATE_HANDLE: unsafe extern "C" fn(_table: SCM, _key: SCM, _init: SCM) -> SCM =
+    //     crate::sys::scm_hash_create_handle_x;
 }
 
 /// Hash map usable in scheme.
