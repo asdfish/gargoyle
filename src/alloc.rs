@@ -23,7 +23,11 @@
 use {
     crate::{Guile, sys::scm_gc_malloc},
     allocator_api2::alloc::{AllocError, Allocator, Layout},
-    std::{ffi::c_void, ptr::NonNull},
+    std::{
+        ffi::{CStr, c_void},
+        marker::PhantomData,
+        ptr::NonNull,
+    },
 };
 
 unsafe extern "C" {
@@ -49,24 +53,47 @@ unsafe impl Allocator for CAllocator {
 }
 
 /// Allocator that uses the guile garbage collector.
-pub struct GcAllocator<'gm> {
-    _guile: &'gm Guile,
+#[derive(Clone, Copy)]
+pub struct GcAllocator<'gm, 'a> {
+    purpose: &'a CStr,
+    _marker: PhantomData<&'gm ()>,
 }
-unsafe impl Allocator for GcAllocator<'_> {
+impl<'gm, 'a> GcAllocator<'gm, 'a> {
+    /// Create a new allocator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use allocator_api2::boxed::Box;
+    /// # use gargoyle::{alloc::GcAllocator, with_guile};
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let allocator = GcAllocator::new(c"box", guile);
+    ///     Box::new_in(10, allocator);
+    /// }).unwrap();
+    /// ```
+    pub fn new(purpose: &'a CStr, _: &'gm Guile) -> Self {
+        Self {
+            purpose,
+            _marker: PhantomData,
+        }
+    }
+}
+unsafe impl Allocator for GcAllocator<'_, '_> {
     fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         let size = layout.size();
 
-        NonNull::new(unsafe { scm_gc_malloc(size, c"unknown".as_ptr()) }.cast::<u8>())
+        NonNull::new(unsafe { scm_gc_malloc(size, self.purpose.as_ptr()) }.cast::<u8>())
             .map(|ptr| NonNull::slice_from_raw_parts(ptr, size))
             .ok_or(AllocError)
     }
     unsafe fn deallocate(&self, _: NonNull<u8>, _: Layout) {}
 }
-impl<'gm> From<&'gm Guile> for GcAllocator<'gm> {
-    fn from(guile: &'gm Guile) -> Self {
-        Self { _guile: guile }
-    }
-}
+// impl<'gm> From<&'gm Guile> for GcAllocator<'gm> {
+//     fn from(guile: &'gm Guile) -> Self {
+//         Self { _guile: guile }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
