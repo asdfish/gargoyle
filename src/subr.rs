@@ -23,14 +23,89 @@ use {
         Guile,
         reference::ReprScm,
         scm::{Scm, ToScm, TryFromScm},
-        sys::scm_procedure_p,
+        sys::{scm_call_n, scm_procedure_p},
         utils::scm_predicate,
     },
     std::{borrow::Cow, ffi::CStr},
 };
 
+trait TupleExt<'gm, const ARITY: usize> {
+    fn to_slice(self, _: &'gm Guile) -> [Scm<'gm>; ARITY];
+}
+macro_rules! impl_tuple_ext_for {
+    () => {
+        impl<'gm> $crate::subr::TupleExt<'gm, 0> for () {
+            fn to_slice(self, _: &'gm $crate::Guile) -> [$crate::scm::Scm<'gm>; 0] {
+                []
+            }
+        }
+    };
+    ($car:ident $(, $($cdr:ident),+)?) => {
+        impl<'gm, $car $(, $($cdr),+)?> $crate::subr::TupleExt<'gm, {
+            1 $($(+ {
+                const $cdr: ::std::primitive::usize = 1;
+                $cdr
+            })+)?
+        }> for ($car, $($($cdr),+)?)
+        where
+            $car: $crate::scm::ToScm<'gm>,
+            $($($cdr: $crate::scm::ToScm<'gm>),+)?
+        {
+            fn to_slice(self, guile: &'gm $crate::Guile) -> [$crate::scm::Scm<'gm>; {
+                1 $($(+ {
+                    const $cdr: ::std::primitive::usize = 1;
+                    $cdr
+                })+)?
+            }] {
+                #[expect(non_snake_case)]
+                let ($car, $($($cdr),+)?) = self;
+
+                [
+                    $crate::scm::ToScm::to_scm($car, guile),
+                    $($($crate::scm::ToScm::to_scm($cdr, guile)),+)?
+                ]
+            }
+        }
+
+        impl_tuple_ext_for!($($($cdr),+)?);
+    };
+}
+impl_tuple_ext_for!(A, B, C, D, E, F, G, H, I, J, K, L);
+
 #[repr(transparent)]
 pub struct Proc<'gm>(Scm<'gm>);
+impl<'gm> Proc<'gm> {
+    /// # Safety
+    ///
+    /// Ensure the function doesn't do anything unsafe like dereferencing null pointers or something.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use gargoyle::{subr::{guile_fn, GuileFn}, with_guile};
+    /// #[guile_fn]
+    /// fn mul(l: &i32, r: &i32) -> i32 {
+    ///     *l * *r
+    /// }
+    /// # #[cfg(not(miri))]
+    /// with_guile(|guile| {
+    ///     let mut proc = Mul::create(guile);
+    ///     assert_eq!(unsafe { proc.call((4, 2)) }, Ok(8));
+    /// }).unwrap();
+    /// ```
+    pub unsafe fn call<const ARITY: usize, A, T>(&mut self, args: A) -> Result<T, Scm<'gm>>
+    where
+        A: TupleExt<'gm, ARITY>,
+        T: TryFromScm<'gm>,
+    {
+        // SAFETY: we are in guile mode since `Proc` has the `'gm` lifetime.
+        let guile = unsafe { Guile::new_unchecked_ref() };
+        let mut slice = args.to_slice(guile).map(|scm| scm.as_ptr());
+
+        let output = unsafe { scm_call_n(self.0.as_ptr(), slice.as_mut_ptr(), slice.len()) };
+        T::try_from_scm(Scm::from_ptr(output, guile), guile)
+    }
+}
 unsafe impl ReprScm for Proc<'_> {}
 impl<'gm> TryFromScm<'gm> for Proc<'gm> {
     fn type_name() -> Cow<'static, CStr> {

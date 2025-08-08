@@ -512,14 +512,13 @@ unsafe extern "C" {
     ) -> SCM;
     pub fn scm_procedure_p(_obj: SCM) -> SCM;
     pub fn scm_set_procedure_property_x(_proc: SCM, _key: SCM, _val: SCM) -> SCM;
+    pub fn scm_call_n(_proc: SCM, _argv: *mut SCM, _nargs: usize) -> SCM;
 
     pub fn scm_eval_string(_: SCM) -> SCM;
     pub fn scm_c_eval_string(_: *const c_char) -> SCM;
     pub fn scm_c_primitive_load(_: *const c_char) -> SCM;
 
     pub fn scm_c_string_length(_: SCM) -> usize;
-
-    pub fn scm_call_n(_: SCM, _: *mut SCM, _: usize) -> SCM;
 
     pub fn scm_open_output_string() -> SCM;
     pub fn scm_strport_to_string(_: SCM) -> SCM;
