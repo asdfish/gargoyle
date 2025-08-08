@@ -18,7 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-use crate::{Guile, string::String, sys::scm_primitive_load};
+use crate::{
+    Guile,
+    scm::{Scm, TryFromScm},
+    string::String,
+    sys::{scm_eval_string, scm_primitive_load},
+};
 
 impl Guile {
     /// # Safety
@@ -43,5 +48,23 @@ impl Guile {
         unsafe {
             scm_primitive_load(path.scm.as_ptr());
         }
+    }
+
+    /// # Safety
+    ///
+    /// Since you can do very unsafe things in scheme, there is probably no way to make this safe.
+    ///
+    /// # Exceptions
+    ///
+    /// This might also potentially throw an exception if the string is not correct.
+    pub unsafe fn eval<'gm, T>(&'gm self, str: &String<'gm>) -> Result<T, Scm<'gm>>
+    where
+        T: TryFromScm<'gm>,
+    {
+        let guile = unsafe { Guile::new_unchecked_ref() };
+        T::try_from_scm(
+            Scm::from_ptr(unsafe { scm_eval_string(str.scm.as_ptr()) }, guile),
+            guile,
+        )
     }
 }

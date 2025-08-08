@@ -34,8 +34,8 @@
 //! with_guile(|guile| {
 //!     Module::current(guile).define(Symbol::from_str("sum-u8-i32", guile), SumU8I32::create(guile));
 //!     assert_eq!(
-//!         unsafe { String::from_str("(sum-u8-i32 '(10 -10))", guile).eval::<i32>() },
-//!         Ok(0)
+//!         unsafe { guile.eval::<i32>(&String::from_str("(sum-u8-i32 '(10 -10))", guile)) },
+//!         Ok(0),
 //!     );
 //! })
 //! .unwrap();

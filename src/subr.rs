@@ -156,7 +156,7 @@ pub trait GuileFn {
 /// # #[cfg(not(miri))]
 /// with_guile(|guile| {
 ///     Module::current(guile).define(Symbol::from_str("add", guile), Add::create(guile));
-///     assert_eq!(unsafe { String::from_str("(add 1 2)", guile).eval::<i32>() }, Ok(3));
+///     assert_eq!(unsafe { guile.eval(&String::from_str("(add 1 2)", guile)) }, Ok(3));
 /// }).unwrap();
 /// ```
 ///
@@ -177,7 +177,7 @@ pub trait GuileFn {
 /// # #[cfg(not(miri))]
 /// with_guile(|guile| {
 ///     Module::current(guile).define(Symbol::from_str("sum", guile), Sum::create(guile));
-///     assert_eq!(unsafe { String::from_str("(sum 1 2 3)", guile).eval::<i32>() }, Ok(6));
+///     assert_eq!(unsafe { guile.eval::<i32>(&String::from_str("(sum 1 2 3)", guile)) }, Ok(6));
 /// }).unwrap();
 /// ```
 ///
@@ -202,8 +202,8 @@ pub trait GuileFn {
 /// # #[cfg(not(miri))]
 /// with_guile(|guile| {
 ///     Module::current(guile).define(Symbol::from_str("sub", guile), Sub::create(guile));
-///     assert_eq!(unsafe { String::from_str("(sub 2 1)", guile).eval::<i32>() }, Ok(1));
-///     assert_eq!(unsafe { String::from_str("(sub 1)", guile).eval::<i32>() }, Ok(-1));
+///     assert_eq!(unsafe { guile.eval::<i32>(&String::from_str("(sub 2 1)", guile)) }, Ok(1));
+///     assert_eq!(unsafe { guile.eval::<i32>(&String::from_str("(sub 1)", guile)) }, Ok(-1));
 /// }).unwrap();
 /// ```
 ///
@@ -216,8 +216,8 @@ pub trait GuileFn {
 /// # #[cfg(not(miri))]
 /// with_guile(|guile| {
 ///     Module::current(guile).define(Symbol::from_str("area", guile), Area::create(guile));
-///     assert_eq!(unsafe { String::from_str("(area #:width 10 #:height 10)", guile).eval::<i32>() }, Ok(100));
-///     assert_eq!(unsafe { String::from_str("(area #:width 10)", guile).eval::<i32>() }, Ok(0));
+///     assert_eq!(unsafe { guile.eval::<i32>(&String::from_str("(area #:width 10 #:height 10)", guile)) }, Ok(100));
+///     assert_eq!(unsafe { guile.eval::<i32>(&String::from_str("(area #:width 10)", guile)) }, Ok(0));
 /// }).unwrap();
 /// ```
 pub use proc_macros::guile_fn;

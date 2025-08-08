@@ -27,8 +27,8 @@ use {
         scm::{Scm, ToScm, TryFromScm},
         symbol::Symbol,
         sys::{
-            scm_c_string_length, scm_char_set_to_string, scm_eval_string, scm_from_utf8_stringn,
-            scm_is_string, scm_string, scm_string_equal_p, scm_string_null_p, scm_symbol_to_string,
+            scm_c_string_length, scm_char_set_to_string, scm_from_utf8_stringn, scm_is_string,
+            scm_string, scm_string_equal_p, scm_string_null_p, scm_symbol_to_string,
             scm_to_utf8_stringn,
         },
         utils::{c_predicate, scm_predicate},
@@ -80,24 +80,6 @@ impl<'gm> String<'gm> {
     }
     pub fn is_empty(&self) -> bool {
         scm_predicate(unsafe { scm_string_null_p(self.scm.as_ptr()) })
-    }
-
-    /// # Safety
-    ///
-    /// Since you can do very unsafe things in scheme, there is probably no way to make this safe.
-    ///
-    /// # Exceptions
-    ///
-    /// This might also potentially throw an exception if the string is not correct.
-    pub unsafe fn eval<T>(&self) -> Result<T, Scm<'gm>>
-    where
-        T: TryFromScm<'gm>,
-    {
-        let guile = unsafe { Guile::new_unchecked_ref() };
-        T::try_from_scm(
-            Scm::from_ptr(unsafe { scm_eval_string(self.scm.as_ptr()) }, guile),
-            guile,
-        )
     }
 }
 impl<'gm> From<CharSet<'gm>> for String<'gm> {

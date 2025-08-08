@@ -110,8 +110,8 @@ pub trait ToScm<'gm> {
 ///     let mut module = Module::current(guile);
 ///     module.define(Symbol::from_str("must-call", guile), MustCall::create(guile));
 ///     module.define(Symbol::from_str("make-coordinate", guile), MakeCoordinate::create(guile));
-///     assert_eq!(unsafe { String::from_str("(must-call (make-coordinate #:x 10 #:y 20))", guile).eval::<bool>() }, Ok(false));
-///     assert_eq!(unsafe { String::from_str("(make-coordinate #:x 10)", guile).eval::<Coordinate>() }, Ok(Coordinate { x: 10, y: 0 }));
+///     assert_eq!(unsafe { guile.eval::<bool>(&String::from_str("(must-call (make-coordinate #:x 10 #:y 20))", guile)) }, Ok(false));
+///     assert_eq!(unsafe { guile.eval::<Coordinate>(&String::from_str("(make-coordinate #:x 10)", guile)) }, Ok(Coordinate { x: 10, y: 0 }));
 /// }).unwrap();
 /// assert_eq!(CALLED.load(atomic::Ordering::Acquire), true);
 /// # }

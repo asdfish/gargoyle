@@ -54,7 +54,7 @@ use {
 /// # use gargoyle::{list, with_guile, collections::list::List, string::String};
 /// # #[cfg(not(miri))]
 /// with_guile(|guile| {
-///    assert_eq!(unsafe { String::from_str("'(1 2 3)", guile).eval::<List<i32>>() }, Ok(list!(guile, 1, 2, 3)));
+///    assert_eq!(unsafe { guile.eval::<List<i32>>(&String::from_str("'(1 2 3)", guile)) }, Ok(list!(guile, 1, 2, 3)));
 /// }).unwrap();
 /// ```
 #[macro_export]
