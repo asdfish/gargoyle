@@ -147,6 +147,7 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     /// ```
     /// # use gargoyle::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
     /// # use std::sync::atomic::{self, AtomicBool};
+    /// # #[cfg(not(miri))] {
     /// static HOOK_RAN: AtomicBool = AtomicBool::new(false);
     /// #[guile_fn]
     /// fn proc() {
@@ -158,6 +159,7 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     ///     hook.run(());
     /// }).unwrap();
     /// assert!(HOOK_RAN.load(atomic::Ordering::Acquire));
+    /// # }
     /// ```
     pub fn run<T>(&self, args: T)
     where

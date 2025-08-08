@@ -96,6 +96,7 @@ impl<'gm> String<'gm> {
     ///
     /// ```
     /// # use gargoyle::{string::String, with_guile};
+    /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(String::from_str("", guile).len(), 0);
     ///     assert_eq!(String::from_str("foo", guile).len(), 3);
@@ -110,6 +111,7 @@ impl<'gm> String<'gm> {
     ///
     /// ```
     /// # use gargoyle::{string::String, with_guile};
+    /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(String::from_str("", guile).is_empty());
     ///     assert!(!String::from_str("foo", guile).is_empty());

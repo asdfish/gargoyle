@@ -142,6 +142,7 @@ impl<'gm> Scm<'gm> {
     /// ```
     /// # use gargoyle::{scm::Scm, with_guile};
     /// # use std::ptr;
+    /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     // safe since the `Scm`'s lifetime is bound to the lifetime of `guile`
     ///     let scm = Scm::from_ptr(ptr::dangling_mut(), guile);

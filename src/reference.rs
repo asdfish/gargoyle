@@ -110,6 +110,7 @@ impl<'gm, T> Ref<'_, 'gm, T> {
     ///
     /// ```
     /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Pair::new(0, 1, guile).as_car().copied(), 0);
     /// }).unwrap();

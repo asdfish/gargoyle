@@ -50,6 +50,7 @@ impl<'gm> Module<'gm> {
     ///
     /// ```
     /// # use gargoyle::{module::Module, with_guile};
+    /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let module = Module::current(guile);
     /// }).unwrap();
