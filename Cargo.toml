@@ -3,7 +3,7 @@ name = "garguile"
 version = "0.1.0"
 edition = "2024"
 description = "guile bindings for rust"
-license = "MIT"
+license = "Apache-2.0"
 repository = "https://github.com/asdfish/gargoyle"
 readme = "README.org"
 
