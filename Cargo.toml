@@ -6,7 +6,7 @@ description = "guile bindings for rust"
 license = "Apache-2.0"
 repository = "https://github.com/asdfish/gargoyle"
 readme = "README.org"
-categories = ["api-bindings", "compilers", "configuration"]
+categories = ["api-bindings", "compilers", "config"]
 
 [features]
 
