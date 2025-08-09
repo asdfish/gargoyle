@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -62,7 +62,7 @@ impl<'gm, T> Vector<'gm, T> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::vector::Vector, with_guile};
+    /// # use garguile::{collections::vector::Vector, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(
@@ -88,7 +88,7 @@ impl<'gm, T> Vector<'gm, T> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::vector::Vector, reference::Ref, with_guile};
+    /// # use garguile::{collections::vector::Vector, reference::Ref, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     Vector::new(true, 10, guile)
@@ -127,7 +127,7 @@ impl<'gm, T> Vector<'gm, T> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::{list::List, pair::Pair, vector::Vector}, reference::Ref, with_guile};
+    /// # use garguile::{collections::{list::List, pair::Pair, vector::Vector}, reference::Ref, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut vec = Vector::from(List::from_iter([(); 10].map(|_| Pair::new(false, (), guile)), guile));

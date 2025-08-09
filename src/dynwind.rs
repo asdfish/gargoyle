@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -71,7 +71,7 @@ impl<'gm> Dynwind<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::list::List, dynwind::Dynwind, symbol::Symbol, Guile, with_guile};
+    /// # use garguile::{collections::list::List, dynwind::Dynwind, symbol::Symbol, Guile, with_guile};
     /// # use std::{pin::Pin, sync::atomic::{self, AtomicBool}};
     /// # #[cfg(not(miri))] {
     /// static DROPPED: AtomicBool = AtomicBool::new(false);

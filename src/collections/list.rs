@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -53,7 +53,7 @@ use {
 /// # Examples
 ///
 /// ```
-/// # use gargoyle::{list, with_guile, collections::list::List, string::String};
+/// # use garguile::{list, with_guile, collections::list::List, string::String};
 /// # #[cfg(not(miri))]
 /// with_guile(|guile| {
 ///    assert_eq!(unsafe { guile.eval::<List<i32>>(&String::from_str("'(1 2 3)", guile)) }, Ok(list!(guile, 1, 2, 3)));
@@ -108,7 +108,7 @@ impl<'gm, T> List<'gm, T> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::list::List, reference::Ref, with_guile};
+    /// # use garguile::{collections::list::List, reference::Ref, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let list = List::new(guile);
@@ -137,7 +137,7 @@ impl<'gm, T> List<'gm, T> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::list::List, with_guile};
+    /// # use garguile::{collections::list::List, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let lst = List::new(guile);
@@ -159,7 +159,7 @@ impl<'gm, T> List<'gm, T> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{list, reference::Ref, with_guile};
+    /// # use garguile::{list, reference::Ref, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let list = list!(guile, 1, 2, 3);
@@ -178,7 +178,7 @@ impl<'gm, T> List<'gm, T> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{list, collections::{hash_map::HashMap, list::List}, reference::Ref, with_guile};
+    /// # use garguile::{list, collections::{hash_map::HashMap, list::List}, reference::Ref, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut list: List<HashMap<i32, ()>> = list!(guile, HashMap::<i32, ()>::with_capacity(1, guile));

@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -53,7 +53,7 @@ impl<'gm> String<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{string::String, with_guile};
+    /// # use garguile::{string::String, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let string = String::from_str("", guile);
@@ -95,7 +95,7 @@ impl<'gm> String<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{string::String, with_guile};
+    /// # use garguile::{string::String, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(String::from_str("", guile).len(), 0);
@@ -110,7 +110,7 @@ impl<'gm> String<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{string::String, with_guile};
+    /// # use garguile::{string::String, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(String::from_str("", guile).is_empty());

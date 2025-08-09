@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -51,7 +51,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # use garguile::{collections::pair::Pair, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Pair::new(1, 2, guile).to_tuple(), (1, 2));
@@ -75,7 +75,7 @@ impl<'gm, L, R> Pair<'gm, L, R> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # use garguile::{collections::pair::Pair, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Pair::new(1, 2, guile).as_car().copied(), 1);
@@ -89,7 +89,7 @@ impl<'gm, L, R> Pair<'gm, L, R> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # use garguile::{collections::pair::Pair, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Pair::new(1, 2, guile).as_cdr().copied(), 2);
@@ -103,7 +103,7 @@ impl<'gm, L, R> Pair<'gm, L, R> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{list, collections::pair::Pair, with_guile};
+    /// # use garguile::{list, collections::pair::Pair, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut pair = Pair::new(Pair::new(1, 1, guile), 2, guile);
@@ -120,7 +120,7 @@ impl<'gm, L, R> Pair<'gm, L, R> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{list, collections::pair::Pair, with_guile};
+    /// # use garguile::{list, collections::pair::Pair, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut pair = Pair::new(0, Pair::new(2, 2, guile), guile);
@@ -143,7 +143,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # use garguile::{collections::pair::Pair, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Pair::new(true, false, guile).to_tuple(), (true, false));
@@ -168,7 +168,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # use garguile::{collections::pair::Pair, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut pair = Pair::new(true, false, guile);
@@ -187,7 +187,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # use garguile::{collections::pair::Pair, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut pair = Pair::new(true, false, guile);

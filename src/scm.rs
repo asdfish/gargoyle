@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -94,7 +94,7 @@ pub trait ToScm<'gm> {
 /// # Examples
 ///
 /// ```
-/// # use gargoyle::{foreign_object::ForeignObject, module::Module, scm::{ToScm, TryFromScm}, string::String, subr::{guile_fn, GuileFn}, symbol::Symbol, with_guile};
+/// # use garguile::{foreign_object::ForeignObject, module::Module, scm::{ToScm, TryFromScm}, string::String, subr::{guile_fn, GuileFn}, symbol::Symbol, with_guile};
 /// # use std::sync::atomic::{self, AtomicBool};
 /// #[derive(Clone, Copy, Debug, ForeignObject, PartialEq, ToScm, TryFromScm)]
 /// struct Coordinate {
@@ -140,7 +140,7 @@ impl<'gm> Scm<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{scm::Scm, with_guile};
+    /// # use garguile::{scm::Scm, with_guile};
     /// # use std::ptr;
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {

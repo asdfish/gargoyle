@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -92,20 +92,20 @@ pub struct scm_t_array_handle {
 pub type scm_t_keyword_arguments_flags = c_int;
 
 unsafe extern "C" {
-    pub static GARGOYLE_REEXPORTS_SCM_BOOL_T: SCM;
-    pub static GARGOYLE_REEXPORTS_SCM_BOOL_F: SCM;
-    pub static GARGOYLE_REEXPORTS_SCM_EOL: SCM;
-    pub static GARGOYLE_REEXPORTS_SCM_UNDEFINED: SCM;
+    pub static GARGUILE_REEXPORTS_SCM_BOOL_T: SCM;
+    pub static GARGUILE_REEXPORTS_SCM_BOOL_F: SCM;
+    pub static GARGUILE_REEXPORTS_SCM_EOL: SCM;
+    pub static GARGUILE_REEXPORTS_SCM_UNDEFINED: SCM;
 
-    pub static GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE: c_int;
-    pub static GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY: c_int;
+    pub static GARGUILE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE: c_int;
+    pub static GARGUILE_REEXPORTS_SCM_F_WIND_EXPLICITLY: c_int;
 
-    pub fn GARGOYLE_REEXPORTS_SCM_HOOK_ARITY(_hook: SCM) -> c_int;
+    pub fn GARGUILE_REEXPORTS_SCM_HOOK_ARITY(_hook: SCM) -> c_int;
 
-    pub fn GARGOYLE_REEXPORTS_SCM_HOOKP(_hook: SCM) -> c_int;
-    pub fn GARGOYLE_REEXPORTS_SCM_MODULEP(_obj: SCM) -> c_int;
-    pub fn GARGOYLE_REEXPORTS_SCM_IS_A_P(_val: SCM, _ty: SCM) -> c_int;
-    pub fn GARGOYLE_REEXPORTS_SCM_UNBNDP(_: SCM) -> c_int;
+    pub fn GARGUILE_REEXPORTS_SCM_HOOKP(_hook: SCM) -> c_int;
+    pub fn GARGUILE_REEXPORTS_SCM_MODULEP(_obj: SCM) -> c_int;
+    pub fn GARGUILE_REEXPORTS_SCM_IS_A_P(_val: SCM, _ty: SCM) -> c_int;
+    pub fn GARGUILE_REEXPORTS_SCM_UNBNDP(_: SCM) -> c_int;
 
     pub fn scm_with_guile(
         _func: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
@@ -217,8 +217,8 @@ unsafe extern "C" {
     // the documentation says these might not be available but they're always available in `libguile/numbers.h`, they just might be heap allocated
     pub fn scm_from_int64(_: i64) -> SCM;
     pub fn scm_from_uint64(_: u64) -> SCM;
-    pub fn gargoyle_reexports_scm_from_intptr_t(_: isize) -> SCM;
-    pub fn gargoyle_reexports_scm_from_uintptr_t(_: usize) -> SCM;
+    pub fn garguile_reexports_scm_from_intptr_t(_: isize) -> SCM;
+    pub fn garguile_reexports_scm_from_uintptr_t(_: usize) -> SCM;
 
     pub fn scm_to_double(_: SCM) -> c_double;
     pub fn scm_to_int8(_: SCM) -> i8;
@@ -229,8 +229,8 @@ unsafe extern "C" {
     pub fn scm_to_uint32(_: SCM) -> u32;
     pub fn scm_to_int64(_: SCM) -> i64;
     pub fn scm_to_uint64(_: SCM) -> u64;
-    pub fn gargoyle_reexports_scm_to_intptr_t(_: SCM) -> isize;
-    pub fn gargoyle_reexports_scm_to_uintptr_t(_: SCM) -> usize;
+    pub fn garguile_reexports_scm_to_intptr_t(_: SCM) -> isize;
+    pub fn garguile_reexports_scm_to_uintptr_t(_: SCM) -> usize;
 
     pub fn scm_list_to_u8vector(_lst: SCM) -> SCM;
     pub fn scm_list_to_s8vector(_lst: SCM) -> SCM;
@@ -454,8 +454,8 @@ unsafe extern "C" {
 
     pub fn scm_is_inexact(_val: SCM) -> c_int;
     pub fn scm_is_string(_val: SCM) -> c_int;
-    pub fn gargoyle_reexports_scm_is_true(_val: SCM) -> c_int;
-    pub fn gargoyle_reexports_scm_is_false(_val: SCM) -> c_int;
+    pub fn garguile_reexports_scm_is_true(_val: SCM) -> c_int;
+    pub fn garguile_reexports_scm_is_false(_val: SCM) -> c_int;
 
     pub fn scm_is_exact_integer(_val: SCM) -> c_int;
     pub fn scm_exact_to_inexact(_z: SCM) -> SCM;
@@ -546,20 +546,20 @@ unsafe extern "C" {
     pub fn scm_throw(_key: SCM, _args: SCM);
 }
 
-pub use GARGOYLE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;
-pub use GARGOYLE_REEXPORTS_SCM_BOOL_T as SCM_BOOL_T;
-pub use GARGOYLE_REEXPORTS_SCM_EOL as SCM_EOL;
-pub use GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE as SCM_F_DYNWIND_REWINDABLE;
-pub use GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY as SCM_F_WIND_EXPLICITLY;
-pub use GARGOYLE_REEXPORTS_SCM_HOOK_ARITY as SCM_HOOK_ARITY;
-pub use GARGOYLE_REEXPORTS_SCM_HOOKP as SCM_HOOKP;
-pub use GARGOYLE_REEXPORTS_SCM_IS_A_P as SCM_IS_A_P;
-pub use GARGOYLE_REEXPORTS_SCM_MODULEP as SCM_MODULEP;
-pub use GARGOYLE_REEXPORTS_SCM_UNBNDP as SCM_UNBNDP;
-pub use GARGOYLE_REEXPORTS_SCM_UNDEFINED as SCM_UNDEFINED;
-pub use gargoyle_reexports_scm_from_intptr_t as scm_from_intptr_t;
-pub use gargoyle_reexports_scm_from_uintptr_t as scm_from_uintptr_t;
-pub use gargoyle_reexports_scm_is_false as scm_is_false;
-pub use gargoyle_reexports_scm_is_true as scm_is_true;
-pub use gargoyle_reexports_scm_to_intptr_t as scm_to_intptr_t;
-pub use gargoyle_reexports_scm_to_uintptr_t as scm_to_uintptr_t;
+pub use GARGUILE_REEXPORTS_SCM_BOOL_F as SCM_BOOL_F;
+pub use GARGUILE_REEXPORTS_SCM_BOOL_T as SCM_BOOL_T;
+pub use GARGUILE_REEXPORTS_SCM_EOL as SCM_EOL;
+pub use GARGUILE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE as SCM_F_DYNWIND_REWINDABLE;
+pub use GARGUILE_REEXPORTS_SCM_F_WIND_EXPLICITLY as SCM_F_WIND_EXPLICITLY;
+pub use GARGUILE_REEXPORTS_SCM_HOOK_ARITY as SCM_HOOK_ARITY;
+pub use GARGUILE_REEXPORTS_SCM_HOOKP as SCM_HOOKP;
+pub use GARGUILE_REEXPORTS_SCM_IS_A_P as SCM_IS_A_P;
+pub use GARGUILE_REEXPORTS_SCM_MODULEP as SCM_MODULEP;
+pub use GARGUILE_REEXPORTS_SCM_UNBNDP as SCM_UNBNDP;
+pub use GARGUILE_REEXPORTS_SCM_UNDEFINED as SCM_UNDEFINED;
+pub use garguile_reexports_scm_from_intptr_t as scm_from_intptr_t;
+pub use garguile_reexports_scm_from_uintptr_t as scm_from_uintptr_t;
+pub use garguile_reexports_scm_is_false as scm_is_false;
+pub use garguile_reexports_scm_is_true as scm_is_true;
+pub use garguile_reexports_scm_to_intptr_t as scm_to_intptr_t;
+pub use garguile_reexports_scm_to_uintptr_t as scm_to_uintptr_t;

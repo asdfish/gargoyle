@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -130,7 +130,7 @@ where
 /// # Examples
 ///
 /// ```
-/// # use gargoyle::{collections::list::List, symbol::Symbol, with_guile};
+/// # use garguile::{collections::list::List, symbol::Symbol, with_guile};
 /// # #[cfg(not(miri))] {
 /// with_guile(|guile| {
 ///     let _sym = Symbol::from_str("foo", guile);
@@ -180,7 +180,7 @@ impl Guile {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::with_guile;
+    /// # use garguile::with_guile;
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     guile.block_on(|| (0..100).for_each(|i| println!("{i}")));

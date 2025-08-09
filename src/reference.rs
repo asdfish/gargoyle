@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -46,7 +46,7 @@ pub unsafe trait ReprScm {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{reference::ReprScm, sys::SCM};
+    /// # use garguile::{reference::ReprScm, sys::SCM};
     /// # use std::ptr;
     /// #[repr(transparent)]
     /// struct Scm(SCM);
@@ -65,7 +65,7 @@ pub unsafe trait ReprScm {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{reference::ReprScm, sys::SCM};
+    /// # use garguile::{reference::ReprScm, sys::SCM};
     /// # use std::ptr;
     /// #[repr(transparent)]
     /// struct Scm(SCM);
@@ -109,7 +109,7 @@ impl<'gm, T> Ref<'_, 'gm, T> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::pair::Pair, with_guile};
+    /// # use garguile::{collections::pair::Pair, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Pair::new(0, 1, guile).as_car().copied(), 0);

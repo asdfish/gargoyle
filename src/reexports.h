@@ -1,5 +1,5 @@
 /*
- * gargoyle - guile bindings for rust
+ * garguile - guile bindings for rust
  * Copyright (C) 2025  Andrew Chi
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,33 +20,33 @@
  * THE SOFTWARE.
  */
 
-#ifndef GARGOYLE_REEXPORTS_H
-#define GARGOYLE_REEXPORTS_H
+#ifndef GARGUILE_REEXPORTS_H
+#define GARGUILE_REEXPORTS_H
 
 #include <libguile.h>
 
-extern const SCM GARGOYLE_REEXPORTS_SCM_BOOL_T;
-extern const SCM GARGOYLE_REEXPORTS_SCM_BOOL_F;
-extern const SCM GARGOYLE_REEXPORTS_SCM_EOL;
-extern const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED;
+extern const SCM GARGUILE_REEXPORTS_SCM_BOOL_T;
+extern const SCM GARGUILE_REEXPORTS_SCM_BOOL_F;
+extern const SCM GARGUILE_REEXPORTS_SCM_EOL;
+extern const SCM GARGUILE_REEXPORTS_SCM_UNDEFINED;
 
-extern const int GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE;
-extern const int GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY;
+extern const int GARGUILE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE;
+extern const int GARGUILE_REEXPORTS_SCM_F_WIND_EXPLICITLY;
 
-extern int gargoyle_reexports_scm_is_true(SCM);
-extern int gargoyle_reexports_scm_is_false(SCM);
+extern int garguile_reexports_scm_is_true(SCM);
+extern int garguile_reexports_scm_is_false(SCM);
 
-extern int GARGOYLE_REEXPORTS_SCM_HOOK_ARITY(SCM);
+extern int GARGUILE_REEXPORTS_SCM_HOOK_ARITY(SCM);
 
-extern int GARGOYLE_REEXPORTS_SCM_IS_A_P(SCM, SCM);
-extern int GARGOYLE_REEXPORTS_SCM_HOOKP(SCM);
-extern int GARGOYLE_REEXPORTS_SCM_MODULEP(SCM);
-extern int GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM);
+extern int GARGUILE_REEXPORTS_SCM_IS_A_P(SCM, SCM);
+extern int GARGUILE_REEXPORTS_SCM_HOOKP(SCM);
+extern int GARGUILE_REEXPORTS_SCM_MODULEP(SCM);
+extern int GARGUILE_REEXPORTS_SCM_UNBNDP(SCM);
 
-extern uintptr_t gargoyle_reexports_scm_to_uintptr_t(SCM);
-extern intptr_t gargoyle_reexports_scm_to_intptr_t(SCM);
+extern uintptr_t garguile_reexports_scm_to_uintptr_t(SCM);
+extern intptr_t garguile_reexports_scm_to_intptr_t(SCM);
 
-extern SCM gargoyle_reexports_scm_from_uintptr_t(uintptr_t);
-extern SCM gargoyle_reexports_scm_from_intptr_t(intptr_t);
+extern SCM garguile_reexports_scm_from_uintptr_t(uintptr_t);
+extern SCM garguile_reexports_scm_from_intptr_t(intptr_t);
 
-#endif // GARGOYLE_REEXPORTS_H
+#endif // GARGUILE_REEXPORTS_H

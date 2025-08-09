@@ -1,5 +1,5 @@
 /*
- * gargoyle - guile bindings for rust
+ * garguile - guile bindings for rust
  * Copyright (C) 2025  Andrew Chi
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,48 +22,48 @@
 
 #include "reexports.h"
 
-const SCM GARGOYLE_REEXPORTS_SCM_BOOL_T = SCM_BOOL_T;
-const SCM GARGOYLE_REEXPORTS_SCM_BOOL_F = SCM_BOOL_F;
-const SCM GARGOYLE_REEXPORTS_SCM_EOL = SCM_EOL;
-const SCM GARGOYLE_REEXPORTS_SCM_UNDEFINED = SCM_UNDEFINED;
+const SCM GARGUILE_REEXPORTS_SCM_BOOL_T = SCM_BOOL_T;
+const SCM GARGUILE_REEXPORTS_SCM_BOOL_F = SCM_BOOL_F;
+const SCM GARGUILE_REEXPORTS_SCM_EOL = SCM_EOL;
+const SCM GARGUILE_REEXPORTS_SCM_UNDEFINED = SCM_UNDEFINED;
 
-const int GARGOYLE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE = SCM_F_DYNWIND_REWINDABLE;
-const int GARGOYLE_REEXPORTS_SCM_F_WIND_EXPLICITLY = SCM_F_WIND_EXPLICITLY;
+const int GARGUILE_REEXPORTS_SCM_F_DYNWIND_REWINDABLE = SCM_F_DYNWIND_REWINDABLE;
+const int GARGUILE_REEXPORTS_SCM_F_WIND_EXPLICITLY = SCM_F_WIND_EXPLICITLY;
 
-int gargoyle_reexports_scm_is_true(SCM b) {
+int garguile_reexports_scm_is_true(SCM b) {
   return scm_is_true(b);
 }
-int gargoyle_reexports_scm_is_false(SCM b) {
+int garguile_reexports_scm_is_false(SCM b) {
   return scm_is_false(b);
 }
 
-int GARGOYLE_REEXPORTS_SCM_HOOK_ARITY(SCM hook) {
+int GARGUILE_REEXPORTS_SCM_HOOK_ARITY(SCM hook) {
   return SCM_HOOK_ARITY(hook);
 }
 
-int GARGOYLE_REEXPORTS_SCM_HOOKP(SCM hook) {
+int GARGUILE_REEXPORTS_SCM_HOOKP(SCM hook) {
   return SCM_HOOKP(hook);
 }
-int GARGOYLE_REEXPORTS_SCM_MODULEP(SCM obj) {
+int GARGUILE_REEXPORTS_SCM_MODULEP(SCM obj) {
   return SCM_MODULEP(obj);
 }
-int GARGOYLE_REEXPORTS_SCM_IS_A_P(SCM val, SCM ty) {
+int GARGUILE_REEXPORTS_SCM_IS_A_P(SCM val, SCM ty) {
   return SCM_IS_A_P(val, ty);
 }
-int GARGOYLE_REEXPORTS_SCM_UNBNDP(SCM scm) {
+int GARGUILE_REEXPORTS_SCM_UNBNDP(SCM scm) {
   return SCM_UNBNDP(scm);
 }
 
-uintptr_t gargoyle_reexports_scm_to_uintptr_t(SCM scm) {
+uintptr_t garguile_reexports_scm_to_uintptr_t(SCM scm) {
   return scm_to_uintptr_t(scm);
 }
-intptr_t gargoyle_reexports_scm_to_intptr_t(SCM scm) {
+intptr_t garguile_reexports_scm_to_intptr_t(SCM scm) {
   return scm_to_intptr_t(scm);
 }
 
-SCM gargoyle_reexports_scm_from_uintptr_t(uintptr_t i) {
+SCM garguile_reexports_scm_from_uintptr_t(uintptr_t i) {
   return scm_from_uintptr_t(i);
 }
-SCM gargoyle_reexports_scm_from_intptr_t(intptr_t i) {
+SCM garguile_reexports_scm_from_intptr_t(intptr_t i) {
   return scm_from_intptr_t(i);
 }

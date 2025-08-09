@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -85,7 +85,7 @@ impl<'gm> Proc<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{subr::{guile_fn, GuileFn}, with_guile};
+    /// # use garguile::{subr::{guile_fn, GuileFn}, with_guile};
     /// #[guile_fn]
     /// fn mul(l: &i32, r: &i32) -> i32 {
     ///     *l * *r
@@ -147,12 +147,12 @@ pub trait GuileFn {
 /// | - | - | - |
 /// | `guile_ident` | Identifier of the function used in metadata. Defaults to the name of the function but in kebab case | [c string literal][CStr] |
 /// | `struct_ident` | The identifier used to implement [GuileFn]. Defaults to the name of the function but in pascal case | identfier |
-/// | `gargoyle_root` | The path to the `gargoyle` crate. This is useful if you renamed the crate. | path |
+/// | `garguile_root` | The path to the `garguile` crate. This is useful if you renamed the crate. | path |
 ///
 /// # Examples
 ///
 /// ```
-/// # use gargoyle::{module::Module, string::String, subr::{guile_fn, GuileFn}, symbol::Symbol, with_guile};
+/// # use garguile::{module::Module, string::String, subr::{guile_fn, GuileFn}, symbol::Symbol, with_guile};
 /// #[guile_fn]
 /// /// Add 2 numbers.
 /// fn add(l: &i32, r: &i32) -> i32 {
@@ -166,7 +166,7 @@ pub trait GuileFn {
 /// ```
 ///
 /// ```
-/// # use gargoyle::{subr::guile_fn, subr::GuileFn};
+/// # use garguile::{subr::guile_fn, subr::GuileFn};
 /// #[guile_fn(guile_ident = c"is-even?", struct_ident = EvenPredicate)]
 /// fn is_even(i: &i32) -> bool {
 ///     *i % 2 == 0
@@ -174,7 +174,7 @@ pub trait GuileFn {
 /// ```
 ///
 /// ```
-/// # use gargoyle::{collections::list::List, module::Module, reference::Ref, string::String, subr::{GuileFn, guile_fn}, symbol::Symbol, with_guile};
+/// # use garguile::{collections::list::List, module::Module, reference::Ref, string::String, subr::{GuileFn, guile_fn}, symbol::Symbol, with_guile};
 /// #[guile_fn]
 /// fn sum(init: &i32, #[rest] r: &List<i32>) -> i32 {
 ///     r.iter().map(Ref::copied).fold(*init, |accum, r| accum + r)
@@ -187,7 +187,7 @@ pub trait GuileFn {
 /// ```
 ///
 /// ```
-/// # use gargoyle::{Guile, collections::list::List, string::String, subr::{GuileFn, guile_fn}};
+/// # use garguile::{Guile, collections::list::List, string::String, subr::{GuileFn, guile_fn}};
 /// #[guile_fn]
 /// fn length_string<'a>(#[guile] guile: &'a Guile, lst: &List<'a, i32>) -> String<'a> {
 ///     String::from_str(&lst.iter().count().to_string(), guile)
@@ -195,7 +195,7 @@ pub trait GuileFn {
 /// ```
 ///
 /// ```
-/// # use gargoyle::{collections::list::List, module::Module, string::String, subr::{GuileFn, guile_fn}, symbol::Symbol, with_guile};
+/// # use garguile::{collections::list::List, module::Module, string::String, subr::{GuileFn, guile_fn}, symbol::Symbol, with_guile};
 /// #[guile_fn]
 /// fn sub(l: &i32, #[optional] r: Option<&i32>) -> i32 {
 ///     if let Some(r) = r {
@@ -213,7 +213,7 @@ pub trait GuileFn {
 /// ```
 ///
 /// ```
-/// # use gargoyle::{collections::list::List, module::Module, string::String, subr::{GuileFn, guile_fn}, symbol::Symbol, with_guile};
+/// # use garguile::{collections::list::List, module::Module, string::String, subr::{GuileFn, guile_fn}, symbol::Symbol, with_guile};
 /// #[guile_fn]
 /// fn area(#[keyword] width: Option<&i32>, height: Option<&i32>) -> i32 {
 ///     width.and_then(|width| height.map(|height| *width * *height)).unwrap_or_default()

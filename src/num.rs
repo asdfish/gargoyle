@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -302,7 +302,7 @@ impl Complex<'_> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{num::Complex, with_guile};
+    /// # use garguile::{num::Complex, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Complex::new(10.0, 0.0, guile).real_part(), 10.0);
@@ -316,7 +316,7 @@ impl Complex<'_> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{num::Complex, with_guile};
+    /// # use garguile::{num::Complex, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Complex::new(10.0, 0.0, guile).imag_part(), 0.0);
@@ -332,7 +332,7 @@ impl<'gm> Complex<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{num::Complex, with_guile};
+    /// # use garguile::{num::Complex, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let complex = Complex::new(10.0, 0.0, guile);

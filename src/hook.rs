@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -41,7 +41,7 @@ use {
 /// # Examples
 ///
 /// ```
-/// # use gargoyle::{hook::Hook, module::Module, symbol::Symbol, with_guile};
+/// # use garguile::{hook::Hook, module::Module, symbol::Symbol, with_guile};
 /// # fn run_user_config() {}
 /// # #[cfg(not(miri))]
 /// with_guile(|guile| {
@@ -62,7 +62,7 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{hook::Hook, with_guile};
+    /// # use garguile::{hook::Hook, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let hook = Hook::<0>::new(guile);
@@ -80,7 +80,7 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
+    /// # use garguile::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
     /// #[guile_fn]
     /// fn foo() {}
     /// # #[cfg(not(miri))]
@@ -100,7 +100,7 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
+    /// # use garguile::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
     /// #[guile_fn]
     /// fn foo() {}
     /// # #[cfg(not(miri))]
@@ -123,7 +123,7 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
+    /// # use garguile::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
     /// #[guile_fn]
     /// fn foo() {}
     /// # #[cfg(not(miri))]
@@ -145,7 +145,7 @@ impl<'gm, const ARITY: usize> Hook<'gm, ARITY> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
+    /// # use garguile::{hook::Hook, subr::{guile_fn, GuileFn}, with_guile};
     /// # use std::sync::atomic::{self, AtomicBool};
     /// # #[cfg(not(miri))] {
     /// static HOOK_RAN: AtomicBool = AtomicBool::new(false);
@@ -216,11 +216,11 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     #[test]
     fn hook_is_empty() {
-        #[guile_fn(gargoyle_root = crate)]
+        #[guile_fn(garguile_root = crate)]
         fn noop() {}
 
         static CALLED: AtomicBool = AtomicBool::new(false);
-        #[guile_fn(gargoyle_root = crate)]
+        #[guile_fn(garguile_root = crate)]
         fn must_call() {
             CALLED.store(true, atomic::Ordering::Release);
         }

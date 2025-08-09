@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -36,7 +36,7 @@ mod keywords {
     custom_keyword!(guile_ident);
     custom_keyword!(struct_ident);
     custom_keyword!(doc);
-    custom_keyword!(gargoyle_root);
+    custom_keyword!(garguile_root);
 
     custom_keyword!(r#false);
 }
@@ -45,7 +45,7 @@ enum Key {
     GuileIdent,
     StructIdent,
     Doc,
-    GargoyleRoot,
+    GarguileRoot,
 }
 impl Parse for Key {
     fn parse(input: ParseStream) -> Result<Self, syn::Error> {
@@ -60,10 +60,10 @@ impl Parse for Key {
                 .map(|_| Self::StructIdent)
         } else if lookahead.peek(keywords::doc) {
             input.parse::<keywords::doc>().map(|_| Self::Doc)
-        } else if lookahead.peek(keywords::gargoyle_root) {
+        } else if lookahead.peek(keywords::garguile_root) {
             input
-                .parse::<keywords::gargoyle_root>()
-                .map(|_| Self::GargoyleRoot)
+                .parse::<keywords::garguile_root>()
+                .map(|_| Self::GarguileRoot)
         } else {
             Err(lookahead.error())
         }
@@ -74,7 +74,7 @@ enum Arg {
     GuileIdent(CString),
     StructIdent(Ident),
     Doc(Option<String>),
-    GargoyleRoot(Path),
+    GarguileRoot(Path),
 }
 impl Parse for Arg {
     fn parse(input: ParseStream) -> Result<Self, syn::Error> {
@@ -107,9 +107,9 @@ impl Parse for Arg {
                     Err(lookahead.error())
                 }
             }),
-            Key::GargoyleRoot => <Token![=]>::parse(input)
+            Key::GarguileRoot => <Token![=]>::parse(input)
                 .and_then(|_| <Path as Parse>::parse(input))
-                .map(Self::GargoyleRoot),
+                .map(Self::GarguileRoot),
         })
     }
 }
@@ -125,7 +125,7 @@ pub struct Config {
     pub guile_ident: CString,
     pub struct_ident: Ident,
     pub doc: Option<String>,
-    pub gargoyle_root: Path,
+    pub garguile_root: Path,
 }
 impl Config {
     pub fn new(
@@ -136,7 +136,7 @@ impl Config {
             ..
         }: &ItemFn,
     ) -> Self {
-        let (guile_ident, struct_ident, doc, gargoyle_root) = args.0.into_iter().fold(
+        let (guile_ident, struct_ident, doc, garguile_root) = args.0.into_iter().fold(
             (
                 None,
                 None,
@@ -171,7 +171,7 @@ impl Config {
                     Arg::GuileIdent(ident) => accum.0 = Some(ident),
                     Arg::StructIdent(ident) => accum.1 = Some(ident),
                     Arg::Doc(doc) => accum.2 = doc,
-                    Arg::GargoyleRoot(root) => accum.3 = Some(root),
+                    Arg::GarguileRoot(root) => accum.3 = Some(root),
                 }
                 accum
             },
@@ -184,7 +184,7 @@ impl Config {
             struct_ident: struct_ident
                 .unwrap_or_else(|| Ident::new(&ident.to_case(Case::Pascal), Span::call_site())),
             doc,
-            gargoyle_root: gargoyle_root.unwrap_or(parse_quote! { ::gargoyle }),
+            garguile_root: garguile_root.unwrap_or(parse_quote! { ::garguile }),
         }
     }
 }

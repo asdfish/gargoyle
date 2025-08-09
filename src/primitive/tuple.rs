@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,7 +24,7 @@
 //!
 //! # Examples
 //! ```
-//! # use gargoyle::{module::Module, string::String, subr::{GuileFn, guile_fn}, symbol::Symbol, with_guile};
+//! # use garguile::{module::Module, string::String, subr::{GuileFn, guile_fn}, symbol::Symbol, with_guile};
 //! #[guile_fn]
 //! fn sum_u8_i32((l, r): &(u8, i32)) -> i32 {
 //!     i32::from(*l) + *r

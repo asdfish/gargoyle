@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -47,7 +47,7 @@ impl<'gm> CharSet<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{list, collections::char_set::CharSet, with_guile};
+    /// # use garguile::{list, collections::char_set::CharSet, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let abc = CharSet::from(list!(guile, 'a', 'b', 'c'));
@@ -71,7 +71,7 @@ impl<'gm> CharSet<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{list, collections::char_set::CharSet, with_guile};
+    /// # use garguile::{list, collections::char_set::CharSet, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut abc = CharSet::from(list!(guile, 'a', 'b', 'c')).iter().collect::<Vec<_>>();

@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -89,7 +89,7 @@ impl Guile {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::list::List, symbol::Symbol, with_guile};
+    /// # use garguile::{collections::list::List, symbol::Symbol, with_guile};
     /// # #[cfg(not(miri))]
     /// assert!(with_guile(|guile| guile.throw(Symbol::from_str("foo", guile), List::<i32>::new(guile))).is_none());
     /// ```
@@ -104,7 +104,7 @@ impl Guile {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{catch::Tag, collections::list::List, symbol::Symbol, with_guile};
+    /// # use garguile::{catch::Tag, collections::list::List, symbol::Symbol, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(guile.try_catch(Tag::All, |_| {}, |_, _, _| {}).is_ok());

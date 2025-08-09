@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -125,7 +125,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::hash_map::HashMap, reference::Ref, with_guile};
+    /// # use garguile::{collections::hash_map::HashMap, reference::Ref, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut hm = HashMap::with_capacity(1, guile);
@@ -152,7 +152,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::{hash_map::HashMap, pair::Pair}, reference::Ref, with_guile};
+    /// # use garguile::{collections::{hash_map::HashMap, pair::Pair}, reference::Ref, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut hm = HashMap::with_capacity(1, guile);
@@ -179,7 +179,7 @@ where
     /// Insert a key value pair into the hash map.
     ///
     /// ```
-    /// # use gargoyle::{collections::hash_map::HashMap, reference::Ref, with_guile};
+    /// # use garguile::{collections::hash_map::HashMap, reference::Ref, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut hm = HashMap::with_capacity(1, guile);
@@ -204,7 +204,7 @@ where
     /// Remove a key value pair from the hash map.
     ///
     /// ```
-    /// # use gargoyle::{collections::hash_map::HashMap, reference::Ref, with_guile};
+    /// # use garguile::{collections::hash_map::HashMap, reference::Ref, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut hm = HashMap::with_capacity(1, guile);

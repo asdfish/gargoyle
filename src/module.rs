@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -49,7 +49,7 @@ impl<'gm> Module<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{module::Module, with_guile};
+    /// # use garguile::{module::Module, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let module = Module::current(guile);
@@ -63,7 +63,7 @@ impl<'gm> Module<'gm> {
     ///
     /// # Examples
     /// ```
-    /// # use gargoyle::{list, module::Module, symbol::Symbol, with_guile};
+    /// # use garguile::{list, module::Module, symbol::Symbol, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let _module = Module::get_or_create(&list!(guile, Symbol::from_str("foo", guile), Symbol::from_str("bar", guile)));
@@ -83,7 +83,7 @@ impl<'gm> Module<'gm> {
     /// # examples
     ///
     /// ```
-    /// # use gargoyle::{list, module::Module, symbol::Symbol, with_guile};
+    /// # use garguile::{list, module::Module, symbol::Symbol, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(Module::resolve(&list!(guile, Symbol::from_str("ice-9", guile))).is_some());
@@ -103,7 +103,7 @@ impl<'gm> Module<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{with_guile, list, module::Module, symbol::Symbol};
+    /// # use garguile::{with_guile, list, module::Module, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(Module::current(guile).is_defined(Symbol::from_str("car", guile)));
@@ -119,7 +119,7 @@ impl<'gm> Module<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{list, with_guile, module::Module, symbol::Symbol};
+    /// # use garguile::{list, with_guile, module::Module, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let sym = Symbol::from_str("baz", guile);
@@ -148,7 +148,7 @@ impl<'gm> Module<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{list, with_guile, module::Module, subr::Proc, symbol::Symbol};
+    /// # use garguile::{list, with_guile, module::Module, subr::Proc, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let module = Module::resolve(&list!(guile, Symbol::from_str("ice-9", guile), Symbol::from_str("eval-string", guile))).unwrap();
@@ -179,7 +179,7 @@ impl<'gm> Module<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{list, with_guile, module::Module, subr::Proc, symbol::Symbol};
+    /// # use garguile::{list, with_guile, module::Module, subr::Proc, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(

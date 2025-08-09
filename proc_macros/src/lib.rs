@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -49,7 +49,7 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                 guile_ident,
                 struct_ident,
                 doc,
-                gargoyle_root,
+                garguile_root,
             } = Config::new(args, &input);
             FnArgs::try_from(input.clone())
                 .map(
@@ -112,29 +112,29 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
 
                         quote! {
                             #vis struct #struct_ident;
-                            impl #gargoyle_root::subr::GuileFn for #struct_ident {
-                                fn create<'gm>(guile: &'gm #gargoyle_root::Guile) -> #gargoyle_root::subr::Proc<'gm> {
+                            impl #garguile_root::subr::GuileFn for #struct_ident {
+                                fn create<'gm>(guile: &'gm #garguile_root::Guile) -> #garguile_root::subr::Proc<'gm> {
                                     unsafe extern "C" fn driver(
-                                        #(#required_idents: #gargoyle_root::sys::SCM,)*
-                                        #(#optional_idents: #gargoyle_root::sys::SCM,)*
-                                        #(#rest_ident: #gargoyle_root::sys::SCM,)*
-                                    ) -> #gargoyle_root::sys::SCM {
-                                        let guile = unsafe { #gargoyle_root::Guile::new_unchecked_ref() };
+                                        #(#required_idents: #garguile_root::sys::SCM,)*
+                                        #(#optional_idents: #garguile_root::sys::SCM,)*
+                                        #(#rest_ident: #garguile_root::sys::SCM,)*
+                                    ) -> #garguile_root::sys::SCM {
+                                        let guile = unsafe { #garguile_root::Guile::new_unchecked_ref() };
 
-                                        #(let #required_idents = ::std::mem::ManuallyDrop::new(#gargoyle_root::scm::TryFromScm::from_scm_or_throw(#gargoyle_root::scm::Scm::from_ptr(#required_idents, guile), #guile_ident, #required_idxs, guile));)*
-                                        #(let #optional_idents = <::std::option::Option<_> as #gargoyle_root::scm::TryFromScm>::from_scm_or_throw(#gargoyle_root::scm::Scm::from_ptr(#optional_idents, guile), #guile_ident, #optional_idxs, guile).map(::std::mem::ManuallyDrop::new);)*
-                                        #(#(static #keyword_static_idents: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#gargoyle_root::sys::scm_unused_struct>> = ::std::sync::LazyLock::new(|| {
+                                        #(let #required_idents = ::std::mem::ManuallyDrop::new(#garguile_root::scm::TryFromScm::from_scm_or_throw(#garguile_root::scm::Scm::from_ptr(#required_idents, guile), #guile_ident, #required_idxs, guile));)*
+                                        #(let #optional_idents = <::std::option::Option<_> as #garguile_root::scm::TryFromScm>::from_scm_or_throw(#garguile_root::scm::Scm::from_ptr(#optional_idents, guile), #guile_ident, #optional_idxs, guile).map(::std::mem::ManuallyDrop::new);)*
+                                        #(#(static #keyword_static_idents: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#garguile_root::sys::scm_unused_struct>> = ::std::sync::LazyLock::new(|| {
                                             const SYMBOL: &'static ::std::primitive::str = #keyword_symbols;
-                                            unsafe { #gargoyle_root::sys::scm_symbol_to_keyword(#gargoyle_root::sys::scm_from_utf8_symboln(SYMBOL.as_bytes().as_ptr().cast(), SYMBOL.len()))}.into()
+                                            unsafe { #garguile_root::sys::scm_symbol_to_keyword(#garguile_root::sys::scm_from_utf8_symboln(SYMBOL.as_bytes().as_ptr().cast(), SYMBOL.len()))}.into()
                                         });
-                                        let mut #keyword_idents = unsafe { #gargoyle_root::sys::SCM_UNDEFINED };)*
-                                        unsafe { #gargoyle_root::sys::scm_c_bind_keyword_arguments(
+                                        let mut #keyword_idents = unsafe { #garguile_root::sys::SCM_UNDEFINED };)*
+                                        unsafe { #garguile_root::sys::scm_c_bind_keyword_arguments(
                                             #guile_ident.as_ptr().cast(), #rest_ident, 0,
                                             #(#keyword_static_idents.load(::std::sync::atomic::Ordering::SeqCst), &raw mut #keyword_idents,)*
-                                            #gargoyle_root::sys::SCM_UNDEFINED,
+                                            #garguile_root::sys::SCM_UNDEFINED,
                                         ); }
-                                        #(let #keyword_idents = <::std::option::Option<_> as #gargoyle_root::scm::TryFromScm>::from_scm_or_throw(#gargoyle_root::scm::Scm::from_ptr(#keyword_idents, guile), #guile_ident, #keyword_idxs, guile).map(::std::mem::ManuallyDrop::new);)*)*
-                                        #(let #rest_ident: ::std::mem::ManuallyDrop<#gargoyle_root::collections::list::List<_>> = ::std::mem::ManuallyDrop::new(#gargoyle_root::scm::TryFromScm::from_scm_or_throw(#gargoyle_root::scm::Scm::from_ptr(#rest_list, guile), #guile_ident, #rest_idx, guile));)*
+                                        #(let #keyword_idents = <::std::option::Option<_> as #garguile_root::scm::TryFromScm>::from_scm_or_throw(#garguile_root::scm::Scm::from_ptr(#keyword_idents, guile), #guile_ident, #keyword_idxs, guile).map(::std::mem::ManuallyDrop::new);)*)*
+                                        #(let #rest_ident: ::std::mem::ManuallyDrop<#garguile_root::collections::list::List<_>> = ::std::mem::ManuallyDrop::new(#garguile_root::scm::TryFromScm::from_scm_or_throw(#garguile_root::scm::Scm::from_ptr(#rest_list, guile), #guile_ident, #rest_idx, guile));)*
 
                                         let ret = #ident(
                                             #guile
@@ -143,14 +143,14 @@ pub fn guile_fn(args: TokenStream, input: TokenStream) -> TokenStream {
                                             #(#(#keyword_idents.as_deref(),)*)*
                                             #(&#rest_enabled_ident)*
                                         );
-                                        #gargoyle_root::reference::ReprScm::as_ptr(&#gargoyle_root::scm::ToScm::to_scm(ret, guile))
+                                        #garguile_root::reference::ReprScm::as_ptr(&#garguile_root::scm::ToScm::to_scm(ret, guile))
                                     }
-                                    static PROC: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#gargoyle_root::sys::scm_unused_struct>> = ::std::sync::LazyLock::new(|| {
-                                        unsafe { #gargoyle_root::sys::scm_c_make_gsubr(#guile_ident.as_ptr().cast(), #required_len.try_into().unwrap(), #optional_len.try_into().unwrap(), #has_rest as ::std::ffi::c_int, driver as *mut ::std::ffi::c_void) }
+                                    static PROC: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#garguile_root::sys::scm_unused_struct>> = ::std::sync::LazyLock::new(|| {
+                                        unsafe { #garguile_root::sys::scm_c_make_gsubr(#guile_ident.as_ptr().cast(), #required_len.try_into().unwrap(), #optional_len.try_into().unwrap(), #has_rest as ::std::ffi::c_int, driver as *mut ::std::ffi::c_void) }
                                         .into()
                                     });
 
-                                    <#gargoyle_root::subr::Proc as #gargoyle_root::scm::TryFromScm>::try_from_scm(#gargoyle_root::scm::Scm::from_ptr(
+                                    <#garguile_root::subr::Proc as #garguile_root::scm::TryFromScm>::try_from_scm(#garguile_root::scm::Scm::from_ptr(
                                         PROC.load(::std::sync::atomic::Ordering::Acquire),
                                         guile,
                                     ), guile).expect("`scm_c_make_gsubr` should always return a procedure")
@@ -209,22 +209,22 @@ where
         .next_back()
         .unwrap_or(Ok(Cow::Owned(default)))
 }
-fn gargoyle_root<'a, C, I>(attrs: &'a C) -> Result<Cow<'a, Path>, syn::Error>
+fn garguile_root<'a, C, I>(attrs: &'a C) -> Result<Cow<'a, Path>, syn::Error>
 where
     &'a C: IntoIterator<Item = &'a Attribute, IntoIter = I>,
     I: DoubleEndedIterator + Iterator<Item = &'a Attribute>,
 {
     get_last_attr(
         attrs,
-        "gargoyle_root",
+        "garguile_root",
         |expr| match expr {
             Expr::Path(ExprPath { path, .. }) => Ok(path),
             expr => Err(syn::Error::new(
                 expr.span(),
-                "expected path: `gargoyle_root = ::foo`",
+                "expected path: `garguile_root = ::foo`",
             )),
         },
-        parse_quote! { ::gargoyle },
+        parse_quote! { ::garguile },
     )
 }
 fn guile_mode_lt<'a, C, I>(attrs: &'a C) -> Result<Cow<'a, Ident>, syn::Error>
@@ -248,7 +248,7 @@ where
     )
 }
 
-#[proc_macro_derive(ForeignObject, attributes(gargoyle_root))]
+#[proc_macro_derive(ForeignObject, attributes(garguile_root))]
 pub fn foreign_object(input: TokenStream) -> TokenStream {
     syn::parse::<DeriveInput>(input)
         .and_then(
@@ -259,23 +259,23 @@ pub fn foreign_object(input: TokenStream) -> TokenStream {
                  ..
              }| {
                 let ty_name_str = ident.to_string().to_case(Case::Kebab);
-                gargoyle_root(&attrs)
-                    .map(|gargoyle_root| {
+                garguile_root(&attrs)
+                    .map(|garguile_root| {
                         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
                         quote! {
-                            impl #impl_generics #gargoyle_root::foreign_object::ForeignObject for #ident #ty_generics
+                            impl #impl_generics #garguile_root::foreign_object::ForeignObject for #ident #ty_generics
                             #where_clause
                             {
-                                unsafe fn get_or_create_type() -> #gargoyle_root::sys::SCM {
-                                    static OBJECT_TYPE: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#gargoyle_root::sys::scm_unused_struct>>
+                                unsafe fn get_or_create_type() -> #garguile_root::sys::SCM {
+                                    static OBJECT_TYPE: ::std::sync::LazyLock<::std::sync::atomic::AtomicPtr<#garguile_root::sys::scm_unused_struct>>
                                         = ::std::sync::LazyLock::new(|| {
-                                            let guile = unsafe { #gargoyle_root::Guile::new_unchecked_ref() };
-                                            let name = #gargoyle_root::symbol::Symbol::from_str(#ty_name_str, guile);
+                                            let guile = unsafe { #garguile_root::Guile::new_unchecked_ref() };
+                                            let name = #garguile_root::symbol::Symbol::from_str(#ty_name_str, guile);
                                             unsafe {
-                                                #gargoyle_root::sys::scm_make_foreign_object_type(
-                                                    #gargoyle_root::reference::ReprScm::as_ptr(&name),
-                                                    #gargoyle_root::foreign_object::slots(),
+                                                #garguile_root::sys::scm_make_foreign_object_type(
+                                                    #garguile_root::reference::ReprScm::as_ptr(&name),
+                                                    #garguile_root::foreign_object::slots(),
                                                     ::std::option::Option::None,
                                                 )
                                             }.into()
@@ -306,7 +306,7 @@ fn add_lifetime(lt: Lifetime, mut generics: Generics) -> Generics {
     generics
 }
 
-#[proc_macro_derive(ToScm, attributes(gargoyle_root, guile_mode_lt))]
+#[proc_macro_derive(ToScm, attributes(garguile_root, guile_mode_lt))]
 pub fn to_scm(input: TokenStream) -> TokenStream {
     syn::parse::<DeriveInput>(input)
         .and_then(
@@ -316,14 +316,14 @@ pub fn to_scm(input: TokenStream) -> TokenStream {
                  generics,
                  ..
              }| {
-                gargoyle_root(&attrs)
-                    .and_then(|gargoyle_root| guile_mode_lt(&attrs)
+                garguile_root(&attrs)
+                    .and_then(|garguile_root| guile_mode_lt(&attrs)
                               .map(|ident| Lifetime {
                                   apostrophe: Span::call_site(),
                                   ident: ident.into_owned(),
                               })
-                              .map(|gm| (gargoyle_root, gm)))
-                    .map(|(gargoyle_root, gm)| {
+                              .map(|gm| (garguile_root, gm)))
+                    .map(|(garguile_root, gm)| {
                         let (_, ty_generics, _) = generics.split_for_impl();
                         let ty_generics = quote! { #ty_generics };
 
@@ -331,15 +331,15 @@ pub fn to_scm(input: TokenStream) -> TokenStream {
                         let (impl_generics, _, where_clause) = generics.split_for_impl();
 
                         quote! {
-                            impl #impl_generics #gargoyle_root::scm::ToScm<#gm> for #ident #ty_generics
+                            impl #impl_generics #garguile_root::scm::ToScm<#gm> for #ident #ty_generics
                             #where_clause
                             {
-                                fn to_scm(self, guile: &'gm #gargoyle_root::Guile) -> #gargoyle_root::scm::Scm<'gm> {
+                                fn to_scm(self, guile: &'gm #garguile_root::Guile) -> #garguile_root::scm::Scm<'gm> {
                                     // we don't need to care about panicking or dynwind since the pointer is garbage collected
-                                    let ptr = #gargoyle_root::reexports::allocator_api2::boxed::Box::into_raw(
-                                        #gargoyle_root::reexports::allocator_api2::boxed::Box::new_in(self, #gargoyle_root::alloc::GcAllocator::new(<Self as #gargoyle_root::scm::TryFromScm>::type_name().as_ref(), guile))
+                                    let ptr = #garguile_root::reexports::allocator_api2::boxed::Box::into_raw(
+                                        #garguile_root::reexports::allocator_api2::boxed::Box::new_in(self, #garguile_root::alloc::GcAllocator::new(<Self as #garguile_root::scm::TryFromScm>::type_name().as_ref(), guile))
                                     );
-                                    #gargoyle_root::scm::Scm::from_ptr(unsafe { #gargoyle_root::sys::scm_make_foreign_object_1(<Self as #gargoyle_root::foreign_object::ForeignObject>::get_or_create_type(), ptr.cast()) }, guile)
+                                    #garguile_root::scm::Scm::from_ptr(unsafe { #garguile_root::sys::scm_make_foreign_object_1(<Self as #garguile_root::foreign_object::ForeignObject>::get_or_create_type(), ptr.cast()) }, guile)
                                 }
                             }
                         }
@@ -350,7 +350,7 @@ pub fn to_scm(input: TokenStream) -> TokenStream {
         .into()
 }
 
-#[proc_macro_derive(TryFromScm, attributes(gargoyle_root, guile_mode_lt, ty_name))]
+#[proc_macro_derive(TryFromScm, attributes(garguile_root, guile_mode_lt, ty_name))]
 pub fn try_from_scm(input: TokenStream) -> TokenStream {
     syn::parse::<DeriveInput>(input)
         .and_then(
@@ -360,21 +360,21 @@ pub fn try_from_scm(input: TokenStream) -> TokenStream {
                  generics,
                  ..
              }| {
-                gargoyle_root(&attrs)
-                    .and_then(|gargoyle_root| {
+                garguile_root(&attrs)
+                    .and_then(|garguile_root| {
                         guile_mode_lt(&attrs)
                             .map(|ident| Lifetime {
                                 apostrophe: Span::call_site(),
                                 ident: ident.into_owned(),
                             })
-                            .map(|gm| (gargoyle_root, gm))
+                            .map(|gm| (garguile_root, gm))
                     })
                     .and_then(|(root, gm)| get_last_attr(&attrs, "ty_name", |expr| match expr {
                         Expr::Lit(ExprLit { lit: Lit::CStr(ty_name), .. }) => Ok(ty_name),
                         expr => Err(syn::Error::new(expr.span(), "expected c string literal: `ty_name = c\"foo\"`"))
                     }, LitCStr::new(&CString::new(ident.to_string().to_case(Case::Kebab)).unwrap(), Span::call_site()))
                     .map(|ty_name| (root, gm, ty_name)))
-                    .map(|(gargoyle_root, gm, ty_name)| {
+                    .map(|(garguile_root, gm, ty_name)| {
                         let (_, ty_generics, _) = generics.split_for_impl();
                         let ty_generics = quote! { #ty_generics };
 
@@ -382,27 +382,27 @@ pub fn try_from_scm(input: TokenStream) -> TokenStream {
                         let (impl_generics, _, where_clause) = generics.split_for_impl();
 
                         quote! {
-                            impl #impl_generics #gargoyle_root::scm::TryFromScm<#gm> for #ident #ty_generics
+                            impl #impl_generics #garguile_root::scm::TryFromScm<#gm> for #ident #ty_generics
                             #where_clause
                             {
                                 fn type_name() -> ::std::borrow::Cow<'static, ::std::ffi::CStr> {
                                     ::std::borrow::Cow::Borrowed(#ty_name)
                                 }
 
-                                fn predicate(scm: &#gargoyle_root::scm::Scm<#gm>, _: &#gm #gargoyle_root::Guile) -> bool {
+                                fn predicate(scm: &#garguile_root::scm::Scm<#gm>, _: &#gm #garguile_root::Guile) -> bool {
                                     let b = unsafe {
-                                        #gargoyle_root::sys::SCM_IS_A_P(
-                                            #gargoyle_root::reference::ReprScm::as_ptr(scm),
-                                            <Self as #gargoyle_root::foreign_object::ForeignObject>::get_or_create_type(),
+                                        #garguile_root::sys::SCM_IS_A_P(
+                                            #garguile_root::reference::ReprScm::as_ptr(scm),
+                                            <Self as #garguile_root::foreign_object::ForeignObject>::get_or_create_type(),
                                         )
                                     };
                                     b != 0
                                 }
 
-                                unsafe fn from_scm_unchecked(scm: #gargoyle_root::scm::Scm<#gm>, _: &#gm #gargoyle_root::Guile) -> Self {
+                                unsafe fn from_scm_unchecked(scm: #garguile_root::scm::Scm<#gm>, _: &#gm #garguile_root::Guile) -> Self {
                                     let ptr = unsafe {
-                                        #gargoyle_root::sys::scm_foreign_object_ref(
-                                            #gargoyle_root::reference::ReprScm::as_ptr(&scm),
+                                        #garguile_root::sys::scm_foreign_object_ref(
+                                            #garguile_root::reference::ReprScm::as_ptr(&scm),
                                             0,
                                         )
                                     }.cast::<Self>();

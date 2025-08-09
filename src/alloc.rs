@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -65,7 +65,7 @@ impl<'gm, 'a> GcAllocator<'gm, 'a> {
     ///
     /// ```
     /// # use allocator_api2::boxed::Box;
-    /// # use gargoyle::{alloc::GcAllocator, with_guile};
+    /// # use garguile::{alloc::GcAllocator, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let allocator = GcAllocator::new(c"box", guile);

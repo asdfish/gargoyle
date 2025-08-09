@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -56,7 +56,7 @@ impl<'gm> Symbol<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{with_guile, symbol::Symbol};
+    /// # use garguile::{with_guile, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let foo = Symbol::from_str("foo", guile);
@@ -86,7 +86,7 @@ impl<'gm> Symbol<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{with_guile, symbol::Symbol};
+    /// # use garguile::{with_guile, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(Symbol::from_str("foo", guile).len(), 3);
@@ -101,7 +101,7 @@ impl<'gm> Symbol<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{with_guile, symbol::Symbol};
+    /// # use garguile::{with_guile, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(!Symbol::from_str("foo", guile).is_empty());
@@ -117,7 +117,7 @@ impl<'gm> Symbol<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{with_guile, string::String, symbol::Symbol};
+    /// # use garguile::{with_guile, string::String, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(!Symbol::new_uninterned(&String::from_str("foo", guile)).is_interned());
@@ -135,7 +135,7 @@ impl<'gm> Symbol<'gm> {
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{with_guile, string::String, symbol::Symbol};
+    /// # use garguile::{with_guile, string::String, symbol::Symbol};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert!(!Symbol::new_uninterned(&String::from_str("foo", guile)).is_interned());

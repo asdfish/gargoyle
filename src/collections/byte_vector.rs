@@ -1,4 +1,4 @@
-// gargoyle - guile bindings for rust
+// garguile - guile bindings for rust
 // Copyright (C) 2025  Andrew Chi
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -307,7 +307,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::byte_vector::ByteVector, list, with_guile};
+    /// # use garguile::{collections::byte_vector::ByteVector, list, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     assert_eq!(
@@ -342,7 +342,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// # use gargoyle::{collections::byte_vector::ByteVector, list, with_guile};
+    /// # use garguile::{collections::byte_vector::ByteVector, list, with_guile};
     /// # #[cfg(not(miri))]
     /// with_guile(|guile| {
     ///     let mut vec = ByteVector::<i32>::from(list!(guile, 1, 2, 3));
