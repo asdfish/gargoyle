@@ -225,4 +225,4 @@ pub trait GuileFn {
 ///     assert_eq!(unsafe { guile.eval::<i32>(&String::from_str("(area #:width 10)", guile)) }, Ok(0));
 /// }).unwrap();
 /// ```
-pub use proc_macros::guile_fn;
+pub use garguile_proc_macros::guile_fn;

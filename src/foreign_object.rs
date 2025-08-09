@@ -64,4 +64,4 @@ pub trait ForeignObject: Copy + Send + Sync {
     /// Only call in guile mode.
     unsafe fn get_or_create_type() -> SCM;
 }
-pub use proc_macros::ForeignObject;
+pub use garguile_proc_macros::ForeignObject;

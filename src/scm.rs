@@ -80,7 +80,7 @@ pub trait TryFromScm<'gm> {
     where
         Self: Sized;
 }
-pub use proc_macros::TryFromScm;
+pub use garguile_proc_macros::TryFromScm;
 
 /// Trait for types that can be converted to a [Scm] object.
 pub trait ToScm<'gm> {
@@ -125,7 +125,7 @@ pub trait ToScm<'gm> {
 /// assert_eq!(CALLED.load(atomic::Ordering::Acquire), true);
 /// # }
 /// ```
-pub use proc_macros::ToScm;
+pub use garguile_proc_macros::ToScm;
 
 /// Guile equivalent of `Box<dyn Any>`
 #[derive(Debug)]

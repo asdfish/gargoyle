@@ -82,11 +82,21 @@ dependencies = [
  "allocator-api2",
  "bstr",
  "cc",
+ "garguile_proc_macros",
  "itertools",
  "parking_lot",
- "proc_macros",
  "string",
  "tempfile",
+]
+
+[[package]]
+name = "garguile_proc_macros"
+version = "0.1.0"
+dependencies = [
+ "convert_case",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -162,16 +172,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02b3e5e68a3a1a02aad3ec490a98007cbc13c37cbe84a3cd7b8e406d76e7f778"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "proc_macros"
-version = "0.1.0"
-dependencies = [
- "convert_case",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
