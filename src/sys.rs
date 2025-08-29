@@ -16,7 +16,10 @@
 #![expect(non_camel_case_types)]
 #![expect(missing_docs)]
 
-use std::ffi::{c_char, c_double, c_int, c_void};
+use std::{
+    ffi::{c_char, c_double, c_int, c_void},
+    ptr,
+};
 
 #[repr(C)]
 pub struct scm_unused_struct {
@@ -66,7 +69,7 @@ pub enum scm_t_array_element_type {
 
 pub type scm_t_vector_ref = Option<extern "C" fn(_: SCM, _: usize) -> SCM>;
 pub type scm_t_vector_set = Option<extern "C" fn(_: SCM, _: usize, SCM)>;
-#[derive(Default)]
+
 #[repr(C)]
 pub struct scm_t_array_handle {
     array: SCM,
@@ -82,6 +85,23 @@ pub struct scm_t_array_handle {
     vector: SCM,
     vref: scm_t_vector_ref,
     vset: scm_t_vector_set,
+}
+impl Default for scm_t_array_handle {
+    fn default() -> Self {
+        Self {
+            array: ptr::null_mut(),
+            base: Default::default(),
+            ndims: Default::default(),
+            dims: ptr::null_mut(),
+            dim0: Default::default(),
+            element_type: Default::default(),
+            elements: ptr::null(),
+            writable_elements: ptr::null_mut(),
+            vector: ptr::null_mut(),
+            vref: Default::default(),
+            vset: Default::default(),
+        }
+    }
 }
 
 pub type scm_t_keyword_arguments_flags = c_int;
