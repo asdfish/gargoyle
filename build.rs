@@ -14,38 +14,29 @@
 // limitations under the License.
 
 use std::{
-    error::Error,
     ffi::OsStr,
-    fmt::{self, Display, Formatter},
+    fmt::Display,
     io::{self, Write, stdout},
     process::Command,
 };
 
-// must be dynamically linked for lgpl
-const PKG_CONFIG_ARGS: &[&str] = &["--cflags", "--libs", "--shared", "guile-3.0"];
-
-pub fn pkg_config_guile() -> Result<Vec<u8>, PkgConfigError> {
-    Command::new("pkg-config")
-        .args(PKG_CONFIG_ARGS)
+fn guile_config(subcmd: &str) -> Result<Vec<u8>, io::Error> {
+    Command::new("guile-config")
+        .arg(subcmd)
         .output()
         .map(|output| output.stdout)
-        .map_err(PkgConfigError)
 }
 
-#[derive(Debug)]
-pub struct PkgConfigError(io::Error);
-impl Display for PkgConfigError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "failed to execute `pkg-config")
-            .and_then(|_| {
-                PKG_CONFIG_ARGS
-                    .iter()
-                    .try_for_each(|arg| write!(f, " {arg}"))
+pub fn pkg_config_guile() -> Result<Vec<u8>, io::Error> {
+    guile_config("compile").and_then(|mut compile_args| {
+        compile_args.push(b' ');
+        guile_config("link")
+            .map(|link_args| {
+                compile_args.extend(link_args);
             })
-            .and_then(|_| write!(f, "`: {}", self.0))
-    }
+            .map(move |_| compile_args)
+    })
 }
-impl Error for PkgConfigError {}
 
 fn die<T, U>(error: T) -> U
 where
